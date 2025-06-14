@@ -93,7 +93,7 @@
   Обратите внимание, что метаданные были вынесены в отдельный файл `meta.py`, но импортируются в `__init__.py`.
   Это сделано для избежания конфликтов импорта в дальнейшей части кода модуля.
 
-  `meta.py`:
+  **`meta.py`**:
   ```python
   from colorama import Fore, Style
 
@@ -105,7 +105,7 @@
   LINKS = "https://t.me/alleexxeeyy, https://t.me/alexeyproduction"
   ```
 
-  `__init__.py`:
+  **`__init__.py`**:
   ```python
   from .plbot.playerokbot_handlers import PlayerokBotHandlers
   from .tgbot.telegrambot_handlers import TelegramBotHandlers

@@ -213,12 +213,11 @@ class PlayerokBot:
                 try:
                     self.logger.info(f"{PREFIX} 🛒  Новая сделка {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE}, оформленная покупателем {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.transaction.value} р.")
                     if self.config["auto_deliveries_enabled"]:
-                        if event.deal.item:
-                            if str(event.deal.item.slug) in self.auto_deliveries.keys():
-                                self.playerok_account.send_message(this_chat.id, 
-                                                                   "\n".join(self.auto_deliveries[str(event.deal.item.slug)]),
-                                                                   self.config.get("read_chat_before_sending_message_enabled") or False)
-                                self.logger.info(f"{PREFIX} 🚀  На оплаченную сделку {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE} от покупателя {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} было автоматически выдано пользовательское сообщение после покупки")
+                        if event.deal.item.id in self.auto_deliveries.keys():
+                            self.playerok_account.send_message(this_chat.id, 
+                                                                "\n".join(self.auto_deliveries[str(event.deal.item.slug)]),
+                                                                self.config.get("read_chat_before_sending_message_enabled") or False)
+                            self.logger.info(f"{PREFIX} 🚀  На оплаченную сделку {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE} от покупателя {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} было автоматически выдано пользовательское сообщение после покупки")
                                 
                     if self.config["auto_raising_items_enabled"]:
                         priority_statuses = self.playerok_account.get_item_priority_statuses(event.deal.item.id, event.deal.item.price)

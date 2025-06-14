@@ -25,6 +25,8 @@ from bot_settings.app import CURRENT_VERSION
 from core.console import set_title, restart
 from core.handlers_manager import HandlersManager
 
+from . import set_playerok_bot
+
 PREFIX = F"{Fore.LIGHTWHITE_EX}[playerok bot]{Fore.WHITE}"
 
 
@@ -74,6 +76,8 @@ class PlayerokBot:
         self.refresh_account_next_time = datetime.now() + timedelta(seconds=3600)
         """ Время следующего обновление данных об аккаунте. """
 
+        set_playerok_bot(self)
+
     def msg(self, message_name: str, **kwargs) -> str:
         """ 
         Получает отформатированное сообщение из словаря сообщений.
@@ -105,6 +109,7 @@ class PlayerokBot:
                 """ Действия, которые должны выполняться в другом потоке, вне цикла раннера. """
                 while True:
                     try:
+                        set_playerok_bot(self)
                         set_title(f"Playerok Universal v{CURRENT_VERSION} | {self.playerok_account.username}: {self.playerok_account.profile.balance.value} RUB")
                         if Data.get_initialized_users() != plbot.initialized_users:
                             Data.set_initialized_users(plbot.initialized_users)

@@ -46,8 +46,8 @@ class AccountBalance:
     :param frozen: Сумма замороженного баланса.
     :type frozen: `int`
 
-    :param avaible: Сумма доступного баланса.
-    :type avaible: `int`
+    :param available: Сумма доступного баланса.
+    :type available: `int`
 
     :param withdrawable: Сумма баланса, доступного для вывода.
     :type withdrawable: `int`
@@ -55,15 +55,15 @@ class AccountBalance:
     :param pending_income: Ожидаемый доход.
     :type pending_income: `int`
     """
-    def __init__(self, id: str, value: int, frozen: int, avaible: int, 
+    def __init__(self, id: str, value: int, frozen: int, available: int, 
                  withdrawable: int, pending_income: int):
         self.id: str = id
         """ ID баланса. """
         self.value: int = value
-        """ Сумма баланса. """
+        """ Сумма общего баланса. """
         self.frozen: int = frozen
-        """ Сумма замороженного баланс.а """
-        self.avaible: int = avaible
+        """ Сумма замороженного баланса. """
+        self.available: int = available
         """ Сумма доступного баланса. """
         self.withdrawable: int = withdrawable
         """ Сумма баланса, доступного для вывода. """
@@ -81,9 +81,9 @@ class AccountIncomingDealsStats:
     :type finished: `int`
     """
     def __init__(self, total: int, finished: int):
-        self.total = total
+        self.total: int = total
         """ Всего исходящих сделок. """
-        self.finished = finished
+        self.finished: int = finished
         """ Кол-во завершённых исходящих сделок. """
 
 class AccountOutgoingDealsStats:
@@ -107,15 +107,15 @@ class AccountDealsStats:
     Подкласс, описывающий статистику сделок аккаунта.
 
     :param incoming: Входящие сделки.
-    :type incoming: `types.UserIncomingDealsStats`
+    :type incoming: `types.AccountIncomingDealsStats`
 
     :param outgoing: Исходящие сделки.
-    :type outgoing: `types.UserOutgoingDealsStats`
+    :type outgoing: `types.AccountOutgoingDealsStats`
     """
     def __init__(self, incoming: AccountIncomingDealsStats, outgoing: AccountOutgoingDealsStats):
-        self.incoming = incoming
+        self.incoming: AccountIncomingDealsStats = incoming
         """ Входящие сделки. """
-        self.outgoing = outgoing
+        self.outgoing: AccountOutgoingDealsStats = outgoing
         """ Исходящие сделки. """
 
 class AccountItemsStats:
@@ -129,9 +129,9 @@ class AccountItemsStats:
     :type finished: `int`
     """
     def __init__(self, total: int, finished: int):
-        self.total = total
+        self.total: int = total
         """ Всего предметов. """
-        self.finished = finished
+        self.finished: int = finished
         """ Кол-во завершённых предметов. """
 
 class AccountStats:
@@ -139,15 +139,15 @@ class AccountStats:
     Подкласс, описывающий статистику аккаунта.
 
     :param items: Статистика предметов.
-    :type items: `types.UserItemsStats`
+    :type items: `types.AccountItemsStats`
 
     :param deals: Статистика сделок.
-    :type deals: `types.UserDealsStats`
+    :type deals: `types.AccountDealsStats`
     """
     def __init__(self, items: AccountItemsStats, deals: AccountDealsStats):
-        self.items = items
+        self.items: AccountItemsStats = items
         """ Статистика предметов. """
-        self.deals = deals
+        self.deals: AccountDealsStats = deals
         """ Статистика сделок. """
 
 class AccountProfile:

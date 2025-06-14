@@ -42,8 +42,6 @@ class BotsManager:
         await self.start_playerok_bot()
         await self.tgbot.run_bot()
 
-
-
 if __name__ == "__main__":
     """ Запуск всех ботов """
     from bot_settings.app import CURRENT_VERSION

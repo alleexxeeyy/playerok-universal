@@ -6,20 +6,16 @@ from datetime import datetime
 
 import tgbot.callback_datas.user_callback_datas as CallbackDatas
 
-from plbot.playerokbot import PlayerokBot
-from plbot.data import Data
-
 from settings import Config, Messages, CustomCommands, AutoDeliveries
 
 from bot_settings.app import CURRENT_VERSION
 from plbot.utils.stats import get_stats
+from plbot import get_playerok_bet
 
 from core.modules_manager import ModulesManager, Module
 from uuid import UUID
 
 from playerokapi import types as plapi_types
-
-playerokbot = PlayerokBot()
         
 class System:
     """ Шаблоны системных сообщений """
@@ -61,12 +57,18 @@ class Navigation:
                     ).pack()
                 )
                 btn3 = InlineKeyboardButton(
+                    text="👤 Мой профиль",
+                    callback_data=CallbackDatas.MenuNavigation(
+                        to="profile"
+                    ).pack()
+                )
+                btn4 = InlineKeyboardButton(
                     text="🔌 Модули",
                     callback_data=CallbackDatas.ModulesPagination(
                         page=0
                     ).pack()
                 )
-                btn4 = InlineKeyboardButton(
+                btn5 = InlineKeyboardButton(
                     text="📖 Инструкция",
                     callback_data=CallbackDatas.InstructionNavigation(
                         to="default"
@@ -84,7 +86,7 @@ class Navigation:
                     text="⚙️ Наш бот",
                     url="https://t.me/alexey_production_bot",
                 )
-                rows = [[btn1, btn2], [btn3], [btn4], [btn6, btn7, btn8]]
+                rows = [[btn1, btn2], [btn3, btn4], [btn5], [btn6, btn7, btn8]]
                 markup = InlineKeyboardMarkup(inline_keyboard=rows)
                 return markup
                 
@@ -137,6 +139,122 @@ class Navigation:
                         text="🔄️ Обновить",
                         callback_data=CallbackDatas.MenuNavigation(
                             to="stats"
+                        ).pack()
+                    )
+                    btn_back = InlineKeyboardButton(
+                        text="⬅️ Назад",
+                        callback_data=CallbackDatas.MenuNavigation(
+                            to="default"
+                        ).pack()
+                    )
+                    rows = [[btn_refresh], [btn_back]]
+                    markup = InlineKeyboardMarkup(inline_keyboard=rows)
+                    return markup
+            
+        class Profile:
+            class Error:
+                def text() -> str:
+                    msg = "👤 <b>Мой профиль</b>" \
+                        f"\n" \
+                        f"\n→ ID: <i>не удалось загрузить</i>" \
+                        f"\n→ Никнейм: <i>не удалось загрузить</i>" \
+                        f"\n→ Email: <i>не удалось загрузить</i>" \
+                        f"\n→ Роль: <i>не удалось загрузить</i>" \
+                        f"\n" \
+                        f"\n→ Рейтинг: <i>не удалось загрузить</i>" \
+                        f"\n→ Кол-во отзывов: <i>не удалось загрузить</i>" \
+                        f"\n" \
+                        f"\n→ Баланс:" \
+                        f"\n  ┕ Всего: <i>не удалось загрузить</i>" \
+                        f"\n  ┕ Доступно: <i>не удалось загрузить</i>" \
+                        f"\n  ┕ Заморожено: <i>не удалось загрузить</i>" \
+                        f"\n" \
+                        f"\n→ Статистика:" \
+                        f"\n  ┕ Предметы: " \
+                        f"\n      ┕ Всего: <i>не удалось загрузить</i>" \
+                        f"\n      ┕ Истёкших: <i>не удалось загрузить</i>" \
+                        f"\n  ┕ Сделки: " \
+                        f"\n      ┕ Всего входящих: <i>не удалось загрузить</i>" \
+                        f"\n      ┕ Завершено входящих: <i>не удалось загрузить</i>" \
+                        f"\n      ┕ Всего исходящих: <i>не удалось загрузить</i>" \
+                        f"\n      ┕ Завершено исходящих: <i>не удалось загрузить</i>" \
+                        f"\n" \
+                        f"\n→ Дата создания: <i>не удалось загрузить</i>" \
+                        f"\n" \
+                        f"\nВыберите действие ↓"
+                    return msg
+
+            class Loading:
+                def text() -> str:
+                    msg = "👤 <b>Мой профиль</b>" \
+                        f"\n" \
+                        f"\n→ ID: <i>загрузка</i>" \
+                        f"\n→ Никнейм: <i>загрузка</i>" \
+                        f"\n→ Email: <i>загрузка</i>" \
+                        f"\n→ Роль: <i>загрузка</i>" \
+                        f"\n" \
+                        f"\n→ Рейтинг: <i>загрузка</i>" \
+                        f"\n→ Кол-во отзывов: <i>загрузка</i>" \
+                        f"\n" \
+                        f"\n→ Баланс:" \
+                        f"\n  ┕ Всего: <i>загрузка</i>" \
+                        f"\n  ┕ Доступно: <i>загрузка</i>" \
+                        f"\n  ┕ Заморожено: <i>загрузка</i>" \
+                        f"\n" \
+                        f"\n→ Статистика:" \
+                        f"\n  ┕ Предметы: " \
+                        f"\n      ┕ Всего: <i>загрузка</i>" \
+                        f"\n      ┕ Истёкших: <i>загрузка</i>" \
+                        f"\n  ┕ Сделки: " \
+                        f"\n      ┕ Всего входящих: <i>загрузка</i>" \
+                        f"\n      ┕ Завершено входящих: <i>загрузка</i>" \
+                        f"\n      ┕ Всего исходящих: <i>загрузка</i>" \
+                        f"\n      ┕ Завершено исходящих: <i>загрузка</i>" \
+                        f"\n" \
+                        f"\n→ Дата создания: <i>загрузка</i>" \
+                        f"\n" \
+                        f"\nВыберите действие ↓"
+                    return msg
+                
+            class Default:
+                def text() -> str:
+                    playerokbot = get_playerok_bet()
+                    profile = playerokbot.playerok_account.profile
+                    msg = "👤 <b>Мой профиль</b>" \
+                        f"\n" \
+                        f"\n→ ID: <code>{profile.id}</code>" \
+                        f"\n→ Никнейм: <b>{profile.username}</b>" \
+                        f"\n→ Email: <b>{profile.email}</b>" \
+                        f"\n→ Роль: <b>{profile.role.name}</b>" \
+                        f"\n" \
+                        f"\n→ Рейтинг: <b>{profile.rating}</b>" \
+                        f"\n→ Кол-во отзывов: <b>{profile.reviews_count}</b>" \
+                        f"\n" \
+                        f"\n→ Баланс:" \
+                        f"\n  ┕ Всего: <b>{profile.balance.value}</b>" \
+                        f"\n  ┕ Доступно: <b>{profile.balance.available}</b>" \
+                        f"\n  ┕ Заморожено: <b>{profile.balance.frozen}</b>" \
+                        f"\n" \
+                        f"\n→ Статистика:" \
+                        f"\n  ┕ Предметы: " \
+                        f"\n      ┕ Всего: <b>{profile.stats.items.total}</b>" \
+                        f"\n      ┕ Истёкших: <b>{profile.stats.items.finished}</b>" \
+                        f"\n  ┕ Сделки: " \
+                        f"\n      ┕ Всего входящих: <b>{profile.stats.deals.incoming.total}</b>" \
+                        f"\n      ┕ Завершено входящих: <b>{profile.stats.deals.incoming.finished}</b>" \
+                        f"\n      ┕ Всего исходящих: <b>{profile.stats.deals.outgoing.total}</b>" \
+                        f"\n      ┕ Завершено исходящих: <b>{profile.stats.deals.outgoing.finished}</b>" \
+                        f"\n" \
+                        f"\n→ Дата создания: <b>{datetime.fromisoformat(profile.created_at).strftime("%d.%m.%Y %H:%M:%S")}</b>" \
+                        f"\n" \
+                        f"\nВыберите действие ↓"
+                    return msg
+                    
+                def kb() -> InlineKeyboardMarkup:
+                    btn_refresh = InlineKeyboardButton(
+                        text="🔄️ Обновить",
+                        callback_data=CallbackDatas.MenuNavigation(
+                            to="profile"
                         ).pack()
                     )
                     btn_back = InlineKeyboardButton(

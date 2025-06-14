@@ -11,15 +11,13 @@ import tgbot.templates.user_templates as Templates
 import tgbot.callback_datas.user_callback_datas as CallbackDatas
 from tgbot.states.states import *
 
-from plbot.playerokbot import PlayerokBot
+from plbot import get_playerok_bet
+
 from settings import Config, CustomCommands, AutoDeliveries
 from core.modules_manager import ModulesManager
 import time
 
 router = Router()
-playerokbot = PlayerokBot()
-
-
 
 @router.callback_query(F.data == "destroy")
 async def callback_back(call: CallbackQuery, state: FSMContext):
@@ -54,6 +52,18 @@ async def callback_menu_navigation(callback: CallbackQuery, callback_data: Callb
             except Exception as e:
                 await callback.message.edit_text(text=Templates.Navigation.MenuNavigation.Stats.Error.text(),
                                                  reply_markup=Templates.Navigation.MenuNavigation.Stats.Default.kb(),
+                                                 parse_mode="HTML")
+        elif to == "profile":
+            try:
+                await callback.message.edit_text(text=Templates.Navigation.MenuNavigation.Profile.Loading.text(),
+                                                 reply_markup=Templates.Navigation.MenuNavigation.Profile.Default.kb(),
+                                                 parse_mode="HTML")
+                await callback.message.edit_text(text=Templates.Navigation.MenuNavigation.Profile.Default.text(),
+                                                 reply_markup=Templates.Navigation.MenuNavigation.Profile.Default.kb(),
+                                                 parse_mode="HTML")
+            except Exception as e:
+                await callback.message.edit_text(text=Templates.Navigation.MenuNavigation.Profile.Error.text(),
+                                                 reply_markup=Templates.Navigation.MenuNavigation.Profile.Default.kb(),
                                                  parse_mode="HTML")
                 raise e
         elif to == "instruction":
@@ -523,6 +533,7 @@ async def callback_add_auto_delivery(call: CallbackQuery, state: FSMContext):
         if not auto_delivery_message:
             raise Exception("Сообщение после покупки авто-доставки не было найдено, повторите процесс с самого начала")
         
+        playerokbot = get_playerok_bet()
         auto_delivery_item_slug = auto_delivery_item_link.split("products/")[1]
         item = playerokbot.playerok_account.get_item(slug=auto_delivery_item_slug)
 

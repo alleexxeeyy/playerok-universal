@@ -11,7 +11,7 @@ import tgbot.templates.user_templates as Templates
 import tgbot.callback_datas.user_callback_datas as CallbackDatas
 from tgbot.states.states import *
 
-from plbot import get_playerok_bet
+from plbot import get_playerok_bot
 
 from settings import Config, CustomCommands, AutoDeliveries
 from core.modules_manager import ModulesManager
@@ -533,7 +533,7 @@ async def callback_add_auto_delivery(call: CallbackQuery, state: FSMContext):
         if not auto_delivery_message:
             raise Exception("Сообщение после покупки авто-доставки не было найдено, повторите процесс с самого начала")
         
-        playerokbot = get_playerok_bet()
+        playerokbot = get_playerok_bot()
         auto_delivery_item_slug = auto_delivery_item_link.split("products/")[1]
         item = playerokbot.playerok_account.get_item(slug=auto_delivery_item_slug)
 

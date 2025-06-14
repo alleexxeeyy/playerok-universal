@@ -10,7 +10,7 @@ from settings import Config, Messages, CustomCommands, AutoDeliveries
 
 from bot_settings.app import CURRENT_VERSION
 from plbot.utils.stats import get_stats
-from plbot import get_playerok_bet
+from plbot import get_playerok_bot
 
 from core.modules_manager import ModulesManager, Module
 from uuid import UUID
@@ -218,7 +218,7 @@ class Navigation:
                 
             class Default:
                 def text() -> str:
-                    playerokbot = get_playerok_bet()
+                    playerokbot = get_playerok_bot()
                     profile = playerokbot.playerok_account.profile
                     msg = "👤 <b>Мой профиль</b>" \
                         f"\n" \

@@ -4,7 +4,7 @@ if TYPE_CHECKING:
 
 _playerok_bot: 'PlayerokBot' = None
 
-def get_playerok_bet() -> 'PlayerokBot':
+def get_playerok_bot() -> 'PlayerokBot':
     global _playerok_bot
     return _playerok_bot
 

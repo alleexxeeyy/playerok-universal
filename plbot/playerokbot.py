@@ -94,7 +94,9 @@ class PlayerokBot:
         if message_lines:
             try:
                 formatted_lines = [line.format_map(SafeDict(**kwargs)) for line in message_lines]
-                return "\n".join(formatted_lines)
+                msg = "\n".join(formatted_lines)
+                msg += f'\n{self.config["messages_watermark"]}' if self.config["messages_watermark_enabled"] and self.config["messages_watermark"] else ""
+                return msg
             except:
                 pass
         return "Не удалось получить сообщение"

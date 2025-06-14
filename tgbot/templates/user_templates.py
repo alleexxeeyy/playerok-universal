@@ -1301,6 +1301,9 @@ class Navigation:
                             f"\n→ Пользовательские команды: <i>не удалось загрузить</i>" \
                             f"\n→ Автовыдача: <i>не удалось загрузить</i>" \
                             f"\n" \
+                            f"\n→ Водяной знак под сообщениями: <i>не удалось загрузить</i>" \
+                            f"\n→ Водяной знак: <i>не удалось загрузить</i>" \
+                            f"\n" \
                             f"\nВыберите параметр для изменения ↓" 
                     return msg
 
@@ -1313,6 +1316,9 @@ class Navigation:
                             f"\n→ Пользовательские команды: <i>загрузка</i>" \
                             f"\n→ Автовыдача: <i>загрузка</i>" \
                             f"\n" \
+                            f"\n→ Водяной знак под сообщениями: <i>загрузка</i>" \
+                            f"\n→ Водяной знак: <i>загрузка</i>" \
+                            f"\n" \
                             f"\nВыберите параметр для изменения ↓" 
                     return msg
 
@@ -1323,12 +1329,17 @@ class Navigation:
                     first_message_enabled = "🟢 Включено" if config["first_message_enabled"] else "🔴 Выключено"
                     custom_commands_enabled = "🟢 Включено" if config["custom_commands_enabled"] else "🔴 Выключено"
                     auto_deliveries_enabled = "🟢 Включено" if config["auto_deliveries_enabled"] else "🔴 Выключено"
+                    messages_watermark_enabled = "🟢 Включено" if config["messages_watermark_enabled"] else "🔴 Выключено"
+                    messages_watermark = config["messages_watermark"] if config["messages_watermark"] else "❌ Не задано"
                     msg = f"⚙️ <b>Настройки бота → 🔧 Прочее</b>" \
                             f"\n" \
                             f"\n→ Читать чат перед отправкой сообщения: <code>{read_chat_before_sending_message_enabled}</code>" \
                             f"\n→ Приветственное сообщение: <code>{first_message_enabled}</code>" \
                             f"\n→ Пользовательские команды: <code>{custom_commands_enabled}</code>" \
                             f"\n→ Автовыдача: <code>{auto_deliveries_enabled}</code>" \
+                            f"\n" \
+                            f"\n→ Водяной знак под сообщениями: <code>{messages_watermark_enabled}</code>" \
+                            f"\n→ Водяной знак: <code>{messages_watermark}</code>" \
                             f"\n" \
                             f"\nВыберите параметр для изменения ↓" 
                     return msg
@@ -1339,7 +1350,8 @@ class Navigation:
                     first_message_enabled = "🟢 Включено" if config["first_message_enabled"] else "🔴 Выключено"
                     custom_commands_enabled = "🟢 Включено" if config["custom_commands_enabled"] else "🔴 Выключено"
                     auto_deliveries_enabled = "🟢 Включено" if config["auto_deliveries_enabled"] else "🔴 Выключено"
-
+                    messages_watermark_enabled = "🟢 Включено" if config["messages_watermark_enabled"] else "🔴 Выключено"
+                    messages_watermark = config["messages_watermark"] if config["messages_watermark"] else "❌ Не задано"
                     btn1 = InlineKeyboardButton(
                         text=f"👀 Читать чат перед отправкой: {read_chat_before_sending_message_enabled}",
                         callback_data="disable_read_chat_before_sending_message" if config["read_chat_before_sending_message_enabled"] else "enable_read_chat_before_sending_message"
@@ -1356,6 +1368,14 @@ class Navigation:
                         text=f"📦 Автоматическая выдача: {auto_deliveries_enabled}",
                         callback_data="disable_auto_delivery" if config["auto_deliveries_enabled"] else "enable_auto_delivery"
                     )
+                    btn5 = InlineKeyboardButton(
+                        text=f"©️ Водяной знак под сообщениями: {messages_watermark_enabled}",
+                        callback_data="disable_messages_watermark" if config["messages_watermark_enabled"] else "enable_messages_watermark"
+                    )
+                    btn6 = InlineKeyboardButton(
+                        text=f"✍️©️ Водяной знак: {messages_watermark}",
+                        callback_data="enter_messages_watermark"
+                    )
                     btn_refresh = InlineKeyboardButton(
                         text="🔄️ Обновить",
                         callback_data=CallbackDatas.BotSettingsNavigation(
@@ -1368,10 +1388,21 @@ class Navigation:
                             to="default"
                         ).pack()
                     )
-                    rows = [[btn1], [btn2], [btn3], [btn4], [btn_refresh], [btn_back]]
+                    rows = [[btn1], [btn2], [btn3], [btn4], [btn5], [btn6], [btn_refresh], [btn_back]]
                     markup = InlineKeyboardMarkup(inline_keyboard=rows)
                     return markup
-                
+
+            class EnterMessagesWatermark:
+                def text() -> str:
+                    msg = f"✍️©️ <b>Введите новый водянок знак под сообщениями ↓</b>" \
+                          f"\nЭтот водяной знак будет под каждым сообщением, отправленным ботом"
+                    return msg
+
+            class MessagesWatermarkChanged:
+                def text(new) -> str:
+                    msg = f"✅ Водяной знак под сообщениями <b>был успешно изменён</b> на <code>{new}</code>"
+                    return msg
+            
     class Modules:
         class Pagination:
             def text() -> str:

@@ -344,6 +344,40 @@ async def callback_enable_auto_delivery(call: CallbackQuery):
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
+@router.callback_query(F.data == "disable_messages_watermark")
+async def callback_disable_messages_watermark(call: CallbackQuery):
+    """ Выключает водяныой знак под сообщениями """
+    try:
+        config = Config.get()
+        config["messages_watermark_enabled"] = False
+        Config.set(config)
+        callback_data = CallbackDatas.BotSettingsNavigation(to="other")
+        return await callback_botsettings_navigation(call, callback_data)
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.callback_query(F.data == "enable_messages_watermark")
+async def callback_enable_messages_watermark(call: CallbackQuery):
+    """ Включает водяной знак под сообщениями """
+    try:
+        config = Config.get()
+        config["messages_watermark_enabled"] = True
+        Config.set(config)
+        callback_data = CallbackDatas.BotSettingsNavigation(to="other")
+        return await callback_botsettings_navigation(call, callback_data)
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.callback_query(F.data == "enter_messages_watermark")
+async def callback_enter_messages_watermark(call: CallbackQuery, state: FSMContext):
+    """ Включает водяной знак под сообщениями """
+    try:
+        await state.set_state(BotSettingsNavigationStates.entering_messages_watermark)
+        await call.message.answer(text=Templates.Navigation.Settings.Other.EnterMessagesWatermark.text(),
+                                  parse_mode="HTML") 
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
 @router.callback_query(CallbackDatas.CustomCommandsPagination.filter())
 async def callback_custom_commands_pagination(callback: CallbackQuery, callback_data: CallbackDatas.CustomCommandsPagination, state: FSMContext):
     """ Срабатывает при пагинации в пользовательских командах """

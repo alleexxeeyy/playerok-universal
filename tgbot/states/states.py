@@ -12,10 +12,7 @@ class BotSettingsNavigationStates(StatesGroup):
     entering_user_agent = State()
     entering_playerokapi_requests_timeout = State()
     entering_playerokapi_listener_requests_delay = State()
-    confirming_enabling_auto_raising_items = State()
-    confirming_disabling_auto_raising_items = State()
-    confirming_enabling_auto_reviews_replies = State()
-    confirming_disabling_auto_reviews_replies = State()
+    entering_messages_watermark = State()
 
 class MessagesNavigationStates(StatesGroup):
     """ Состояния навигации по сообщениям """

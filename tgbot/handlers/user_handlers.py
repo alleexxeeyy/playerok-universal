@@ -353,3 +353,22 @@ async def handler_entering_new_auto_delivery_message(message: types.Message, sta
         )
     except Exception as e:
         await message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.message(BotSettingsNavigationStates.entering_messages_watermark)
+async def handler_entering_messages_watermark(message: types.Message, state: FSMContext):
+    """ Считывает введённый пользователем водяной знак и изменяет его в конфиге """ 
+    try:
+        await state.set_state(None)
+        data = await state.get_data()
+        if len(message.text.strip()) <= 0 or len(message.text.strip()) >= 150:
+            return await message.answer(text=Templates.System.Error.text("Слишком короткий или длинный знак"), parse_mode="HTML")
+
+        config = Config.get()
+        config["messages_watermark"] = message.text.strip()
+        Config.set(config)
+        await message.answer(
+            text=Templates.Navigation.Settings.Other.MessagesWatermarkChanged.text(message.text.strip()),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        await message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")

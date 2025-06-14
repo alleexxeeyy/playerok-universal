@@ -34,6 +34,8 @@ class Config:
             "tg_bot_token": "",
             "playerokapi_requests_timeout": 30,
             "playerokapi_listener_requests_delay": 2,
+            "messages_watermark_enabled": True,
+            "messages_watermark": "©️ 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
             "read_chat_before_sending_message_enabled": True,
             "first_message_enabled": True,
             "custom_commands_enabled": True,

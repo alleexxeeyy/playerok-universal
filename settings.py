@@ -10,6 +10,10 @@ class Config:
         try:
             with open(Config.PATH, 'r', encoding='utf-8') as f:
                 config = json.load(f)
+                def_config = Config.default_config()
+                for k, v in def_config.items():
+                    if k not in config:
+                        config[k] = v
         except:
             with open(Config.PATH, 'w', encoding='utf-8') as f:
                 json.dump(Config.default_config(), f, indent=4, ensure_ascii=False)

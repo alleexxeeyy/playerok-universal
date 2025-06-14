@@ -840,7 +840,7 @@ class Navigation:
             class EnterCustomCommandAnswer:
                 def text() -> str:
                     msg = f"✍️ <b>Введите ответ команды ↓</b>" \
-                            f"\nТекст, который будет выдавать покуптаелю после ввода команды"
+                            f"\nТекст, который будет выдавать покупателю после ввода команды"
                     return msg
                 
             class ConfirmAddingCustomCommand:

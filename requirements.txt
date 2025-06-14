@@ -1,0 +1,11 @@
+bs4==0.0.2
+requests==2.32.3
+requests-toolbelt==0.10.1
+validators==0.34.0
+asyncio==3.4.3
+aiogram==3.10.0
+lxml==5.2.2
+certifi==2025.1.31
+urllib3==1.26.16
+colorama==0.4.6
+beautifulsoup4==4.12.3

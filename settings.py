@@ -45,7 +45,7 @@ class Config:
             "custom_commands_enabled": True,
             "auto_deliveries_enabled": True,
             "auto_raising_items_enabled": True,
-            "auto_raising_items_priority_status": "MEDIUM" # или PREMIUM
+            "auto_raising_items_priority_status": "DEFAULT"
         }
     
     @staticmethod

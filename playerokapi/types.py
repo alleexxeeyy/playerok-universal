@@ -317,7 +317,7 @@ class UserProfile:
     def set_account(self, acc: Account):
         self.__account = acc
 
-    def get_items(self, count: int = 24, status: ItemStatuses = ItemStatuses.APPROVED,
+    def get_items(self, count: int = 24, statuses: list[ItemStatuses] | None = None,
                   after_cursor: str | None = None) -> ItemProfileList:
         """
         Получает предметы пользователя.
@@ -325,8 +325,8 @@ class UserProfile:
         :param count: Кол-во предеметов, которые нужно получить (не более 24 за один запрос), _опционально_.
         :type count: `int`
 
-        :param status: Тип предметов, которые нужно получить. Некоторые статусы можно получить только, если это профиль вашего аккаунта.
-        :type status: `enums.ItemStatuses`
+        :param status: Массив типов предметов, которые нужно получить. Некоторые статусы можно получить только, если это профиль вашего аккаунта. Если не указано, получает сразу все возможные.
+        :type status: `list[enums.ItemStatuses]`
 
         :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
         :type after_cursor: `str` or `None`
@@ -334,6 +334,10 @@ class UserProfile:
         :return: Страница профилей предметов.
         :rtype: `PlayerokAPI.types.ItemProfileList`
         """
+        payload_status = [] if statuses else None
+        if statuses:
+            for status in statuses:
+                payload_status.append(status.name)
         headers = {
             "Accept": "*/*",
             "Content-Type": "application/json",
@@ -341,7 +345,7 @@ class UserProfile:
         }
         payload = {
             "operationName": "items",
-            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "status": [status.name] if status else None}}, ensure_ascii=False),
+            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "status": payload_status}}, ensure_ascii=False),
             "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "d79d6e2921fea03c5f1515a8925fbb816eacaa7bcafe03eb47a40425ef49601e"}}, ensure_ascii=False)
         }
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()

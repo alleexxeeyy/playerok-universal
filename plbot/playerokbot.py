@@ -75,6 +75,8 @@ class PlayerokBot:
 
         self.refresh_account_next_time = datetime.now() + timedelta(seconds=3600)
         """ Время следующего обновление данных об аккаунте. """
+        self.try_raise_items_next_time = datetime.now()
+        """ Время следующей попытки поднять предметы. """
 
         set_playerok_bot(self)
 
@@ -111,7 +113,7 @@ class PlayerokBot:
                 """ Действия, которые должны выполняться в другом потоке, вне цикла раннера. """
                 while True:
                     try:
-                        set_playerok_bot(self)
+                        set_playerok_bot(plbot)
                         set_title(f"Playerok Universal v{CURRENT_VERSION} | {self.playerok_account.username}: {self.playerok_account.profile.balance.value} RUB")
                         if Data.get_initialized_users() != plbot.initialized_users:
                             Data.set_initialized_users(plbot.initialized_users)
@@ -124,6 +126,50 @@ class PlayerokBot:
                         if AutoDeliveries.get() != plbot.auto_deliveries:
                             plbot.auto_deliveries = AutoDeliveries.get()
 
+                        if datetime.now() > self.try_raise_items_next_time:
+                            user = plbot.playerok_account.get_user(id=plbot.playerok_account.id)
+                            break_flag = False
+                            first_item = None
+                            next_cursor = None
+                            while True:
+                                try:
+                                    item_list = user.get_items(statuses=[ItemStatuses.EXPIRED, ItemStatuses.SOLD], after_cursor=next_cursor)
+                                    if not item_list.items:
+                                        break
+                                    next_cursor = item_list.page_info.end_cursor
+                                    for item in item_list.items:
+                                        try:
+                                            if first_item is not None:
+                                                if first_item.id == item.id:
+                                                    break_flag = True
+                                                    break
+                                            if first_item is None:
+                                                first_item = item
+                                            priority_statuses = self.playerok_account.get_item_priority_statuses(item.id, item.price)
+                                            priority_status = None
+                                            for status in priority_statuses:
+                                                if status.type is PriorityTypes.__members__.get(self.config["auto_raising_items_priority_status"]):
+                                                    priority_status = status
+
+                                            item = self.playerok_account.publish_item(item.id, priority_status.id)
+                                            if item.status is ItemStatuses.PENDING_APPROVAL or item.status is ItemStatuses.APPROVED:
+                                                self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически поднят после его покупки")
+                                            else:
+                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось поднять предмет «{item.name}». Его статус: {Fore.WHITE}{item.status.name}")
+                                        except plapi_exceptions.RequestError as e:
+                                            if e.error_code == "TOO_MANY_REQUESTS":
+                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
+                                                time.sleep(10)
+                                            else:
+                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка запроса {e.status_code}: {Fore.WHITE}\n{e}")
+                                        except Exception as e:
+                                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка: {Fore.WHITE}{e}")
+                                    if break_flag:
+                                        break
+                                except Exception as e:
+                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При поднятии предметов произошла ошибка: {Fore.WHITE}{e}")
+                            self.try_raise_items_next_time = datetime.now() + timedelta(seconds=60)
+                                    
                         if datetime.now() > self.refresh_account_next_time:
                             self.playerok_account = Account(token=self.config["token"],
                                                             user_agent=self.config["user_agent"],
@@ -218,20 +264,6 @@ class PlayerokBot:
                                                                 "\n".join(self.auto_deliveries[str(event.deal.item.slug)]),
                                                                 self.config.get("read_chat_before_sending_message_enabled") or False)
                             self.logger.info(f"{PREFIX} 🚀  На оплаченную сделку {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE} от покупателя {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} было автоматически выдано пользовательское сообщение после покупки")
-                                
-                    if self.config["auto_raising_items_enabled"]:
-                        priority_statuses = self.playerok_account.get_item_priority_statuses(event.deal.item.id, event.deal.item.price)
-                        priority_status = None
-                        for status in priority_statuses:
-                            if status.type is PriorityTypes.MEDIUM and self.config["auto_raising_items_priority_status"] == "MEDIUM":
-                                priority_status = status
-                            elif status.type is PriorityTypes.PREMIUM and self.config["auto_raising_items_priority_status"] == "PREMIUM":
-                                priority_status = status
-                        item = self.playerok_account.publish_item(event.deal.item.id, priority_status.id)
-                        if item.status is ItemStatuses.PENDING_APPROVAL or item.status is ItemStatuses.APPROVED:
-                            self.logger.log(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}» {Fore.WHITE}был автоматически поднят после его покупки")
-                        else:
-                            self.logger.log(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось поднять предмет «{event.deal.item.name}». Его статус: {Fore.WHITE}{item.status.name}")
                 except Exception as e:
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке новой сделки от {event.deal.user.username} произошла ошибка: {Fore.WHITE}{e}")
             except plapi_exceptions.RequestFailedError as e:

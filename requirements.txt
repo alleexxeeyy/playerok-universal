@@ -9,4 +9,5 @@ lxml==5.2.2
 certifi==2025.1.31
 urllib3==1.26.16
 colorama==0.4.6
+colorlog==6.9.0
 beautifulsoup4==4.12.3

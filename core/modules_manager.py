@@ -273,6 +273,8 @@ class ModulesManager:
                     modules.append(module_data)
                 except Exception as e:
                     print(f"{Fore.LIGHTRED_EX}Ошибка при загрузке модуля {name}: {Fore.WHITE}{e}")
+                    import traceback
+                    traceback.print_exc()
         return modules
 
     @staticmethod

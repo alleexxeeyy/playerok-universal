@@ -126,49 +126,50 @@ class PlayerokBot:
                         if AutoDeliveries.get() != plbot.auto_deliveries:
                             plbot.auto_deliveries = AutoDeliveries.get()
 
-                        if datetime.now() > self.try_raise_items_next_time:
-                            user = plbot.playerok_account.get_user(id=plbot.playerok_account.id)
-                            break_flag = False
-                            first_item = None
-                            next_cursor = None
-                            while True:
-                                try:
-                                    item_list = user.get_items(statuses=[ItemStatuses.EXPIRED, ItemStatuses.SOLD], after_cursor=next_cursor)
-                                    if not item_list.items:
-                                        break
-                                    next_cursor = item_list.page_info.end_cursor
-                                    for item in item_list.items:
-                                        try:
-                                            if first_item is not None:
-                                                if first_item.id == item.id:
-                                                    break_flag = True
-                                                    break
-                                            if first_item is None:
-                                                first_item = item
-                                            priority_statuses = self.playerok_account.get_item_priority_statuses(item.id, item.price)
-                                            priority_status = None
-                                            for status in priority_statuses:
-                                                if status.type is PriorityTypes.__members__.get(self.config["auto_raising_items_priority_status"]):
-                                                    priority_status = status
+                        if self.config["auto_restore_items_enabled"]:
+                            if datetime.now() > self.try_raise_items_next_time:
+                                user = plbot.playerok_account.get_user(id=plbot.playerok_account.id)
+                                break_flag = False
+                                first_item = None
+                                next_cursor = None
+                                while True:
+                                    try:
+                                        item_list = user.get_items(statuses=[ItemStatuses.EXPIRED, ItemStatuses.SOLD], after_cursor=next_cursor)
+                                        if not item_list.items:
+                                            break
+                                        next_cursor = item_list.page_info.end_cursor
+                                        for item in item_list.items:
+                                            try:
+                                                if first_item is not None:
+                                                    if first_item.id == item.id:
+                                                        break_flag = True
+                                                        break
+                                                if first_item is None:
+                                                    first_item = item
+                                                priority_statuses = self.playerok_account.get_item_priority_statuses(item.id, item.price)
+                                                priority_status = None
+                                                for status in priority_statuses:
+                                                    if status.type is PriorityTypes.__members__.get(self.config["auto_restore_items_priority_status"]):
+                                                        priority_status = status
 
-                                            item = self.playerok_account.publish_item(item.id, priority_status.id)
-                                            if item.status is ItemStatuses.PENDING_APPROVAL or item.status is ItemStatuses.APPROVED:
-                                                self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически поднят после его покупки")
-                                            else:
-                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось поднять предмет «{item.name}». Его статус: {Fore.WHITE}{item.status.name}")
-                                        except plapi_exceptions.RequestError as e:
-                                            if e.error_code == "TOO_MANY_REQUESTS":
-                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
-                                                time.sleep(10)
-                                            else:
-                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка запроса {e.status_code}: {Fore.WHITE}\n{e}")
-                                        except Exception as e:
-                                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка: {Fore.WHITE}{e}")
-                                    if break_flag:
-                                        break
-                                except Exception as e:
-                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При поднятии предметов произошла ошибка: {Fore.WHITE}{e}")
-                            self.try_raise_items_next_time = datetime.now() + timedelta(seconds=60)
+                                                item = self.playerok_account.publish_item(item.id, priority_status.id)
+                                                if item.status is ItemStatuses.PENDING_APPROVAL or item.status is ItemStatuses.APPROVED:
+                                                    self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически поднят после его покупки")
+                                                else:
+                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось поднять предмет «{item.name}». Его статус: {Fore.WHITE}{item.status.name}")
+                                            except plapi_exceptions.RequestError as e:
+                                                if e.error_code == "TOO_MANY_REQUESTS":
+                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
+                                                    time.sleep(10)
+                                                else:
+                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка запроса {e.status_code}: {Fore.WHITE}\n{e}")
+                                            except Exception as e:
+                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка: {Fore.WHITE}{e}")
+                                        if break_flag:
+                                            break
+                                    except Exception as e:
+                                        self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При поднятии предметов произошла ошибка: {Fore.WHITE}{e}")
+                                self.try_raise_items_next_time = datetime.now() + timedelta(seconds=60)
                                     
                         if datetime.now() > self.refresh_account_next_time:
                             self.playerok_account = Account(token=self.config["token"],

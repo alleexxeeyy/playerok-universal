@@ -224,48 +224,48 @@ async def callback_enter_playerokapi_listener_requests_delay(call: CallbackQuery
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
-@router.callback_query(F.data == "enable_auto_raising_items")
-async def callback_enable_auto_raising_items(call: CallbackQuery):
-    """ Включает автоматическое поднятие лотов """
+@router.callback_query(F.data == "enable_auto_restore_items")
+async def callback_enable_auto_restore_items(call: CallbackQuery):
+    """ Включает автоматическое восстановление предметов """
     try:
         config = Config.get()
-        config["auto_raising_items_enabled"] = True
+        config["auto_restore_items_enabled"] = True
         Config.set(config)
         callback_data = CallbackDatas.BotSettingsNavigation(to="items")
         return await callback_botsettings_navigation(call, callback_data)
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
-@router.callback_query(F.data == "disable_auto_raising_items")
-async def callback_disable_auto_raising_items(call: CallbackQuery):
+@router.callback_query(F.data == "disable_auto_restore_items")
+async def callback_disable_auto_restore_items(call: CallbackQuery):
     """ Выключает автоматическое поднятие лотов """
     try:
         config = Config.get()
-        config["auto_raising_items_enabled"] = False
+        config["auto_restore_items_enabled"] = False
         Config.set(config)
         callback_data = CallbackDatas.BotSettingsNavigation(to="items")
         return await callback_botsettings_navigation(call, callback_data)
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
-@router.callback_query(F.data == "premium_auto_raising_items_priority_status")
-async def callback_premium_auto_raising_items_priority_status(call: CallbackQuery):
+@router.callback_query(F.data == "premium_auto_restore_items_priority_status")
+async def callback_premium_auto_restore_items_priority_status(call: CallbackQuery):
     """ Переключает статус приоритета для поднятых предметов на RPEMIUM """
     try:
         config = Config.get()
-        config["auto_raising_items_priority_status"] = "PREMIUM"
+        config["auto_restore_items_priority_status"] = "PREMIUM"
         Config.set(config)
         callback_data = CallbackDatas.BotSettingsNavigation(to="items")
         return await callback_botsettings_navigation(call, callback_data)
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
-@router.callback_query(F.data == "default_auto_raising_items_priority_status")
-async def callback_default_auto_raising_items_priority_status(call: CallbackQuery):
+@router.callback_query(F.data == "default_auto_restore_items_priority_status")
+async def callback_default_auto_restore_items_priority_status(call: CallbackQuery):
     """ Переключает статус приоритета для поднятых предметов на DEFAULT """
     try:
         config = Config.get()
-        config["auto_raising_items_priority_status"] = "DEFAULT"
+        config["auto_restore_items_priority_status"] = "DEFAULT"
         Config.set(config)
         callback_data = CallbackDatas.BotSettingsNavigation(to="items")
         return await callback_botsettings_navigation(call, callback_data)

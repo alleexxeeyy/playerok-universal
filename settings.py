@@ -44,8 +44,8 @@ class Config:
             "first_message_enabled": True,
             "custom_commands_enabled": True,
             "auto_deliveries_enabled": True,
-            "auto_raising_items_enabled": True,
-            "auto_raising_items_priority_status": "DEFAULT"
+            "auto_restore_items_enabled": True,
+            "auto_restore_items_priority_status": "DEFAULT"
         }
     
     @staticmethod

@@ -289,7 +289,8 @@ class PlayerokBot:
             """ Начальный хендлер нового заказа. """
             try:
                 try:
-                    self.__restored_items[event.deal.item.name] = event.deal.item.id
+                    if event.deal.item.id in self.auto_deliveries.keys():
+                        self.__restored_items[event.deal.item.name] = event.deal.item.id
 
                     this_chat = plbot.playerok_account.get_chat(event.deal.chat.id)
                     self.logger.info(f"{PREFIX} 🛒  {Fore.LIGHTYELLOW_EX}Новая сделка: {Fore.WHITE}Пользователь {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.item.price} р.")

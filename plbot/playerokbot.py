@@ -65,9 +65,8 @@ class PlayerokBot:
                 Config.configure_config()
                 restart()
             else:
-                self.logger.info(f"{PREFIX} Вы отказались от настройки конфига. Пробуем снова подключиться к вашему Playerok аккаунту...")
-                print(f"\n{Fore.LIGHTWHITE_EX}Перезапустите бота, чтобы продолжить работу.")
-                raise SystemExit(1)
+                self.logger.info(f"{PREFIX} Вы отказались от настройки конфига. Перезагрузим бота и попробуем снова подключиться к вашему аккаунту...")
+                restart()
 
         self.initialized_users: list = Data.get_initialized_users()
         """ Инициализированные пользователи. """
@@ -87,24 +86,28 @@ class PlayerokBot:
 
         set_playerok_bot(self)
 
-    def msg(self, message_name: str, **kwargs) -> str:
+    def msg(self, message_name: str, exclude_watermark: bool = False, **kwargs) -> str:
         """ 
         Получает отформатированное сообщение из словаря сообщений.
 
         :param message_name: Наименование сообщения в словаре сообщений (ID).
-        :type message_name: `str`
+        :type message_name: str
+
+        :param exclude_watermark: Пропустить и не использовать водяной знак.
+        :type exclude_watermark: bool
         """
 
         class SafeDict(dict):
             def __missing__(self, key):
                 return "{" + key + "}"
         
-        message_lines = self.messages[message_name]
+        message_lines: list[str] = self.messages[message_name]
         if message_lines:
             try:
                 formatted_lines = [line.format_map(SafeDict(**kwargs)) for line in message_lines]
                 msg = "\n".join(formatted_lines)
-                msg += f'\n{self.config["messages_watermark"]}' if self.config["messages_watermark_enabled"] and self.config["messages_watermark"] else ""
+                if not exclude_watermark:
+                    msg += f'\n{self.config["messages_watermark"]}' if self.config["messages_watermark_enabled"] and self.config["messages_watermark"] else ""
                 return msg
             except:
                 pass

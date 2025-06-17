@@ -13,6 +13,7 @@ from settings import Config
 
 from core.modules_manager import ModulesManager
 from core.handlers_manager import HandlersManager
+from core.console import restart
 
 PREFIX = f"{Fore.LIGHTCYAN_EX}[telegram bot]{Fore.WHITE}"
 
@@ -35,11 +36,10 @@ class TelegramBot:
             a = input(f"{Fore.WHITE}> {Fore.LIGHTWHITE_EX}")
             if a == "+":
                 Config.configure_config()
-                print(f"\n{Fore.LIGHTWHITE_EX}Перезапустите бота, чтобы продолжить работу.")
-                raise SystemExit(1)
+                restart()
             else:
-                logger.info(f"{PREFIX} Вы отказались от настройки конфига. Пробуем снова подключиться к вашему Telegram боту...")
-                return TelegramBot().run_bot()
+                logger.info(f"{PREFIX} Вы отказались от настройки конфига. Перезагрузим бота и попробуем снова подключиться к Telegram боту...")
+                restart()
         self.dp = Dispatcher()
         
         for module in ModulesManager.get_modules():

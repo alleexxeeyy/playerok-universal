@@ -245,7 +245,7 @@ class Navigation:
                         f"\n      ┕ Всего исходящих: <b>{profile.stats.deals.outgoing.total}</b>" \
                         f"\n      ┕ Завершено исходящих: <b>{profile.stats.deals.outgoing.finished}</b>" \
                         f"\n" \
-                        f"\n→ Дата создания: <b>{datetime.fromisoformat(profile.created_at).strftime("%d.%m.%Y %H:%M:%S")}</b>" \
+                        f"\n→ Дата создания: <b>{datetime.fromisoformat(profile.created_at).strftime('%d.%m.%Y %H:%M:%S')}</b>" \
                         f"\n" \
                         f"\nВыберите действие ↓"
                     return msg
@@ -1327,6 +1327,7 @@ class Navigation:
                     msg = f"⚙️ <b>Настройки бота → 🔧 Прочее</b>" \
                             f"\n" \
                             f"\n→ Читать чат перед отправкой сообщения: <i>не удалось загрузить</i>" \
+                            f"\n→ Автоподтверждение выполнения заказов: <i>не удалось загрузить</i>" \
                             f"\n→ Приветственное сообщение: <i>не удалось загрузить</i>" \
                             f"\n→ Пользовательские команды: <i>не удалось загрузить</i>" \
                             f"\n→ Автоматическая выдача: <i>не удалось загрузить</i>" \
@@ -1342,6 +1343,7 @@ class Navigation:
                     msg = f"⚙️ <b>Настройки бота → 🔧 Прочее</b>" \
                             f"\n" \
                             f"\n→ Читать чат перед отправкой сообщения: <i>загрузка</i>" \
+                            f"\n→ Автоподтверждение выполнения заказов: <i>загрузка</i>" \
                             f"\n→ Приветственное сообщение: <i>загрузка</i>" \
                             f"\n→ Пользовательские команды: <i>загрузка</i>" \
                             f"\n→ Автоматическая выдача: <i>загрузка</i>" \
@@ -1356,6 +1358,7 @@ class Navigation:
                 def text() -> str:
                     config = Config.get()
                     read_chat_before_sending_message_enabled = "🟢 Включено" if config["read_chat_before_sending_message_enabled"] else "🔴 Выключено"
+                    auto_complete_deals_enabled = "🟢 Включено" if config["auto_complete_deals_enabled"] else "🔴 Выключено"
                     first_message_enabled = "🟢 Включено" if config["first_message_enabled"] else "🔴 Выключено"
                     custom_commands_enabled = "🟢 Включено" if config["custom_commands_enabled"] else "🔴 Выключено"
                     auto_deliveries_enabled = "🟢 Включено" if config["auto_deliveries_enabled"] else "🔴 Выключено"
@@ -1364,6 +1367,7 @@ class Navigation:
                     msg = f"⚙️ <b>Настройки бота → 🔧 Прочее</b>" \
                             f"\n" \
                             f"\n→ Читать чат перед отправкой сообщения: <code>{read_chat_before_sending_message_enabled}</code>" \
+                            f"\n→ Автоподтверждение выполнения заказов: <code>{auto_complete_deals_enabled}</code>" \
                             f"\n→ Приветственное сообщение: <code>{first_message_enabled}</code>" \
                             f"\n→ Пользовательские команды: <code>{custom_commands_enabled}</code>" \
                             f"\n→ Автоматическая выдача: <code>{auto_deliveries_enabled}</code>" \
@@ -1377,6 +1381,7 @@ class Navigation:
                 def kb() -> InlineKeyboardMarkup:
                     config = Config.get()
                     read_chat_before_sending_message_enabled = "🟢 Включено" if config["read_chat_before_sending_message_enabled"] else "🔴 Выключено"
+                    auto_complete_deals_enabled = "🟢 Включено" if config["auto_complete_deals_enabled"] else "🔴 Выключено"
                     first_message_enabled = "🟢 Включено" if config["first_message_enabled"] else "🔴 Выключено"
                     custom_commands_enabled = "🟢 Включено" if config["custom_commands_enabled"] else "🔴 Выключено"
                     auto_deliveries_enabled = "🟢 Включено" if config["auto_deliveries_enabled"] else "🔴 Выключено"
@@ -1387,22 +1392,26 @@ class Navigation:
                         callback_data="disable_read_chat_before_sending_message" if config["read_chat_before_sending_message_enabled"] else "enable_read_chat_before_sending_message"
                     )
                     btn2 = InlineKeyboardButton(
+                        text=f"☑️ Автоподтверждение выполнения заказов: {auto_complete_deals_enabled}",
+                        callback_data="disable_auto_complete_deals" if config["auto_complete_deals_enabled"] else "enable_auto_complete_deals"
+                    )
+                    btn3 = InlineKeyboardButton(
                         text=f"👋 Приветственное сообщение: {first_message_enabled}",
                         callback_data="disable_first_message" if config["first_message_enabled"] else "enable_first_message"
                     )
-                    btn3 = InlineKeyboardButton(
+                    btn4 = InlineKeyboardButton(
                         text=f"🔧 Пользовательские команды: {custom_commands_enabled}",
                         callback_data="disable_custom_commands" if config["custom_commands_enabled"] else "enable_custom_commands"
                     )
-                    btn4 = InlineKeyboardButton(
+                    btn5 = InlineKeyboardButton(
                         text=f"🚀 Автоматическая выдача: {auto_deliveries_enabled}",
                         callback_data="disable_auto_delivery" if config["auto_deliveries_enabled"] else "enable_auto_delivery"
                     )
-                    btn5 = InlineKeyboardButton(
+                    btn6 = InlineKeyboardButton(
                         text=f"©️ Водяной знак под сообщениями: {messages_watermark_enabled}",
                         callback_data="disable_messages_watermark" if config["messages_watermark_enabled"] else "enable_messages_watermark"
                     )
-                    btn6 = InlineKeyboardButton(
+                    btn7 = InlineKeyboardButton(
                         text=f"✍️©️ Водяной знак: {messages_watermark}",
                         callback_data="enter_messages_watermark"
                     )
@@ -1418,7 +1427,7 @@ class Navigation:
                             to="default"
                         ).pack()
                     )
-                    rows = [[btn1], [btn2], [btn3], [btn4], [btn5], [btn6], [btn_refresh], [btn_back]]
+                    rows = [[btn1], [btn2], [btn3], [btn4], [btn5], [btn6], [btn7], [btn_refresh], [btn_back]]
                     markup = InlineKeyboardMarkup(inline_keyboard=rows)
                     return markup
 

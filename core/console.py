@@ -31,7 +31,7 @@ def setup_logger():
     """ 
     Настраивает глобальный логгер. 
     """
-    LOG_FORMAT = "[%(asctime)s] %(log_color)s%(levelname)-8s %(message)s"
+    LOG_FORMAT = "%(log_color)s[%(asctime)s] %(levelname)-8s %(message)s"
     formatter = ColoredFormatter(
         LOG_FORMAT,
         datefmt="%Y.%m.%d %H:%M:%S",

@@ -16,6 +16,7 @@ from playerokapi import exceptions as plapi_exceptions
 from playerokapi.enums import *
 from playerokapi.listener.events import *
 from playerokapi.listener.listener import EventListener
+from playerokapi.types import ItemProfile
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -75,8 +76,14 @@ class PlayerokBot:
 
         self.refresh_account_next_time = datetime.now() + timedelta(seconds=3600)
         """ Время следующего обновление данных об аккаунте. """
-        self.try_raise_items_next_time = datetime.now()
-        """ Время следующей попытки поднять предметы. """
+        self.try_restore_items_next_time = datetime.now()
+        """ Время следующей попытки восстановить предметы. """
+
+        self.__restored_items: dict = {}
+        """ 
+        Словарь, хранящий восстановленные предметы (для того, чтобы потом заменить ID на новые в конфиге автовыдачи).\n
+        Формат словаря: `{item_name: old_item_id}`
+        """
 
         set_playerok_bot(self)
 
@@ -127,7 +134,7 @@ class PlayerokBot:
                             plbot.auto_deliveries = AutoDeliveries.get()
 
                         if self.config["auto_restore_items_enabled"]:
-                            if datetime.now() > self.try_raise_items_next_time:
+                            if datetime.now() > self.try_restore_items_next_time:
                                 user = plbot.playerok_account.get_user(id=plbot.playerok_account.id)
                                 break_flag = False
                                 first_item = None
@@ -152,36 +159,50 @@ class PlayerokBot:
                                                     if status.type is PriorityTypes.__members__.get(self.config["auto_restore_items_priority_status"]):
                                                         priority_status = status
 
-                                                item = self.playerok_account.publish_item(item.id, priority_status.id)
-                                                if item.status is ItemStatuses.PENDING_APPROVAL or item.status is ItemStatuses.APPROVED:
-                                                    self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически поднят после его покупки")
+                                                new_item = self.playerok_account.publish_item(item.id, priority_status.id)
+                                                if new_item.status is ItemStatuses.PENDING_APPROVAL or new_item.status is ItemStatuses.APPROVED:
+                                                    self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически восстановлен после его покупки")
+
+                                                    def handle_on_item_restore():
+                                                        """ 
+                                                        Запускается при восстановление предмета.
+                                                        Запускает за собой все хендлеры ON_ITEM_RESTORE 
+                                                        """
+                                                        if "ON_ITEM_RESTORE" in bot_event_handlers:
+                                                            for handler in bot_event_handlers["ON_ITEM_RESTORE"]:
+                                                                try:
+                                                                    handler(self, item)
+                                                                except Exception as e:
+                                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Ошибка при обработке хендлера ивента ON_ITEM_RESTORE: {Fore.WHITE}{e}")
+                                                    handle_on_item_restore()
+
                                                 else:
-                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось поднять предмет «{item.name}». Его статус: {Fore.WHITE}{item.status.name}")
+                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось восстановить предмет «{new_item.name}». Его статус: {Fore.WHITE}{new_item.status.name}")
                                             except plapi_exceptions.RequestError as e:
                                                 if e.error_code == "TOO_MANY_REQUESTS":
-                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
+                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке восстановления предмета «{item.name}» произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
                                                     time.sleep(10)
                                                 else:
-                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка запроса {e.status_code}: {Fore.WHITE}\n{e}")
+                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке восстановления предмета «{item.name}» произошла ошибка запроса {e.error_code}: {Fore.WHITE}\n{e}")
                                             except Exception as e:
-                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке поднятия предмета «{item.name}» произошла ошибка: {Fore.WHITE}{e}")
+                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке восстановления предмета «{item.name}» произошла ошибка: {Fore.WHITE}{e}")
                                         if break_flag:
                                             break
                                     except Exception as e:
-                                        self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При поднятии предметов произошла ошибка: {Fore.WHITE}{e}")
-                                self.try_raise_items_next_time = datetime.now() + timedelta(seconds=60)
+                                        self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При восстановлении предметов произошла ошибка: {Fore.WHITE}{e}")
+                                self.try_restore_items_next_time = datetime.now() + timedelta(seconds=60)
                                     
                         if datetime.now() > self.refresh_account_next_time:
                             self.playerok_account = Account(token=self.config["token"],
                                                             user_agent=self.config["user_agent"],
                                                             requests_timeout=self.config["playerokapi_timeout"]).get()
                             self.playerok_account = datetime.now() + timedelta(seconds=3600)
-                    except plapi_exceptions.RequestFailedError as e:
-                        if e.status_code == 429:
+                    except plapi_exceptions.RequestError as e:
+                        if e.error_code == "TOO_MANY_REQUESTS":
                             self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}В бесконечном цикле произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
                             time.sleep(10)
                         else:
-                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}В бесконечном цикле произошла ошибка запроса {e.status_code}: {Fore.WHITE}\n{e}")
+                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}В бесконечном цикле произошла ошибка запроса {e.error_code}: {Fore.WHITE}\n{e}")
                     except Exception:
                         self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}В бесконечном цикле произошла ошибка: {Fore.WHITE}")
                         traceback.print_exc()
@@ -190,8 +211,19 @@ class PlayerokBot:
             endless_loop_thread = Thread(target=endless_loop, daemon=True)
             endless_loop_thread.start()
         
+        def handler_on_item_restore(plbot: 'PlayerokBot', item: ItemProfile):
+            """ Начальный хендлер ON_ITEM_RESTORE. """
+            
+            # как только сменился ID предмета после его восстановления, сразу же заменяем в словаре автовыдач на новый ID
+            # костыль какой-то получается, дойдут руки - исправлю
+            if item.name in plbot.__restored_items.keys():
+                plbot.auto_deliveries[item.id] = plbot.auto_deliveries.pop(plbot.__restored_items[item.name])
+                AutoDeliveries.set(plbot.auto_deliveries)
+                del plbot.__restored_items[item.name]
+
         bot_event_handlers = HandlersManager.get_bot_event_handlers()
         bot_event_handlers["ON_PLAYEROK_BOT_INIT"].insert(0, handler_on_playerok_bot_init)
+        bot_event_handlers["ON_ITEM_RESTORE"].insert(0, handler_on_item_restore)
         HandlersManager.set_bot_event_handlers(bot_event_handlers)
 
         async def handler_new_message(plbot: PlayerokBot, event: NewMessageEvent):
@@ -243,12 +275,12 @@ class PlayerokBot:
                             plbot.playerok_account.send_message(this_chat.id, 
                                                                 plbot.msg("command_error"),
                                                                 self.config.get("read_chat_before_sending_message_enabled") or False)
-            except plapi_exceptions.RequestFailedError as e:
-                if e.status_code == 429:
+            except plapi_exceptions.RequestError as e:
+                if e.error_code == "TOO_MANY_REQUESTS":
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
                     time.sleep(10)
                 else:
-                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка {e.status_code}: {Fore.WHITE}\n{e}")
+                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка {e.error_code}: {Fore.WHITE}\n{e}")
             except Exception:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()
@@ -256,23 +288,32 @@ class PlayerokBot:
         async def handler_new_deal(plbot: PlayerokBot, event: NewDealEvent):
             """ Начальный хендлер нового заказа. """
             try:
-                this_chat = plbot.playerok_account.get_chat(event.deal.chat.id)
                 try:
-                    self.logger.info(f"{PREFIX} 🛒  Новая сделка {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE}, оформленная покупателем {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.transaction.value} р.")
+                    self.__restored_items[event.deal.item.name] = event.deal.item.id
+
+                    this_chat = plbot.playerok_account.get_chat(event.deal.chat.id)
+                    self.logger.info(f"{PREFIX} 🛒  {Fore.LIGHTYELLOW_EX}Новая сделка: {Fore.WHITE}Пользователь {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.item.price} р.")
+                    
                     if self.config["auto_deliveries_enabled"]:
                         if event.deal.item.id in self.auto_deliveries.keys():
                             self.playerok_account.send_message(this_chat.id, 
                                                                 "\n".join(self.auto_deliveries[str(event.deal.item.slug)]),
                                                                 self.config.get("read_chat_before_sending_message_enabled") or False)
                             self.logger.info(f"{PREFIX} 🚀  На оплаченную сделку {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE} от покупателя {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} было автоматически выдано пользовательское сообщение после покупки")
+                
+                    if self.config["auto_complete_deals_enabled"]:
+                        if event.deal.user.id != plbot.playerok_account.id:
+                            self.playerok_account.update_deal(event.deal.id, ItemDealStatuses.SENT)
+                            self.logger.info(f"{PREFIX} ☑️  Заказ {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE} от покупателя {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} был автоматически подтверждён")
+                
                 except Exception as e:
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке новой сделки от {event.deal.user.username} произошла ошибка: {Fore.WHITE}{e}")
-            except plapi_exceptions.RequestFailedError as e:
-                if e.status_code == 429:
+            except plapi_exceptions.RequestError as e:
+                if e.error_code == "TOO_MANY_REQUESTS":
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новой сделки произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
                     time.sleep(10)
                 else:
-                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новой сделки произошла ошибка {e.status_code}: {Fore.WHITE}\n{e}")
+                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новой сделки произошла ошибка {e.error_code}: {Fore.WHITE}\n{e}")
             except Exception:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новой сделки произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()
@@ -297,12 +338,12 @@ class PlayerokBot:
                         plbot.playerok_account.send_message(chat.id, 
                                                             plbot.msg("deal_confirmed"),
                                                             self.config.get("read_chat_before_sending_message_enabled") or False)
-            except plapi_exceptions.RequestFailedError as e:
-                if e.status_code == 429:
+            except plapi_exceptions.RequestError as e:
+                if e.error_code == "TOO_MANY_REQUESTS":
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента смены статуса сделки произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
                     time.sleep(10)
                 else:
-                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента смены статуса сделки произошла ошибка {e.status_code}: {Fore.WHITE}\n{e}")
+                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента смены статуса сделки произошла ошибка {e.error_code}: {Fore.WHITE}\n{e}")
             except Exception:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента смены статуса сделки произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()
@@ -316,7 +357,7 @@ class PlayerokBot:
         bot_event_handlers = HandlersManager.get_bot_event_handlers()
         def handle_on_playerok_bot_init():
             """ 
-            Запускается при инициализации Playeork бота.
+            Запускается при инициализации Playerok бота.
             Запускает за собой все хендлеры ON_PLAYEROK_BOT_INIT 
             """
             if "ON_PLAYEROK_BOT_INIT" in bot_event_handlers:
@@ -335,11 +376,11 @@ class PlayerokBot:
                 for handler in playerok_event_handlers[event.type]:
                     try:
                         await handler(self, event)
-                    except plapi_exceptions.RequestFailedError as e:
-                        if e.status_code == 429:
-                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Ошибка 429 слишком частых запросов при обработке хендлера {handler} в ивенте {event.type.name}. Ждём 10 секунд и пробуем снова")
+                    except plapi_exceptions.RequestError as e:
+                        if e.error_code == "TOO_MANY_REQUESTS":
+                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Произошла ошибка 429 слишком частых запросов при обработке хендлера {handler} в ивенте {event.type.name}. Ждём 10 секунд и пробуем снова")
                             time.sleep(10)
                         else:
-                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Ошибка {e.status_code} слишком частых запросов при обработке хендлера {handler} в ивенте {event.type.name}: {Fore.WHITE}\n{e}")
+                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Произошла ошибка {e.error_code} при обработке хендлера {handler} в ивенте {event.type.name}: {Fore.WHITE}\n{e}")
                     except Exception as e:
-                        self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Ошибка при обработке хендлера {handler} в ивенте {event.type.name}: {Fore.WHITE}{e}")
+                        self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Произошла ошибка при обработке хендлера {handler} в ивенте {event.type.name}: {Fore.WHITE}{e}")

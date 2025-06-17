@@ -1319,7 +1319,7 @@ class Item:
     :type description: `str`
 
     :param obtaining_type: Способ получения.
-    :type obtaining_type: `str` or `None`
+    :type obtaining_type: `types.GameCategoryObtainingType` or `None`
 
     :param price: Цена предмета.
     :type price: `int`
@@ -1405,7 +1405,7 @@ class Item:
         """ Имя страницы предмета. """
         self.status: ItemStatuses = status
         """ Статус предмета. """
-        self.user: str = user
+        self.user: UserProfile = user
         """ Профиль продавца. """
 
 class ItemProfile:
@@ -1669,10 +1669,10 @@ class ChatMessage:
     :type moderator: `types.Moderator`
 
     :param event_by_user: Ивент от пользователя.
-    :type event_by_user: `types.Event` or `None`
+    :type event_by_user: `types.UserProfile` or `None`
 
     :param event_to_user: Ивент для пользователя.
-    :type event_to_user: `types.Event` or `None`
+    :type event_to_user: `types.UserProfile` or `None`
 
     :param is_auto_response: Авто-ответ ли это.
     :type is_auto_response: `bool`
@@ -1686,7 +1686,7 @@ class ChatMessage:
     def __init__(self, id: str, text: str, created_at: str, deleted_at: str | None, is_read: bool, 
                  is_suspicious: bool, is_bulk_messaging: bool, game: Game | None, file: FileObject | None,
                  user: UserProfile, deal: ItemDeal | None, item: ItemProfile | None, transaction: Transaction | None,
-                 moderator: Moderator | None, event_by_user: Event | None, event_to_user: Event | None, 
+                 moderator: Moderator | None, event_by_user: UserProfile | None, event_to_user: UserProfile | None, 
                  is_auto_response: bool, event: Event | None, buttons: list[ChatMessageButton]):
         self.id: str = id
         """ ID сообщения. """
@@ -1716,14 +1716,14 @@ class ChatMessage:
         """ Транзакция сообщения. """
         self.moderator: Moderator = moderator
         """ Модератор сообщения. """
-        self.event_by_user: Event | None = event_by_user
+        self.event_by_user: UserProfile | None = event_by_user
         """ Ивент от пользователя. """
-        self.event_to_user: Event | None = event_to_user
+        self.event_to_user: UserProfile | None = event_to_user
         """ Ивент для пользователя. """
         self.is_auto_response: bool = is_auto_response
         """ Авто-ответ ли это. """
         self.event: Event | None = event
-        """ Ивент сообщения.. """
+        """ Ивент сообщения. """
         self.buttons: list[ChatMessageButton] = buttons
         """ Кнопки сообщения. """
 

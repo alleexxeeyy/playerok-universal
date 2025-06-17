@@ -296,6 +296,30 @@ async def callback_enable_read_chat_before_sending_message(call: CallbackQuery):
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
+@router.callback_query(F.data == "disable_auto_complete_deals")
+async def callback_disable_auto_complete_deals(call: CallbackQuery):
+    """ Выключает автоподтверждение выполнения заказа """
+    try:
+        config = Config.get()
+        config["auto_complete_deals_enabled"] = False
+        Config.set(config)
+        callback_data = CallbackDatas.BotSettingsNavigation(to="other")
+        return await callback_botsettings_navigation(call, callback_data)
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.callback_query(F.data == "enable_auto_complete_deals")
+async def callback_enable_auto_complete_deals(call: CallbackQuery):
+    """ Включает автоподтверждение выполнения заказа """
+    try:
+        config = Config.get()
+        config["auto_complete_deals_enabled"] = True
+        Config.set(config)
+        callback_data = CallbackDatas.BotSettingsNavigation(to="other")
+        return await callback_botsettings_navigation(call, callback_data)
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
 @router.callback_query(F.data == "disable_first_message")
 async def callback_disable_first_message(call: CallbackQuery):
     """ Выключает приветственное сообщение """

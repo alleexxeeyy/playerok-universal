@@ -124,7 +124,9 @@ class PlayerokBot:
                 while True:
                     try:
                         set_playerok_bot(plbot)
-                        set_title(f"Playerok Universal v{CURRENT_VERSION} | {self.playerok_account.username}: {self.playerok_account.profile.balance.value} RUB")
+                        if self.playerok_account.profile.balance is not None: balance = self.playerok_account.profile.balance.value
+                        else: balance = 0
+                        set_title(f"Playerok Universal v{CURRENT_VERSION} | {self.playerok_account.username}: {balance} RUB")
                         if Data.get_initialized_users() != plbot.initialized_users:
                             Data.set_initialized_users(plbot.initialized_users)
                         if Config.get() != plbot.config:

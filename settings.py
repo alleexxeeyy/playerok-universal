@@ -287,11 +287,11 @@ class AutoDeliveries:
     @staticmethod
     def default_auto_deliveries() -> dict:
         """ Возвращает стандартную структуру auto_deliveries.json. """
-        return {
-            "xxxxxxxx-xxxxxxxxx-xxxxxxxxxx-xxxxxxxxx": [
-                "Вот ваш аккаунт:",
-                "- Логин: login123",
-                "- Пароль: password123",
-                "©️ 𝐅𝐮𝐧𝐏𝐚𝐲 𝐔𝐧𝐢𝐯𝐞𝐫𝐬𝐚𝐥"
-            ]
-        }
+        return [
+            {
+                "keywords": ["аккаунт", "telegram"],
+                "message": [
+                    "Вот твой аккаунт: log, pass"
+                ]
+            }
+        ]

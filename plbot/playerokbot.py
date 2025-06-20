@@ -78,7 +78,7 @@ class PlayerokBot:
         self.try_restore_items_next_time = datetime.now()
         """ Время следующей попытки восстановить предметы. """
 
-        self.__saved_chats: dict[str, Chat] = None
+        self.__saved_chats: dict[str, Chat] = {}
         """ 
         Словарь последних запомненных чатов.\n
         В формате: {`chat_id` _or_ `username`: `chat_obj`, ...}

@@ -16,7 +16,7 @@ from playerokapi import exceptions as plapi_exceptions
 from playerokapi.enums import *
 from playerokapi.listener.events import *
 from playerokapi.listener.listener import EventListener
-from playerokapi.types import ItemProfile
+from playerokapi.types import Chat, Item
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -78,13 +78,33 @@ class PlayerokBot:
         self.try_restore_items_next_time = datetime.now()
         """ Время следующей попытки восстановить предметы. """
 
-        self.__restored_items: dict = {}
+        self.__saved_chats: dict[str, Chat] = None
         """ 
-        Словарь, хранящий восстановленные предметы (для того, чтобы потом заменить ID на новые в конфиге автовыдачи).\n
-        Формат словаря: `{item_name: old_item_id}`
+        Словарь последних запомненных чатов.\n
+        В формате: {`chat_id` _or_ `username`: `chat_obj`, ...}
         """
 
         set_playerok_bot(self)
+
+    def get_chat_by_id(self, chat_id: str) -> Chat:
+        """ 
+        Получает чат с пользователем из запомненных чатов по его ID, 
+        если его он запомнен, иначе находит его с помощью запроса.
+        """
+        if chat_id in self.__saved_chats:
+            return self.__saved_chats[chat_id]
+        self.__saved_chats[chat_id] = self.playerok_account.get_chat(chat_id)
+        return self.get_chat_by_id(chat_id)
+
+    def get_chat_by_username(self, username: str) -> Chat:
+        """ 
+        Получает чат с пользователем из запомненных чатов по никнейму собеседника, 
+        если его он запомнен, иначе находит его с помощью запроса.
+        """
+        if username in self.__saved_chats:
+            return self.__saved_chats[username]
+        self.__saved_chats[username] = self.playerok_account.get_chat_by_username(username)
+        return self.get_chat_by_username(username)
 
     def msg(self, message_name: str, exclude_watermark: bool = False, **kwargs) -> str:
         """ 
@@ -106,12 +126,47 @@ class PlayerokBot:
             try:
                 formatted_lines = [line.format_map(SafeDict(**kwargs)) for line in message_lines]
                 msg = "\n".join(formatted_lines)
-                if not exclude_watermark:
-                    msg += f'\n{self.config["messages_watermark"]}' if self.config["messages_watermark_enabled"] and self.config["messages_watermark"] else ""
+                if not exclude_watermark and self.config["messages_watermark_enabled"]:
+                    msg += f'\n{self.config["messages_watermark"]}'
                 return msg
             except:
                 pass
         return "Не удалось получить сообщение"
+    
+    async def restore_item(self, item: Item):
+        """ 
+        Восстанавливает (заново выставляет на продажу) предмет. 
+        
+        :param item_id: Объект предмета, который нужно восстановить.
+        :type item_id: `playerok.types.Item`
+        """
+
+        try:
+            priority_statuses = self.playerok_account.get_item_priority_statuses(item.id, item.price)
+            priority_status = None
+            for status in priority_statuses:
+                if status.type is PriorityTypes.__members__.get(self.config["auto_restore_items_priority_status"]):
+                    priority_status = status
+                    break
+            else:
+                for status in priority_statuses:
+                    if status.type is PriorityTypes.DEFAULT:
+                        priority_status = status
+                        break
+
+            new_item = self.playerok_account.publish_item(item.id, priority_status.id)
+            if new_item.status is ItemStatuses.PENDING_APPROVAL or new_item.status is ItemStatuses.APPROVED:
+                self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически восстановлен после его покупки")
+            else:
+                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось восстановить предмет «{new_item.name}». Его статус: {Fore.WHITE}{new_item.status.name}")
+        except plapi_exceptions.RequestError as e:
+            if e.error_code == "TOO_MANY_REQUESTS":
+                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке восстановления предмета «{item.name}» произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
+                time.sleep(10)
+            else:
+                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При восстановлении предмета «{item.name}» произошла ошибка запроса {e.error_code}: {Fore.WHITE}\n{e}")
+        except Exception as e:
+            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При восстановлении предмета «{item.name}» произошла ошибка: {Fore.WHITE}{e}")
 
     async def run_bot(self) :
         """ Основная функция-запускатор бота. """
@@ -138,7 +193,7 @@ class PlayerokBot:
                         if AutoDeliveries.get() != plbot.auto_deliveries:
                             plbot.auto_deliveries = AutoDeliveries.get()
 
-                        if self.config["auto_restore_items_enabled"]:
+                        '''if self.config["auto_restore_items_enabled"]:
                             if datetime.now() > self.try_restore_items_next_time:
                                 user = plbot.playerok_account.get_user(id=plbot.playerok_account.id)
                                 break_flag = False
@@ -167,20 +222,6 @@ class PlayerokBot:
                                                 new_item = self.playerok_account.publish_item(item.id, priority_status.id)
                                                 if new_item.status is ItemStatuses.PENDING_APPROVAL or new_item.status is ItemStatuses.APPROVED:
                                                     self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически восстановлен после его покупки")
-
-                                                    def handle_on_item_restore():
-                                                        """ 
-                                                        Запускается при восстановление предмета.
-                                                        Запускает за собой все хендлеры ON_ITEM_RESTORE 
-                                                        """
-                                                        if "ON_ITEM_RESTORE" in bot_event_handlers:
-                                                            for handler in bot_event_handlers["ON_ITEM_RESTORE"]:
-                                                                try:
-                                                                    handler(self, item)
-                                                                except Exception as e:
-                                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Ошибка при обработке хендлера ивента ON_ITEM_RESTORE: {Fore.WHITE}{e}")
-                                                    handle_on_item_restore()
-
                                                 else:
                                                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось восстановить предмет «{new_item.name}». Его статус: {Fore.WHITE}{new_item.status.name}")
                                             except plapi_exceptions.RequestError as e:
@@ -195,7 +236,7 @@ class PlayerokBot:
                                             break
                                     except Exception as e:
                                         self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При восстановлении предметов произошла ошибка: {Fore.WHITE}{e}")
-                                self.try_restore_items_next_time = datetime.now() + timedelta(seconds=60)
+                                self.try_restore_items_next_time = datetime.now() + timedelta(seconds=60)'''
                                     
                         if datetime.now() > self.refresh_account_next_time:
                             self.playerok_account = Account(token=self.config["token"],
@@ -215,26 +256,15 @@ class PlayerokBot:
 
             endless_loop_thread = Thread(target=endless_loop, daemon=True)
             endless_loop_thread.start()
-        
-        def handler_on_item_restore(plbot: 'PlayerokBot', item: ItemProfile):
-            """ Начальный хендлер ON_ITEM_RESTORE. """
-            
-            # как только сменился ID предмета после его восстановления, сразу же заменяем в словаре автовыдач на новый ID
-            # костыль какой-то получается, дойдут руки - исправлю
-            if item.name in plbot.__restored_items.keys():
-                plbot.auto_deliveries[item.id] = plbot.auto_deliveries.pop(plbot.__restored_items[item.name])
-                AutoDeliveries.set(plbot.auto_deliveries)
-                del plbot.__restored_items[item.name]
 
         bot_event_handlers = HandlersManager.get_bot_event_handlers()
         bot_event_handlers["ON_PLAYEROK_BOT_INIT"].insert(0, handler_on_playerok_bot_init)
-        bot_event_handlers["ON_ITEM_RESTORE"].insert(0, handler_on_item_restore)
         HandlersManager.set_bot_event_handlers(bot_event_handlers)
 
         async def handler_new_message(plbot: PlayerokBot, event: NewMessageEvent):
             """ Начальный хендлер новых сообщений. """
             try:
-                this_chat = plbot.playerok_account.get_chat_by_username(event.message.user.username)
+                this_chat = self.get_chat_by_username(event.message.user.username)
                 if self.config["first_message_enabled"]:
                     if event.message.user.id == event.message.user.id and event.message.user.id not in plbot.initialized_users:
                         try:
@@ -294,19 +324,22 @@ class PlayerokBot:
             """ Начальный хендлер нового заказа. """
             try:
                 try:
-                    if event.deal.item.id in self.auto_deliveries.keys():
-                        self.__restored_items[event.deal.item.name] = event.deal.item.id
-
-                    this_chat = plbot.playerok_account.get_chat(event.deal.chat.id)
+                    this_chat = self.get_chat_by_username(event.deal.user.username)
                     self.logger.info(f"{PREFIX} 🛒  {Fore.LIGHTYELLOW_EX}Новая сделка: {Fore.WHITE}Пользователь {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.item.price} р.")
                     
+                    break_flag = False
                     if self.config["auto_deliveries_enabled"]:
-                        if event.deal.item.id in self.auto_deliveries.keys():
-                            self.playerok_account.send_message(this_chat.id, 
-                                                                "\n".join(self.auto_deliveries[str(event.deal.item.slug)]),
-                                                                self.config.get("read_chat_before_sending_message_enabled") or False)
-                            self.logger.info(f"{PREFIX} 🚀  На оплаченную сделку {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE} от покупателя {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} было автоматически выдано пользовательское сообщение после покупки")
-                
+                        for auto_delivery in self.auto_deliveries:
+                            for keyword in auto_delivery["keywords"]:
+                                if keyword.lower() in event.deal.item.name.lower():
+                                    self.playerok_account.send_message(this_chat.id, 
+                                                                        "\n".join(auto_delivery["message"]),
+                                                                        self.config.get("read_chat_before_sending_message_enabled") or False)
+                                    self.logger.info(f"{PREFIX} 🚀  На оплаченный предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} от покупателя {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} было автоматически выдано пользовательское сообщение после покупки (ключевое слово: {keyword})")
+                                    break_flag = True
+                                    break
+                            if break_flag: break
+
                     if self.config["auto_complete_deals_enabled"]:
                         if event.deal.user.id != plbot.playerok_account.id:
                             self.playerok_account.update_deal(event.deal.id, ItemDealStatuses.SENT)
@@ -323,7 +356,21 @@ class PlayerokBot:
             except Exception:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новой сделки произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()
-            
+
+        async def handler_item_paid(plbot: PlayerokBot, event: ItemPaidEvent):
+            try:
+                if self.config["auto_restore_items_enabled"]:
+                    self.restore_item(event.deal.item)
+            except plapi_exceptions.RequestError as e:
+                if e.error_code == "TOO_MANY_REQUESTS":
+                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
+                    time.sleep(10)
+                else:
+                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка {e.error_code}: {Fore.WHITE}\n{e}")
+            except Exception:
+                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка: {Fore.WHITE}")
+                traceback.print_exc()
+
         async def handler_deal_status_changed(plbot: PlayerokBot, event: DealStatusChangedEvent):
             """ Начальный хендлер изменения статуса заказа """
             try:
@@ -340,7 +387,7 @@ class PlayerokBot:
 
                 if event.deal.status is ItemDealStatuses.CONFIRMED or event.deal.status is ItemDealStatuses.ROLLED_BACK:
                     if event.deal.status is ItemDealStatuses.CONFIRMED:
-                        chat = plbot.playerok_account.get_chat_by_username(event.deal.user.username)
+                        chat = self.get_chat_by_username(event.deal.user.username)
                         plbot.playerok_account.send_message(chat.id, 
                                                             plbot.msg("deal_confirmed"),
                                                             self.config.get("read_chat_before_sending_message_enabled") or False)
@@ -358,6 +405,7 @@ class PlayerokBot:
         playerok_event_handlers[EventTypes.NEW_MESSAGE].insert(0, handler_new_message)
         playerok_event_handlers[EventTypes.NEW_DEAL].insert(0, handler_new_deal)
         playerok_event_handlers[EventTypes.DEAL_STATUS_CHANGED].insert(0, handler_deal_status_changed)
+        playerok_event_handlers[EventTypes.ITEM_PAID].insert(0, handler_item_paid)
         HandlersManager.set_playerok_event_handlers(playerok_event_handlers)
 
         bot_event_handlers = HandlersManager.get_bot_event_handlers()

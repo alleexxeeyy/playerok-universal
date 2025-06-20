@@ -58,7 +58,7 @@ class AutoDeliveriesPagination(CallbackData, prefix="audepag"):
 
 class AutoDeliveryPage(CallbackData, prefix="audepage"):
     """ Страница авто-выдачи. """
-    item_id: str
+    index: int
 
 
 class MessagesPagination(CallbackData, prefix="messpag"):

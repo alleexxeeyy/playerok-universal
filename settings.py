@@ -291,7 +291,7 @@ class AutoDeliveries:
             {
                 "keywords": ["аккаунт", "telegram"],
                 "message": [
-                    "Вот твой аккаунт: log, pass"
+                    "Вот твой аккаунт: log, pass. Это тестовая автовыдача, которую можно убрать в настройках Playerok Universal"
                 ]
             }
         ]

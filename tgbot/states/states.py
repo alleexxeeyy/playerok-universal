@@ -38,8 +38,9 @@ class AutoDeliveriesNavigationStates(StatesGroup):
 
 class AutoDeliveryPageNavigationStates(StatesGroup):
     """ Состояния навигации по странице сообщения """
-    entering_auto_delivery_item_link = State()
+    entering_auto_delivery_keywords = State()
     entering_auto_delivery_message = State()
+    entering_new_auto_delivery_keywords = State()
     entering_new_auto_delivery_message = State()
 
 class ActiveOrdersNavigationStates(StatesGroup):

@@ -938,18 +938,18 @@ class Navigation:
         class AutoDeliveries:
             class Pagination:
                 def text() -> str:
-                    auto_deliveries = AutoDeliveries.get()
+                    auto_deliveries: list = AutoDeliveries.get()
                     msg = f"⚙️ <b>Настройки бота</b> → 🚀 <b>Автоматическая выдача</b>" \
-                            f"\nВсего <b>{len(auto_deliveries.keys())}</b> настроенных лотов для авто-выдачи в конфиге" \
-                            f"\n\nПеремещайтесь по разделам ниже. Нажмите на ID лота, чтобы перейти в редактирование его авто-выдачи ↓"
+                            f"\nВсего <b>{len(auto_deliveries)}</b> настроенных авто-выдач в конфиге" \
+                            f"\n\nПеремещайтесь по разделам ниже. Нажмите на нужную авто-выдачу, чтобы перейти в её редактирование ↓"
                     return msg
                 
                 def kb(page: int = 0) -> InlineKeyboardMarkup:
-                    auto_deliveries = AutoDeliveries.get()
+                    auto_deliveries: list = AutoDeliveries.get()
 
                     rows = []
                     items_per_page = 7
-                    total_pages = math.ceil(len(auto_deliveries.keys())/items_per_page)
+                    total_pages = math.ceil(len(auto_deliveries)/items_per_page)
                     total_pages = total_pages if total_pages > 0 else 1
 
                     if page < 0:
@@ -960,12 +960,13 @@ class Navigation:
                     start_offset = page * items_per_page
                     end_offset = start_offset + items_per_page
 
-                    for item_id in list(auto_deliveries.keys())[start_offset:end_offset]:
-                        auto_delivery_text = "\n".join(auto_deliveries[item_id])
+                    for auto_delivery in list(auto_deliveries)[start_offset:end_offset]:
+                        keywords = ", ".join(auto_delivery.get("keywords")) or "❌ Не задано"
+                        message = "\n".join(auto_delivery.get("message")) or "❌ Не задано"
                         btn = InlineKeyboardButton(
-                            text=f'{item_id} → {auto_delivery_text}',
+                            text=f'{keywords[:32]} → {message}',
                             callback_data=CallbackDatas.AutoDeliveryPage(
-                                item_id=item_id
+                                index=auto_deliveries.index(auto_delivery)
                             ).pack()
                         )
                         rows.append([btn])
@@ -1008,25 +1009,25 @@ class Navigation:
 
                     btn1 = InlineKeyboardButton(
                         text="➕🚀 Добавить авто-выдачу",
-                        callback_data="enter_auto_delivery_item_link"
+                        callback_data="enter_auto_delivery_keywords"
                     )
                     rows.append([btn1])
-                    btn2 = InlineKeyboardButton(
+                    btn_exit = InlineKeyboardButton(
                         text="🚪 Выход",
                         callback_data=CallbackDatas.BotSettingsNavigation(
                             to="default"
                         ).pack()
                     )
-                    rows.append([btn2])
+                    rows.append([btn_exit])
                     markup = InlineKeyboardMarkup(inline_keyboard=rows)
                     return markup
-                
+                    
             class Page:
                 class Error:
                     def text() -> str:
                         msg = f"✏️ <b>Редактирование авто-выдачи</b>" \
                             f"\n" \
-                            f"\n→ ID предмета: <i>не удалось загрузить</i>" \
+                            f"\n→ Ключевые слова: <i>не удалось загрузить</i>" \
                             f"\n→ Сообщение после покупки: <i>не удалось загрузить</i>" \
                             f"\n" \
                             f"\nВыберите параметр для изменения ↓"
@@ -1036,39 +1037,49 @@ class Navigation:
                     def text() -> str:
                         msg = f"✏️ <b>Редактирование авто-выдачи</b>" \
                             f"\n" \
-                            f"\n→ ID предмета: <i>загрузка</i>" \
+                            f"\n→ Ключевые слова: <i>загрузка</i>" \
                             f"\n→ Сообщение после покупки: <i>загрузка</i>" \
                             f"\n" \
                             f"\nВыберите параметр для изменения ↓"
                         return msg
 
                 class Default:
-                    def text(item_id: str) -> str:
+                    def text(index: int) -> str:
                         auto_deliveries = AutoDeliveries.get()
-                        auto_delivery_message = "\n".join(auto_deliveries[str(item_id)])
+                        auto_delivery: dict = auto_deliveries[index]
+                        keywords = "</code>, <code>".join(auto_delivery.get("keywords")) or "❌ Не задано"
+                        message = "\n".join(auto_delivery.get("message")) or "❌ Не задано"
+
                         msg = f"✏️ <b>Редактирование авто-выдачи</b>" \
                             f"\n" \
-                            f"\n→ ID предмета: <code>{item_id}</code>" \
-                            f"\n→ Сообщение после покупки: \n<blockquote>{auto_delivery_message}</blockquote>" \
+                            f"\n→ Ключевые слова: \n<code>{keywords}</code>" \
+                            f"\n→ Сообщение после покупки: \n<blockquote>{message}</blockquote>" \
                             f"\n" \
                             f"\nВыберите параметр для изменения ↓"
                         return msg
                     
-                    def kb(item_id, page) -> InlineKeyboardMarkup:
+                    def kb(index: int, page: int = 0) -> InlineKeyboardMarkup:
                         auto_deliveries = AutoDeliveries.get()
-                        auto_delivery_message = "\n".join(auto_deliveries[str(item_id)]) if auto_deliveries[str(item_id)] else "❌ Не задано"
+                        auto_delivery: dict = auto_deliveries[index]
+                        keywords = ", ".join(auto_delivery.get("keywords")) or "❌ Не задано"
+                        message = "\n".join(auto_delivery.get("message")) or "❌ Не задано"
+
                         btn1 = InlineKeyboardButton(
-                            text=f"✍️ Сообщение после покупки: {auto_delivery_message}",
-                            callback_data="enter_new_auto_delivery_message"
+                            text=f"🔑 Ключевые слова: {keywords}",
+                            callback_data="enter_new_auto_delivery_keywords"
                         )
                         btn2 = InlineKeyboardButton(
+                            text=f"✍️ Сообщение после покупки: {message}",
+                            callback_data="enter_new_auto_delivery_message"
+                        )
+                        btn3 = InlineKeyboardButton(
                             text="🗑️ Удалить авто-выдачу",
                             callback_data="confirm_deleting_auto_delivery"
                         )
                         btn_refresh = InlineKeyboardButton(
                             text="🔄️ Обновить",
                             callback_data=CallbackDatas.AutoDeliveryPage(
-                                item_id=item_id
+                                index=index
                             ).pack()
                         )
                         btn_back = InlineKeyboardButton(
@@ -1077,7 +1088,7 @@ class Navigation:
                                 page=page
                             ).pack()
                         )
-                        rows = [[btn1], [btn2], [btn_refresh], [btn_back]]
+                        rows = [[btn1], [btn2], [btn3], [btn_refresh], [btn_back]]
                         markup = InlineKeyboardMarkup(inline_keyboard=rows)
                         return markup
                 
@@ -1086,10 +1097,11 @@ class Navigation:
                     msg = f"📃 Введите номер страницы для перехода ↓" 
                     return msg
                 
-            class EnterAutoDeliveryItemLink:
+            class EnterAutoDeliveryKeywords:
                 def text() -> str:
-                    msg = f"🔗 <b>Введите ссылку на предмет ↓</b>" \
-                            f"\nНа предмет с этой ссылкой будет добавлена автовыдача"
+                    msg = f"🔑 <b>Введите ключевые слова названия предмета авто-выдачи ↓</b>" \
+                            f"\nВводятся через запятую" \
+                            f"\nАвтовыдача привяжется ко всем предметам, в названии которых будут указанные вами ключевые слова"
                     return msg
                 
             class EnterAutoDeliveryMessage:
@@ -1099,9 +1111,10 @@ class Navigation:
                     return msg
                 
             class ConfirmAddingAutoDelivery:
-                def text(item_link, message) -> str:
+                def text(keywords, message) -> str:
+                    keywords = ", ".join(keywords)
                     msg = f"➕🚀 <b>Подтвердите добавление новой авто-выдачи</b>" \
-                            f"\nСсылка на предмет: <code>{item_link}</code>" \
+                            f"\nКлючевые слова: <code>{keywords}</code>" \
                             f"\nСообщение после покупки: <blockquote>{message}</blockquote>"
                     return msg
 
@@ -1119,28 +1132,44 @@ class Navigation:
                     return markup
                 
             class AutoDeliveryAdded:
-                def text(item_name) -> str:
-                    msg = f"✅ Автовыдача на предмет <code>{item_name}</code> <b>была успешно добавлена</b>" 
+                def text(keywords) -> str:
+                    keywords = ", ".join(keywords)
+                    msg = f"✅ Авто-выдача с ключевыми словами <code>{keywords}</code> <b>была успешно добавлена</b>" 
+                    return msg
+                
+            class EnterNewAutoDeliveryKeywords:
+                def text(index: int) -> str:
+                    auto_deliveries = AutoDeliveries.get()
+                    keywords = ", ".join(auto_deliveries[index].get("keywords")) or "❌ Не задано"
+                    msg = f"🔑 <b>Введите новые ключевые слова названия предмета ↓</b>" \
+                            f"\nВводить нужно через запятую" \
+                            f"\nТекущее значение: <code>{keywords}</code>"
+                    return msg
+                
+            class AutoDeliveryKeywordsChanged:
+                def text(new) -> str:
+                    msg = f"✅ Ключевые слова авто-выдачи <b>были успешно изменены</b> на:\n<code>{new}</code>" 
                     return msg
                 
             class EnterNewAutoDeliveryMessage:
-                def text(item_id) -> str:
+                def text(index: int) -> str:
                     auto_deliveries = AutoDeliveries.get()
-                    auto_delivery_message = "\n".join(auto_deliveries[item_id]) if auto_deliveries[item_id] else "❌ Не задано"
+                    message = "\n".join(auto_deliveries[index].get("message")) or "❌ Не задано"
                     msg = f"✍️ <b>Введите новое сообщение после покупки ↓</b>" \
-                            f"\nID предмета: <code>{item_id}</code>" \
-                            f"\nТекущее сообщение: <blockquote>{auto_delivery_message}</blockquote>"
+                            f"\nТекущее сообщение: <blockquote>{message}</blockquote>"
                     return msg
                 
             class AutoDeliveryMessageChanged:
-                def text(new, item_id) -> str:
-                    msg = f"✅ Сообщение после покупки предмета <code>{item_id}</code> <b>было успешно изменено</b> на:\n<blockquote>{new}</blockquote>" 
+                def text(new) -> str:
+                    msg = f"✅ Сообщение после покупки <b>было успешно изменено</b> на:\n<blockquote>{new}</blockquote>" 
                     return msg
                 
             class ConfirmDeletingAutoDelivery:
-                def text(item_id) -> str:
+                def text(index: int) -> str:
+                    auto_deliveries = AutoDeliveries.get()
+                    keywords = auto_deliveries[index].get("keywords") or "❌ Не задано"
                     msg = f"🗑️ <b>Подтвердите удаление авто-выдачи</b>" \
-                            f"\nЭто действие удалит авто-выдачу на предмет <code>{item_id}</code>" 
+                            f"\nЭто действие удалит авто-выдачу для ключевых слов:\n<code>{keywords}</code>" 
                     return msg
 
                 def kb() -> InlineKeyboardMarkup:
@@ -1157,8 +1186,10 @@ class Navigation:
                     return markup
                 
             class AutoDeliveryDeleted:
-                def text(item_id) -> str:
-                    msg = f"✅ Авто-выдача на предмет <code>{item_id}</code> <b>была успешно удалена</b>" 
+                def text(index: int) -> str:
+                    auto_deliveries = AutoDeliveries.get()
+                    keywords = auto_deliveries[index].get("keywords") or "❌ Не задано"
+                    msg = f"✅ Авто-выдача для ключевых слов <code>{keywords}</code> <b>была успешно удалена</b>" 
                     return msg
             
         class Messages:

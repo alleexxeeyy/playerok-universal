@@ -4,8 +4,7 @@ _bot_event_handlers = {
     "ON_MODULE_CONNECTED": [],
     "ON_INIT": [],
     "ON_PLAYEROK_BOT_INIT": [],
-    "ON_TELEGRAM_BOT_INIT": [],
-    "ON_ITEM_RESTORE": []
+    "ON_TELEGRAM_BOT_INIT": []
 }
 """ Хендлеры ивентов бота. """
 _playerok_event_handlers = {

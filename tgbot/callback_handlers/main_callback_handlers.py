@@ -554,6 +554,7 @@ async def callback_delete_custom_command(call: CallbackQuery, state: FSMContext)
 async def callback_auto_delivery_pagination(callback: CallbackQuery, callback_data: CallbackDatas.AutoDeliveriesPagination, state: FSMContext):
     """ Срабатывает при пагинации в авто-выдаче """
     page = callback_data.page
+    data = await state.get_data()
     await state.update_data(last_page=page)
     try:
         await callback.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.Pagination.text(),
@@ -565,20 +566,20 @@ async def callback_auto_delivery_pagination(callback: CallbackQuery, callback_da
 @router.callback_query(CallbackDatas.AutoDeliveryPage.filter())
 async def callback_custom_command_page(callback: CallbackQuery, callback_data: CallbackDatas.AutoDeliveryPage, state: FSMContext):
     """ Срабатывает при переходе на страницу редактирования авто-выдачи """
-    item_id = callback_data.item_id
+    index = callback_data.index
     data = await state.get_data()
-    await state.update_data(auto_delivery_item_id=item_id)
+    await state.update_data(auto_delivery_index=index)
     last_page = data.get("last_page") if data.get("last_page") else 0
     try:
         await callback.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.Page.Loading.text(),
-                                         reply_markup=Templates.Navigation.Settings.AutoDeliveries.Page.Default.kb(item_id, last_page),
+                                         reply_markup=Templates.Navigation.Settings.AutoDeliveries.Page.Default.kb(index, last_page),
                                          parse_mode="HTML")
-        await callback.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.Page.Default.text(item_id),
-                                         reply_markup=Templates.Navigation.Settings.AutoDeliveries.Page.Default.kb(item_id, last_page),
+        await callback.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.Page.Default.text(index),
+                                         reply_markup=Templates.Navigation.Settings.AutoDeliveries.Page.Default.kb(index, last_page),
                                          parse_mode="HTML")
     except Exception as e:
         await callback.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.Page.Error.text(),
-                                         reply_markup=Templates.Navigation.Settings.AutoDeliveries.Page.Default.kb(item_id, last_page),
+                                         reply_markup=Templates.Navigation.Settings.AutoDeliveries.Page.Default.kb(index, last_page),
                                          parse_mode="HTML")
         await callback.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
@@ -592,12 +593,12 @@ async def callback_enter_auto_deliveries_page(call: CallbackQuery, state: FSMCon
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
-@router.callback_query(F.data == "enter_auto_delivery_item_link")
-async def callback_enter_auto_delivery_item_link(call: CallbackQuery, state: FSMContext):
-    """ Отрабатывает ввод ссылки на предмет авто-выдачи """
+@router.callback_query(F.data == "enter_auto_delivery_keywords")
+async def callback_enter_auto_delivery_keywords(call: CallbackQuery, state: FSMContext):
+    """ Отрабатывает ввод ключевых слов названия предмета авто-выдачи """
     try:
-        await state.set_state(AutoDeliveryPageNavigationStates.entering_auto_delivery_item_link)
-        await call.message.answer(text=Templates.Navigation.Settings.AutoDeliveries.EnterAutoDeliveryItemLink.text(),
+        await state.set_state(AutoDeliveryPageNavigationStates.entering_auto_delivery_keywords)
+        await call.message.answer(text=Templates.Navigation.Settings.AutoDeliveries.EnterAutoDeliveryKeywords.text(),
                                   parse_mode="HTML") 
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
@@ -608,24 +609,34 @@ async def callback_add_auto_delivery(call: CallbackQuery, state: FSMContext):
     try:
         data = await state.get_data()
         auto_deliveries = AutoDeliveries.get()
-        auto_delivery_item_link: str = data.get("auto_delivery_item_link")
+        auto_delivery_keywords: str = data.get("auto_delivery_keywords")
         auto_delivery_message: str = data.get("auto_delivery_message")
-        if not auto_delivery_item_link:
-            raise Exception("Ссылка на предмет автовыдачи не была найдена, повторите процесс с самого начала")
+        if not auto_delivery_keywords:
+            raise Exception("Ключевые слова предмета авто-выдачи не были найдены, повторите процесс с самого начала")
         if not auto_delivery_message:
             raise Exception("Сообщение после покупки авто-доставки не было найдено, повторите процесс с самого начала")
-        
-        playerokbot = get_playerok_bot()
-        auto_delivery_item_slug = auto_delivery_item_link.split("products/")[1]
-        item = playerokbot.playerok_account.get_item(slug=auto_delivery_item_slug)
 
-        auto_deliveries[item.id] = []
-        for line in auto_delivery_message.splitlines():
-            auto_deliveries[item.id].append(line)
+        auto_deliveries: list = AutoDeliveries.get()
+        auto_deliveries.append({"keywords": auto_delivery_keywords, "message": auto_delivery_message.splitlines()})
         AutoDeliveries.set(auto_deliveries)
-        await call.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.AutoDeliveryAdded.text(item.name),
+        await call.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.AutoDeliveryAdded.text(auto_delivery_keywords),
                                      parse_mode="HTML") 
         await state.set_state(None)
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.callback_query(F.data == "enter_new_auto_delivery_keywords")
+async def callback_enter_new_auto_delivery_keywords(call: CallbackQuery, state: FSMContext):
+    """ Отрабатывает ввод нового сообщения после покупки авто-выдачи """
+    try:
+        data = await state.get_data()
+        auto_delivery_index = data.get("auto_delivery_index")
+        if auto_delivery_index is None:
+            raise Exception("Автовыдача не была найдена, повторите процесс с самого начала")
+        
+        await state.set_state(AutoDeliveryPageNavigationStates.entering_new_auto_delivery_keywords)
+        await call.message.answer(text=Templates.Navigation.Settings.AutoDeliveries.EnterNewAutoDeliveryKeywords.text(auto_delivery_index),
+                                  parse_mode="HTML") 
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
@@ -634,12 +645,12 @@ async def callback_enter_new_auto_delivery_message(call: CallbackQuery, state: F
     """ Отрабатывает ввод нового сообщения после покупки авто-выдачи """
     try:
         data = await state.get_data()
-        auto_delivery_item_id = data.get("auto_delivery_item_id")
-        if not auto_delivery_item_id:
-            raise Exception("ID предмета автовыдачи не был найден, повторите процесс с самого начала")
+        auto_delivery_index = data.get("auto_delivery_index")
+        if not auto_delivery_index is None:
+            raise Exception("Автовыдача не была найдена, повторите процесс с самого начала")
         
         await state.set_state(AutoDeliveryPageNavigationStates.entering_new_auto_delivery_message)
-        await call.message.answer(text=Templates.Navigation.Settings.AutoDeliveries.EnterNewAutoDeliveryMessage.text(auto_delivery_item_id),
+        await call.message.answer(text=Templates.Navigation.Settings.AutoDeliveries.EnterNewAutoDeliveryMessage.text(auto_delivery_index),
                                   parse_mode="HTML") 
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
@@ -649,11 +660,11 @@ async def callback_confirm_deleting_auto_delivery(call: CallbackQuery, state: FS
     """ Отрабатывает подтверждения удаления авто-выдачи """
     try:
         data = await state.get_data()
-        auto_delivery_item_id = data.get("auto_delivery_item_id")
-        if not auto_delivery_item_id:
-            raise Exception("ID предмета автовыдачи не был найден, повторите процесс с самого начала")
+        auto_delivery_index = data.get("auto_delivery_index")
+        if not auto_delivery_index:
+            raise Exception("Автовыдача не была найдена, повторите процесс с самого начала")
         
-        await call.message.answer(text=Templates.Navigation.Settings.AutoDeliveries.ConfirmDeletingAutoDelivery.text(auto_delivery_item_id),
+        await call.message.answer(text=Templates.Navigation.Settings.AutoDeliveries.ConfirmDeletingAutoDelivery.text(auto_delivery_index),
                                   reply_markup=Templates.Navigation.Settings.AutoDeliveries.ConfirmDeletingAutoDelivery.kb(),
                                   parse_mode="HTML") 
     except Exception as e:
@@ -665,13 +676,13 @@ async def callback_delete_auto_delivery(call: CallbackQuery, state: FSMContext):
     try:
         data = await state.get_data()
         auto_deliveries = AutoDeliveries.get()
-        auto_delivery_item_id = data.get("auto_delivery_item_id")
-        if not auto_delivery_item_id:
-            raise Exception("ID предмета автовыдачи не был найден, повторите процесс с самого начала")
+        auto_delivery_index = data.get("auto_delivery_index")
+        if not auto_delivery_index:
+            raise Exception("Автовыдача не была найдена, повторите процесс с самого начала")
         
-        del auto_deliveries[str(auto_delivery_item_id)]
+        del auto_deliveries[auto_delivery_index]
         AutoDeliveries.set(auto_deliveries)
-        await call.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.AutoDeliveryDeleted.text(auto_delivery_item_id),
+        await call.message.edit_text(text=Templates.Navigation.Settings.AutoDeliveries.AutoDeliveryDeleted.text(auto_delivery_index),
                                      parse_mode="HTML") 
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")

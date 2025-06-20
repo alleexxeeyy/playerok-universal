@@ -47,7 +47,6 @@
   | `ON_INIT` | При инициализации бота | `-` |
   | `ON_PLAYEROK_BOT_INIT` | При инициализации (запуске) Playerok бота | `PlayerokBot` |
   | `ON_TELEGRAM_BOT_INIT` | При инициализации (запуске) Telegram бота | `TelegramBot` |
-  | `ON_ITEM_RESTORE` | При восстановлении предмета после его покупки | `PlayerokBot`, `Item` |
 
   ### Ивенты Playerok (PLAYEROK_EVENT_HANDLERS)
 

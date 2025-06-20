@@ -298,15 +298,20 @@ async def handler_entering_custom_commands_page(message: types.Message, state: F
     except Exception as e:
         await message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
         
-@router.message(AutoDeliveryPageNavigationStates.entering_auto_delivery_item_link)
-async def handler_entering_auto_delivery_item_link(message: types.Message, state: FSMContext):
-    """ Считывает введённый пользователем ID предмета автовыдачи и запоминает """ 
+@router.message(AutoDeliveryPageNavigationStates.entering_auto_delivery_keywords)
+async def handler_entering_entering_auto_delivery_keywords(message: types.Message, state: FSMContext):
+    """ Считывает введённые пользователем ключевые слова названия предмета автовыдачи и запоминает """ 
     try:
         await state.set_state(None)
-        if len(message.text.strip()) <= 0 or len(message.text.strip()) >= 1000:
-            return await message.answer(text=Templates.System.Error.text("Слишком короткая или длинная ссылка на предмет"), parse_mode="HTML")
+        if len(message.text.strip()) <= 0:
+            return await message.answer(text=Templates.System.Error.text("Некорректные ключевые слова"), parse_mode="HTML")
+        
+        keywords_split = message.text.strip().split(",")
+        keywords = []
+        for split in keywords_split:
+            keywords.append(split.strip())
 
-        await state.update_data(auto_delivery_item_link=message.text.strip())
+        await state.update_data(auto_delivery_keywords=keywords)
         await state.set_state(AutoDeliveryPageNavigationStates.entering_auto_delivery_message)
         await message.answer(
             text=Templates.Navigation.Settings.AutoDeliveries.EnterAutoDeliveryMessage.text(),
@@ -325,8 +330,33 @@ async def handler_entering_auto_delivery_message(message: types.Message, state: 
         await state.update_data(auto_delivery_message=message.text.strip())
         data = await state.get_data()
         await message.answer(
-            text=Templates.Navigation.Settings.AutoDeliveries.ConfirmAddingAutoDelivery.text(data["auto_delivery_item_link"], data["auto_delivery_message"]),
+            text=Templates.Navigation.Settings.AutoDeliveries.ConfirmAddingAutoDelivery.text(data["auto_delivery_keywords"], data["auto_delivery_message"]),
             reply_markup=Templates.Navigation.Settings.AutoDeliveries.ConfirmAddingAutoDelivery.kb(),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        await message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.message(AutoDeliveryPageNavigationStates.entering_new_auto_delivery_keywords)
+async def handler_entering_new_auto_delivery_keywords(message: types.Message, state: FSMContext):
+    """ Считывает введённые пользователем новые ключевые слова названия предмета авто-выдачи и изменяет его в конфиге """ 
+    try:
+        await state.set_state(None)
+        data = await state.get_data()
+        if len(message.text.strip()) <= 0:
+            return await message.answer(text=Templates.System.Error.text("Некорректные ключевые слова"), parse_mode="HTML")
+
+        keywords_split = message.text.strip().split(",")
+        keywords = []
+        for split in keywords_split:
+            keywords.append(split.strip())
+
+        auto_deliveries = AutoDeliveries.get()
+        auto_deliveries[data["auto_delivery_index"]]["keywords"] = keywords
+        AutoDeliveries.set(auto_deliveries)
+
+        await message.answer(
+            text=Templates.Navigation.Settings.AutoDeliveries.AutoDeliveryKeywordsChanged.text(", ".join(keywords)),
             parse_mode="HTML"
         )
     except Exception as e:
@@ -339,16 +369,13 @@ async def handler_entering_new_auto_delivery_message(message: types.Message, sta
         await state.set_state(None)
         data = await state.get_data()
         if len(message.text.strip()) <= 0:
-            return await message.answer(text=Templates.System.Error.text("Слишком короткий текст"), parse_mode="HTML")
+            return await message.answer(text=Templates.System.Error.text("Некорректное сообщение"), parse_mode="HTML")
 
         auto_deliveries = AutoDeliveries.get()
-        auto_deliveries[data["auto_delivery_item_id"]] = []
-        answer_split_lines = message.text.strip().split('\n')
-        for line in answer_split_lines:
-            auto_deliveries[data["auto_delivery_item_id"]].append(line)
+        auto_deliveries[data["auto_delivery_index"]]["message"] = message.text.strip().split("\n")
         AutoDeliveries.set(auto_deliveries)
         await message.answer(
-            text=Templates.Navigation.Settings.AutoDeliveries.AutoDeliveryMessageChanged.text(message.text.strip(), data["auto_delivery_item_id"]),
+            text=Templates.Navigation.Settings.AutoDeliveries.AutoDeliveryMessageChanged.text(message.text.strip()),
             parse_mode="HTML"
         )
     except Exception as e:

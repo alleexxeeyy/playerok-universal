@@ -360,7 +360,7 @@ class PlayerokBot:
         async def handler_item_paid(plbot: PlayerokBot, event: ItemPaidEvent):
             try:
                 if self.config["auto_restore_items_enabled"]:
-                    self.restore_item(event.deal.item)
+                    await self.restore_item(event.deal.item)
             except plapi_exceptions.RequestError as e:
                 if e.error_code == "TOO_MANY_REQUESTS":
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
@@ -376,7 +376,7 @@ class PlayerokBot:
             try:
                 try:
                     if event.deal.status is ItemDealStatuses.CONFIRMED:
-                        plbot.stats["earned_money"] += event.deal.transaction.value
+                        plbot.stats["earned_money"] += event.deal.transaction.value or 0
                         plbot.stats["earned_money"] = round(plbot.stats["earned_money"], 2)
                     elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
                         plbot.stats["orders_refunded"] += 1

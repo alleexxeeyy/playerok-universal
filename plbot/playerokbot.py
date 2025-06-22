@@ -133,15 +133,17 @@ class PlayerokBot:
                 pass
         return "Не удалось получить сообщение"
     
-    async def restore_item(self, item: Item):
+    async def restore_last_sold_item(self):
         """ 
-        Восстанавливает (заново выставляет на продажу) предмет. 
+        Восстанавливает последний проданный предмет. 
         
         :param item_id: Объект предмета, который нужно восстановить.
         :type item_id: `playerok.types.Item`
         """
 
         try:
+            profile = self.playerok_account.get_user(id=self.playerok_account.id)
+            item = profile.get_items(count=1, statuses=[ItemStatuses.SOLD])
             priority_statuses = self.playerok_account.get_item_priority_statuses(item.id, item.price)
             priority_status = None
             for status in priority_statuses:
@@ -360,7 +362,7 @@ class PlayerokBot:
         async def handler_item_paid(plbot: PlayerokBot, event: ItemPaidEvent):
             try:
                 if self.config["auto_restore_items_enabled"]:
-                    await self.restore_item(event.deal.item)
+                    await self.restore_last_sold_item()
             except plapi_exceptions.RequestError as e:
                 if e.error_code == "TOO_MANY_REQUESTS":
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")

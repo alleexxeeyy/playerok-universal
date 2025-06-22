@@ -245,7 +245,7 @@ class Navigation:
                         f"\n      ┕ Всего исходящих: <b>{profile.stats.deals.outgoing.total}</b>" \
                         f"\n      ┕ Завершено исходящих: <b>{profile.stats.deals.outgoing.finished}</b>" \
                         f"\n" \
-                        f"\n→ Дата создания: <b>{datetime.fromisoformat(profile.created_at).strftime('%d.%m.%Y %H:%M:%S')}</b>" \
+                        f"\n→ Дата создания: <b>{datetime.fromisoformat(profile.created_at.replace('Z', '+00:00')).strftime('%d.%m.%Y %H:%M:%S')}</b>" \
                         f"\n" \
                         f"\nВыберите действие ↓"
                     return msg

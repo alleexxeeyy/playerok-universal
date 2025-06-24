@@ -52,9 +52,9 @@ class EventListener:
                 events.append(event)
         return events
 
-    def parse_message_event(self, message: ChatMessage) -> list[NewMessageEvent | NewDealEvent | ItemPaidEvent
-                                                                | ItemSentEvent | DealConfirmedEvent | DealRolledBackEvent | DealHasProblemEvent
-                                                                | DealProblemResolvedEvent | DealStatusChangedEvent]:
+    def parse_message_event(self, message: ChatMessage, chat: Chat) -> list[NewMessageEvent | NewDealEvent | ItemPaidEvent
+                                                                            | ItemSentEvent | DealConfirmedEvent | DealRolledBackEvent | DealHasProblemEvent
+                                                                            | DealProblemResolvedEvent | DealStatusChangedEvent]:
         """
         Получает ивент с сообщения.
         
@@ -78,19 +78,19 @@ class EventListener:
         if not message:
             return []
         if message.text == "{{ITEM_PAID}}" and message.deal is not None:
-            return [NewDealEvent(message.deal), ItemPaidEvent(message.deal)]
+            return [NewDealEvent(message.deal, chat), ItemPaidEvent(message.deal, chat)]
         elif message.text == "{{ITEM_SENT}}" and message.deal is not None:
-            return [ItemSentEvent(message.deal)]
+            return [ItemSentEvent(message.deal, chat)]
         elif message.text == "{{DEAL_CONFIRMED}}" and message.deal is not None:
-            return [DealConfirmedEvent(message.deal), DealStatusChangedEvent(message.deal)]
+            return [DealConfirmedEvent(message.deal, chat), DealStatusChangedEvent(message.deal, chat)]
         elif message.text == "{{DEAL_ROLLED_BACK}}" and message.deal is not None:
-            return [DealRolledBackEvent(message.deal), DealStatusChangedEvent(message.deal)]
+            return [DealRolledBackEvent(message.deal, chat), DealStatusChangedEvent(message.deal, chat)]
         elif message.text == "{{DEAL_HAS_PROBLEM}}" and message.deal is not None:
-            return [DealHasProblemEvent(message.deal), DealStatusChangedEvent(message.deal)]
+            return [DealHasProblemEvent(message.deal, chat), DealStatusChangedEvent(message.deal, chat)]
         elif message.text == "{{DEAL_PROBLEM_RESOLVED}}" and message.deal is not None:
-            return [DealProblemResolvedEvent(message.deal), DealStatusChangedEvent(message.deal)]
+            return [DealProblemResolvedEvent(message.deal, chat), DealStatusChangedEvent(message.deal, chat)]
         
-        return [NewMessageEvent(message)]
+        return [NewMessageEvent(message, chat)]
 
     def get_message_events(self, old_chats: ChatList, new_chats: ChatList):
         """
@@ -124,7 +124,7 @@ class EventListener:
             if not old_chat:
                 msg_list = self.account.get_chat_messages(new_chat.id, 5)
                 for msg in reversed(msg_list.messages):
-                    events.extend(self.parse_message_event(msg))
+                    events.extend(self.parse_message_event(msg, new_chat))
                 continue
 
             if not new_chat.last_message or not old_chat.last_message:
@@ -140,7 +140,7 @@ class EventListener:
                 new_msgs.append(msg)
 
             for msg in reversed(new_msgs):
-                events.extend(self.parse_message_event(msg))
+                events.extend(self.parse_message_event(msg, new_chat))
         return events      
                 
     def listen(self, requests_delay: int | float = 4) -> Generator[ChatInitializedEvent | NewMessageEvent | NewDealEvent | ItemPaidEvent

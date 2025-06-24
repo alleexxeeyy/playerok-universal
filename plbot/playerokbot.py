@@ -143,7 +143,7 @@ class PlayerokBot:
 
         try:
             profile = self.playerok_account.get_user(id=self.playerok_account.id)
-            item = profile.get_items(count=1, statuses=[ItemStatuses.SOLD])
+            item = profile.get_items(count=1, statuses=[ItemStatuses.SOLD]).items[0]
             priority_statuses = self.playerok_account.get_item_priority_statuses(item.id, item.price)
             priority_status = None
             for status in priority_statuses:
@@ -266,7 +266,7 @@ class PlayerokBot:
         async def handler_new_message(plbot: PlayerokBot, event: NewMessageEvent):
             """ Начальный хендлер новых сообщений. """
             try:
-                this_chat = self.get_chat_by_username(event.message.user.username)
+                this_chat = event.chat
                 if self.config["first_message_enabled"]:
                     if event.message.user.id == event.message.user.id and event.message.user.id not in plbot.initialized_users:
                         try:
@@ -326,7 +326,7 @@ class PlayerokBot:
             """ Начальный хендлер нового заказа. """
             try:
                 try:
-                    this_chat = self.get_chat_by_username(event.deal.user.username)
+                    this_chat = event.chat
                     self.logger.info(f"{PREFIX} 🛒  {Fore.LIGHTYELLOW_EX}Новая сделка: {Fore.WHITE}Пользователь {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.item.price} р.")
                     
                     break_flag = False
@@ -376,6 +376,7 @@ class PlayerokBot:
         async def handler_deal_status_changed(plbot: PlayerokBot, event: DealStatusChangedEvent):
             """ Начальный хендлер изменения статуса заказа """
             try:
+                this_chat = event.chat
                 try:
                     if event.deal.status is ItemDealStatuses.CONFIRMED:
                         plbot.stats["earned_money"] += event.deal.transaction.value or 0
@@ -389,8 +390,7 @@ class PlayerokBot:
 
                 if event.deal.status is ItemDealStatuses.CONFIRMED or event.deal.status is ItemDealStatuses.ROLLED_BACK:
                     if event.deal.status is ItemDealStatuses.CONFIRMED:
-                        chat = self.get_chat_by_username(event.deal.user.username)
-                        plbot.playerok_account.send_message(chat.id, 
+                        plbot.playerok_account.send_message(this_chat.id, 
                                                             plbot.msg("deal_confirmed"),
                                                             self.config.get("read_chat_before_sending_message_enabled") or False)
             except plapi_exceptions.RequestError as e:

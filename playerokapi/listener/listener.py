@@ -124,6 +124,7 @@ class EventListener:
             if not old_chat:
                 # если это новый чат, парсим ивенты только последнего сообщения, ведь это - покупка товара
                 events.extend(self.parse_message_event(new_chat.last_message, new_chat))
+                continue
 
             if not new_chat.last_message or not old_chat.last_message:
                 continue

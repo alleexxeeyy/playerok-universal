@@ -122,10 +122,8 @@ class EventListener:
             old_chat = old_chat_map.get(new_chat.id)
             
             if not old_chat:
-                msg_list = self.account.get_chat_messages(new_chat.id, 5)
-                for msg in reversed(msg_list.messages):
-                    events.extend(self.parse_message_event(msg, new_chat))
-                continue
+                # если это новый чат, парсим ивенты только последнего сообщения, ведь это - покупка товара
+                events.extend(self.parse_message_event(new_chat.last_message, new_chat))
 
             if not new_chat.last_message or not old_chat.last_message:
                 continue

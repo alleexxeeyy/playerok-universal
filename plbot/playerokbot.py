@@ -243,7 +243,7 @@ class PlayerokBot:
                         if datetime.now() > self.refresh_account_next_time:
                             self.playerok_account = Account(token=self.config["token"],
                                                             user_agent=self.config["user_agent"],
-                                                            requests_timeout=self.config["playerokapi_timeout"]).get()
+                                                            requests_timeout=self.config["playerokapi_requests_timeout"]).get()
                             self.playerok_account = datetime.now() + timedelta(seconds=3600)
                     except plapi_exceptions.RequestError as e:
                         if e.error_code == "TOO_MANY_REQUESTS":

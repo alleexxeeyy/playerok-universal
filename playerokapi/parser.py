@@ -537,6 +537,73 @@ def moderator(data: dict) -> 'Moderator':
 def event(data: dict):
     ... # TODO: Сделать парсинг класса Event
 
+def chat_message_button(data: dict) -> 'ChatMessageButton':
+    from .types import ChatMessageButton
+    if not data:
+        return None
+    return ChatMessageButton(
+        type=ChatMessageButtonTypes.__members__.get(data.get("type")),
+        url=data.get("url"),
+        text=data.get("text")
+    )
+
+def chat_message(data: dict) -> 'ChatMessage':
+    from .types import ChatMessage
+    if not data:
+        return None
+    btns = []
+    data_btns = data.get("buttons")
+    if data_btns:
+        for btn in data_btns:
+            btns.append(chat_message_button(btn))
+    return ChatMessage(
+        id=data.get("id"),
+        text=data.get("text"),
+        created_at=data.get("createdAt"),
+        deleted_at=data.get("deletedAt"),
+        is_read=data.get("isRead"),
+        is_suspicious=data.get("isSuspicious"),
+        is_bulk_messaging=data.get("isBulkMessaging"),
+        file=file(data.get("file")),
+        game=game(data.get("game")),
+        user=user_profile(data.get("user")),
+        deal=item_deal(data.get("deal")),
+        item=item(data.get("item")),
+        transaction=transaction(data.get("transaction")),
+        moderator=moderator(data.get("moderator")),
+        event=event(data.get("event")),
+        event_by_user=user_profile(data.get("eventByUser")),
+        event_to_user=user_profile(data.get("eventToUser")),
+        is_auto_response=data.get("isAutoResponse"),
+        buttons=btns
+    )
+
+def chat_message_page_info(data: dict) -> 'ChatMessagePageInfo':
+    from .types import ChatMessagePageInfo
+    if not data:
+        return None
+    return ChatMessagePageInfo(
+        start_cursor=data.get("startCursor"),
+        end_cursor=data.get("endCursor"),
+        has_previous_page=data.get("hasPreviousPage"),
+        has_next_page=data.get("hasNextPage")
+    )
+
+def chat_message_list(data: dict) -> 'ChatMessageList':
+    from .types import ChatMessageList
+    if not data:
+        return None
+    messages = []
+    edges: dict[dict] = data.get("edges")
+    if edges:
+        for edge in edges:
+            messages.append(chat_message(edge.get("node")))
+    return ChatMessageList(
+        messages=messages,
+        page_info=chat_message_page_info(data.get("pageInfo")),
+        total_count=data.get("totalCount")
+    )
+
 def chat(data: dict) -> 'Chat':
     from .types import Chat
     if not data:
@@ -692,72 +759,5 @@ def item_deal_list(data: dict) -> 'ItemDealList':
     return ItemDealList(
         deals=deals,
         page_info=item_deal_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
-    )
-
-def chat_message_button(data: dict) -> 'ChatMessageButton':
-    from .types import ChatMessageButton
-    if not data:
-        return None
-    return ChatMessageButton(
-        type=ChatMessageButtonTypes.__members__.get(data.get("type")),
-        url=data.get("url"),
-        text=data.get("text")
-    )
-
-def chat_message(data: dict) -> 'ChatMessage':
-    from .types import ChatMessage
-    if not data:
-        return None
-    btns = []
-    data_btns = data.get("buttons")
-    if data_btns:
-        for btn in data_btns:
-            btns.append(chat_message_button(btn))
-    return ChatMessage(
-        id=data.get("id"),
-        text=data.get("text"),
-        created_at=data.get("createdAt"),
-        deleted_at=data.get("deletedAt"),
-        is_read=data.get("isRead"),
-        is_suspicious=data.get("isSuspicious"),
-        is_bulk_messaging=data.get("isBulkMessaging"),
-        file=file(data.get("file")),
-        game=game(data.get("game")),
-        user=user_profile(data.get("user")),
-        deal=item_deal(data.get("deal")),
-        item=item(data.get("item")),
-        transaction=transaction(data.get("transaction")),
-        moderator=moderator(data.get("moderator")),
-        event=event(data.get("event")),
-        event_by_user=user_profile(data.get("eventByUser")),
-        event_to_user=user_profile(data.get("eventToUser")),
-        is_auto_response=data.get("isAutoResponse"),
-        buttons=btns
-    )
-
-def chat_message_page_info(data: dict) -> 'ChatMessagePageInfo':
-    from .types import ChatMessagePageInfo
-    if not data:
-        return None
-    return ChatMessagePageInfo(
-        start_cursor=data.get("startCursor"),
-        end_cursor=data.get("endCursor"),
-        has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
-    )
-
-def chat_message_list(data: dict) -> 'ChatMessageList':
-    from .types import ChatMessageList
-    if not data:
-        return None
-    messages = []
-    edges: dict[dict] = data.get("edges")
-    if edges:
-        for edge in edges:
-            messages.append(chat_message(edge.get("node")))
-    return ChatMessageList(
-        messages=messages,
-        page_info=chat_message_page_info(data.get("pageInfo")),
         total_count=data.get("totalCount")
     )

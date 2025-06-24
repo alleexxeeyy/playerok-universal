@@ -268,50 +268,52 @@ class PlayerokBot:
             try:
                 this_chat = event.chat
                 if self.config["first_message_enabled"]:
-                    if event.message.user.id == event.message.user.id and event.message.user.id not in plbot.initialized_users:
-                        try:
-                            plbot.playerok_account.send_message(this_chat.id, 
-                                                                plbot.msg("user_not_initialized",
-                                                                          buyer_username=event.message.user.username),
-                                                                self.config.get("read_chat_before_sending_message_enabled") or False)
-                            plbot.initialized_users.append(event.message.user.id)
-                        except Exception as e:
-                            self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При отправке приветственного сообщения для {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
-
-                if event.message.user.id != plbot.playerok_account.id:
-                    if self.config["custom_commands_enabled"]:
-                        if event.message.text in self.custom_commands.keys():
+                    if event.message.user is not None:
+                        if event.message.user.id == event.message.user.id and event.message.user.id not in plbot.initialized_users:
                             try:
-                                message = "\n".join(self.custom_commands[event.message.text])
                                 plbot.playerok_account.send_message(this_chat.id, 
-                                                                    message, 
+                                                                    plbot.msg("user_not_initialized",
+                                                                            buyer_username=event.message.user.username),
+                                                                    self.config.get("read_chat_before_sending_message_enabled") or False)
+                                plbot.initialized_users.append(event.message.user.id)
+                            except Exception as e:
+                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При отправке приветственного сообщения для {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
+
+                if event.message.user is not None:
+                    if event.message.user.id != plbot.playerok_account.id:
+                        if self.config["custom_commands_enabled"]:
+                            if event.message.text in self.custom_commands.keys():
+                                try:
+                                    message = "\n".join(self.custom_commands[event.message.text])
+                                    plbot.playerok_account.send_message(this_chat.id, 
+                                                                        message, 
+                                                                        self.config.get("read_chat_before_sending_message_enabled") or False)
+                                except Exception as e:
+                                    self.logger.info(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе пользовательской команды \"{event.message.text}\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
+                                    plbot.playerok_account.send_message(this_chat.id, 
+                                                                        plbot.msg("command_error"),
+                                                                        self.config.get("read_chat_before_sending_message_enabled") or False)
+                        if str(event.message.text).lower() == "!команды" or str(event.message.text).lower() == "!commands":
+                            try:
+                                plbot.playerok_account.send_message(this_chat.id, 
+                                                                    plbot.msg("buyer_command_commands"),
                                                                     self.config.get("read_chat_before_sending_message_enabled") or False)
                             except Exception as e:
-                                self.logger.info(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе пользовательской команды \"{event.message.text}\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
+                                self.logger.info(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе команды \"!команды\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
                                 plbot.playerok_account.send_message(this_chat.id, 
                                                                     plbot.msg("command_error"),
                                                                     self.config.get("read_chat_before_sending_message_enabled") or False)
-                    if str(event.message.text).lower() == "!команды" or str(event.message.text).lower() == "!commands":
-                        try:
-                            plbot.playerok_account.send_message(this_chat.id, 
-                                                                plbot.msg("buyer_command_commands"),
-                                                                self.config.get("read_chat_before_sending_message_enabled") or False)
-                        except Exception as e:
-                            self.logger.info(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе команды \"!команды\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
-                            plbot.playerok_account.send_message(this_chat.id, 
-                                                                plbot.msg("command_error"),
-                                                                self.config.get("read_chat_before_sending_message_enabled") or False)
-                    if str(event.message.text).lower() == "!продавец" or str(event.message.text).lower() == "!seller":
-                        try:
-                            asyncio.run_coroutine_threadsafe(plbot.tgbot.call_seller(event.message.user.username, this_chat.id), self.tgbot_loop)
-                            plbot.playerok_account.send_message(this_chat.id, 
-                                                                plbot.msg("buyer_command_seller"),
-                                                                self.config.get("read_chat_before_sending_message_enabled") or False)
-                        except Exception as e:
-                            self.logger.log(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе команды \"!продавец\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
-                            plbot.playerok_account.send_message(this_chat.id, 
-                                                                plbot.msg("command_error"),
-                                                                self.config.get("read_chat_before_sending_message_enabled") or False)
+                        if str(event.message.text).lower() == "!продавец" or str(event.message.text).lower() == "!seller":
+                            try:
+                                asyncio.run_coroutine_threadsafe(plbot.tgbot.call_seller(event.message.user.username, this_chat.id), self.tgbot_loop)
+                                plbot.playerok_account.send_message(this_chat.id, 
+                                                                    plbot.msg("buyer_command_seller"),
+                                                                    self.config.get("read_chat_before_sending_message_enabled") or False)
+                            except Exception as e:
+                                self.logger.log(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе команды \"!продавец\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
+                                plbot.playerok_account.send_message(this_chat.id, 
+                                                                    plbot.msg("command_error"),
+                                                                    self.config.get("read_chat_before_sending_message_enabled") or False)
             except plapi_exceptions.RequestError as e:
                 if e.error_code == "TOO_MANY_REQUESTS":
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")

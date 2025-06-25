@@ -144,7 +144,7 @@ class PlayerokBot:
         try:
             profile = self.playerok_account.get_user(id=self.playerok_account.id)
             items = profile.get_items(count=24, statuses=[ItemStatuses.SOLD]).items
-            item = [item for profile_item in items if profile_item.name == item.name]
+            item = [profile_item for profile_item in items if profile_item.name == item.name]
             if len(item) <= 0:
                 return
             item = item[0]

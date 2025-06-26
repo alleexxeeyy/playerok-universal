@@ -248,7 +248,7 @@ class PlayerokBot:
                             self.playerok_account = Account(token=self.config["token"],
                                                             user_agent=self.config["user_agent"],
                                                             requests_timeout=self.config["playerokapi_requests_timeout"]).get()
-                            self.playerok_account = datetime.now() + timedelta(seconds=3600)
+                            self.refresh_account_next_time = datetime.now() + timedelta(seconds=3600)
                     except plapi_exceptions.RequestError as e:
                         if e.error_code == "TOO_MANY_REQUESTS":
                             self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}В бесконечном цикле произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")

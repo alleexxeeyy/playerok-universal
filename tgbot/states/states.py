@@ -12,6 +12,7 @@ class BotSettingsNavigationStates(StatesGroup):
     entering_user_agent = State()
     entering_playerokapi_requests_timeout = State()
     entering_playerokapi_listener_requests_delay = State()
+    entering_bot_event_notifications_chat_id = State()
     entering_messages_watermark = State()
 
 class MessagesNavigationStates(StatesGroup):

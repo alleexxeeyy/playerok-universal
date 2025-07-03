@@ -46,7 +46,9 @@ class Config:
             "auto_deliveries_enabled": True,
             "auto_restore_items_enabled": True,
             "auto_restore_items_priority_status": "DEFAULT",
-            "auto_complete_deals_enabled": True
+            "auto_complete_deals_enabled": True,
+            "bot_event_notifications_enabled": False,
+            "bot_event_notifications_chat_id": 0
         }
     
     @staticmethod

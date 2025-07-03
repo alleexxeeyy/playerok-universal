@@ -373,24 +373,30 @@ class Navigation:
                         ).pack()
                     )
                     btn4 = InlineKeyboardButton(
+                        text="🔔 Уведомления",
+                        callback_data=CallbackDatas.BotSettingsNavigation(
+                            to="notifications"
+                        ).pack()
+                    )
+                    btn5 = InlineKeyboardButton(
                         text="✉️ Сообщения",
                         callback_data=CallbackDatas.MessagesPagination(
                             page=0
                         ).pack()
                     )
-                    btn5 = InlineKeyboardButton(
+                    btn6 = InlineKeyboardButton(
                         text="⌨️ Пользовательские команды",
                         callback_data=CallbackDatas.CustomCommandsPagination(
                             page=0
                         ).pack()
                     )
-                    btn6 = InlineKeyboardButton(
+                    btn7 = InlineKeyboardButton(
                         text="🚀 Автоматическая выдача",
                         callback_data=CallbackDatas.AutoDeliveriesPagination(
                             page=0
                         ).pack()
                     )
-                    btn7 = InlineKeyboardButton(
+                    btn8 = InlineKeyboardButton(
                         text="🔧 Прочее",
                         callback_data=CallbackDatas.BotSettingsNavigation(
                             to="other"
@@ -408,7 +414,7 @@ class Navigation:
                             to="default"
                         ).pack()
                     )
-                    rows = [[btn1, btn2], [btn3, btn4], [btn5], [btn6], [btn7], [btn_refresh], [btn_back]]
+                    rows = [[btn1, btn2], [btn3, btn4], [btn5, btn6], [btn7, btn8], [btn_refresh], [btn_back]]
                     markup = InlineKeyboardMarkup(inline_keyboard=rows)
                     return markup
             
@@ -708,6 +714,97 @@ class Navigation:
                     rows = [[btn1], [btn2], [btn_refresh], [btn_back]]
                     markup = InlineKeyboardMarkup(inline_keyboard=rows)
                     return markup
+
+        class Notifications:
+            class Error:
+                def text() -> str:
+                    msg = f"⚙️ <b>Настройки бота → 🔔 Уведомления</b>"\
+                            f"\n" \
+                            f"\n→ Уведомления в TG о событиях бота: <i>не удалось загрузить</i>" \
+                            f"\n→ ID чата для отправки уведомлений: <i>не удалось загрузить</i>" \
+                            f"\n" \
+                            f"\n<b>Что такое уведомления в TG о событиях бота?</b>" \
+                            f"\nВ указанный Telegram чат будут приходить уведомления о событиях бота " \
+                            f"(например, новые сделки, новые выставленные предметы и т.д.). Чтобы бот отправлял " \
+                            f"уведомления в нужный канал/чат, он должен быть в нём администратором." \
+                            f"\n" \
+                            f"\nВыберите параметр для изменения ↓"
+                    return msg
+
+            class Loading:
+                def text() -> str:
+                    msg = f"⚙️ <b>Настройки бота → 🔔 Уведомления</b>"\
+                            f"\n" \
+                            f"\n→ Уведомления в TG о событиях бота: <i>загрузка</i>" \
+                            f"\n→ ID чата для отправки уведомлений: <i>загрузка</i>" \
+                            f"\n" \
+                            f"\n<b>Что такое уведомления в TG о событиях бота?</b>" \
+                            f"\nВ указанный Telegram чат будут приходить уведомления о событиях бота " \
+                            f"(например, новые сделки, новые выставленные предметы и т.д.). Чтобы бот отправлял " \
+                            f"уведомления в нужный канал/чат, он должен быть в нём администратором." \
+                            f"\n" \
+                            f"\nВыберите параметр для изменения ↓"
+                    return msg
+
+            class Default:
+                def text() -> str:
+                    config = Config.get()
+                    bot_event_notifications_enabled = "🟢 Включено" if config.get("bot_event_notifications_enabled") else "🔴 Выключено"
+                    bot_event_notifications_chat_id = config.get("bot_event_notifications_chat_id") or "❌ Не задано"
+                    msg = f"⚙️ <b>Настройки бота → 🔔 Уведомления</b>"\
+                            f"\n" \
+                            f"\n→ Уведомления в TG о событиях бота: <code>{bot_event_notifications_enabled}</code>" \
+                            f"\n→ ID чата для отправки уведомлений: <code>{bot_event_notifications_chat_id}</code>" \
+                            f"\n" \
+                            f"\n<b>Что такое уведомления в TG о событиях бота?</b>" \
+                            f"\nВ указанный Telegram чат будут приходить уведомления о событиях бота " \
+                            f"(например, новые сделки, новые выставленные предметы и т.д.). Чтобы бот отправлял " \
+                            f"уведомления в нужный канал/чат, он должен быть в нём администратором." \
+                            f"\n" \
+                            f"\nВыберите параметр для изменения ↓" 
+                    return msg
+
+                def kb() -> InlineKeyboardMarkup:
+                    config = Config.get()
+                    bot_event_notifications_enabled = "🟢 Включено" if config.get("bot_event_notifications_enabled") else "🔴 Выключено"
+                    bot_event_notifications_chat_id = config.get("bot_event_notifications_chat_id") or "❌ Не задано"
+                    btn1 = InlineKeyboardButton(
+                        text=f"🔔 Уведомления в TG о событиях бота: {bot_event_notifications_enabled}",
+                        callback_data="disable_bot_event_notifications" if config.get("bot_event_notifications_enabled") else "enable_bot_event_notifications"
+                    )
+                    btn2 = InlineKeyboardButton(
+                        text=f"💬 ID чата для отправки уведомлений: {bot_event_notifications_chat_id}",
+                        callback_data="enter_bot_event_notifications_chat_id"
+                    )
+                    btn_refresh = InlineKeyboardButton(
+                        text="🔄️ Обновить",
+                        callback_data=CallbackDatas.BotSettingsNavigation(
+                            to="notifications"
+                        ).pack()
+                    )
+                    btn_back = InlineKeyboardButton(
+                        text="⬅️ Назад",
+                        callback_data=CallbackDatas.BotSettingsNavigation(
+                            to="default"
+                        ).pack()
+                    )
+                    rows = [[btn1], [btn2], [btn_refresh], [btn_back]]
+                    markup = InlineKeyboardMarkup(inline_keyboard=rows)
+                    return markup
+
+            class EnterChatId:  
+                def text() -> str:
+                    config = Config.get()
+                    bot_event_notifications_chat_id = config.get("bot_event_notifications_chat_id") or "❌ Не задано"
+                    msg = f"💬 <b>Введите ID чата для отправки уведомлений ↓</b>" \
+                          f"\nТекущее значение: <code>{bot_event_notifications_chat_id}</code>" \
+                          f"\nДопускается ввод, как числового ID, так и тэга канала (например, @testchannel)"
+                    return msg
+
+            class ChatIdChanged:  
+                def text(new) -> str:
+                    msg = f"✅ ID чата для отправки уведомлений <b>был успешно изменён</b> на <code>{new}</code>"
+                    return msg
                 
         class CustomCommands:
             class Pagination:

@@ -27,6 +27,7 @@ from core.console import set_title, restart
 from core.handlers_manager import HandlersManager
 
 from . import set_playerok_bot
+from tgbot import get_telegram_bot, get_loop
 
 PREFIX = F"{Fore.LIGHTWHITE_EX}[playerok bot]{Fore.WHITE}"
 
@@ -34,23 +35,14 @@ PREFIX = F"{Fore.LIGHTWHITE_EX}[playerok bot]{Fore.WHITE}"
 class PlayerokBot:
     """
     Класс, запускающий и инициализирующий Playerok бота.
-
-    :param tgbot: Объект класса TelegramBot
-    :param tgbot_loop: loop, в котором запущен Telegram бот
     """
 
-    def __init__(self, tgbot: 'TelegramBot' = None, 
-                 tgbot_loop: asyncio.AbstractEventLoop = None):
+    def __init__(self):
         self.config = Config.get()
         self.messages = Messages.get()
         self.custom_commands = CustomCommands.get()
         self.auto_deliveries = AutoDeliveries.get()
         self.logger = getLogger(f"UNIVERSAL.TelegramBot")
-
-        self.tgbot = tgbot
-        """ Класс, содержащий данные и методы Telegram бота """
-        self.tgbot_loop = tgbot_loop
-        """ Объект loop, в котором запущен Telegram бот """
 
         try:
             self.playerok_account = Account(token=self.config["token"],
@@ -133,6 +125,15 @@ class PlayerokBot:
                 pass
         return "Не удалось получить сообщение"
     
+    def log_to_tg(self, text: str):
+        """
+        Логгирует ивент в Telegram бота.
+
+        :param text: Текст лога.
+        :type text: str
+        """
+        asyncio.run_coroutine_threadsafe(get_telegram_bot().log_event(text), get_loop())
+
     async def restore_last_sold_item(self, item: Item):
         """ 
         Восстанавливает последний проданный предмет. 
@@ -163,6 +164,8 @@ class PlayerokBot:
             new_item = self.playerok_account.publish_item(item.id, priority_status.id)
             if new_item.status is ItemStatuses.PENDING_APPROVAL or new_item.status is ItemStatuses.APPROVED:
                 self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически восстановлен после его покупки")
+                if self.config["bot_event_notifications_chat_id"]:
+                    self.log_to_tg(f"♻️ Предмет <code>{new_item.name}</code> был восстановлен")
             else:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось восстановить предмет «{new_item.name}». Его статус: {Fore.WHITE}{new_item.status.name}")
         except plapi_exceptions.RequestError as e:
@@ -198,51 +201,6 @@ class PlayerokBot:
                             plbot.custom_commands = CustomCommands.get()
                         if AutoDeliveries.get() != plbot.auto_deliveries:
                             plbot.auto_deliveries = AutoDeliveries.get()
-
-                        '''if self.config["auto_restore_items_enabled"]:
-                            if datetime.now() > self.try_restore_items_next_time:
-                                user = plbot.playerok_account.get_user(id=plbot.playerok_account.id)
-                                break_flag = False
-                                first_item = None
-                                next_cursor = None
-                                while True:
-                                    try:
-                                        item_list = user.get_items(statuses=[ItemStatuses.EXPIRED, ItemStatuses.SOLD], after_cursor=next_cursor)
-                                        if not item_list.items:
-                                            break
-                                        next_cursor = item_list.page_info.end_cursor
-                                        for item in item_list.items:
-                                            try:
-                                                if first_item is not None:
-                                                    if first_item.id == item.id:
-                                                        break_flag = True
-                                                        break
-                                                if first_item is None:
-                                                    first_item = item
-                                                priority_statuses = self.playerok_account.get_item_priority_statuses(item.id, item.price)
-                                                priority_status = None
-                                                for status in priority_statuses:
-                                                    if status.type is PriorityTypes.__members__.get(self.config["auto_restore_items_priority_status"]):
-                                                        priority_status = status
-
-                                                new_item = self.playerok_account.publish_item(item.id, priority_status.id)
-                                                if new_item.status is ItemStatuses.PENDING_APPROVAL or new_item.status is ItemStatuses.APPROVED:
-                                                    self.logger.info(f"{PREFIX} Предмет {Fore.LIGHTYELLOW_EX}«{item.name}» {Fore.WHITE}был автоматически восстановлен после его покупки")
-                                                else:
-                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось восстановить предмет «{new_item.name}». Его статус: {Fore.WHITE}{new_item.status.name}")
-                                            except plapi_exceptions.RequestError as e:
-                                                if e.error_code == "TOO_MANY_REQUESTS":
-                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке восстановления предмета «{item.name}» произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")
-                                                    time.sleep(10)
-                                                else:
-                                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке восстановления предмета «{item.name}» произошла ошибка запроса {e.error_code}: {Fore.WHITE}\n{e}")
-                                            except Exception as e:
-                                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При попытке восстановления предмета «{item.name}» произошла ошибка: {Fore.WHITE}{e}")
-                                        if break_flag:
-                                            break
-                                    except Exception as e:
-                                        self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При восстановлении предметов произошла ошибка: {Fore.WHITE}{e}")
-                                self.try_restore_items_next_time = datetime.now() + timedelta(seconds=60)'''
                                     
                         if datetime.now() > self.refresh_account_next_time:
                             self.playerok_account = Account(token=self.config["token"],
@@ -293,7 +251,7 @@ class PlayerokBot:
                                                                         message, 
                                                                         self.config.get("read_chat_before_sending_message_enabled") or False)
                                 except Exception as e:
-                                    self.logger.info(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе пользовательской команды \"{event.message.text}\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
+                                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе пользовательской команды \"{event.message.text}\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
                                     plbot.playerok_account.send_message(this_chat.id, 
                                                                         plbot.msg("command_error"),
                                                                         self.config.get("read_chat_before_sending_message_enabled") or False)
@@ -303,13 +261,13 @@ class PlayerokBot:
                                                                     plbot.msg("buyer_command_commands"),
                                                                     self.config.get("read_chat_before_sending_message_enabled") or False)
                             except Exception as e:
-                                self.logger.info(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе команды \"!команды\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
+                                self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе команды \"!команды\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
                                 plbot.playerok_account.send_message(this_chat.id, 
                                                                     plbot.msg("command_error"),
                                                                     self.config.get("read_chat_before_sending_message_enabled") or False)
                         if str(event.message.text).lower() == "!продавец" or str(event.message.text).lower() == "!seller":
                             try:
-                                asyncio.run_coroutine_threadsafe(plbot.tgbot.call_seller(event.message.user.username, this_chat.id), self.tgbot_loop)
+                                asyncio.run_coroutine_threadsafe(get_telegram_bot().call_seller(event.message.user.username, this_chat.id), get_loop())
                                 plbot.playerok_account.send_message(this_chat.id, 
                                                                     plbot.msg("buyer_command_seller"),
                                                                     self.config.get("read_chat_before_sending_message_enabled") or False)
@@ -333,8 +291,10 @@ class PlayerokBot:
             try:
                 try:
                     this_chat = event.chat
-                    self.logger.info(f"{PREFIX} 🛒  {Fore.LIGHTYELLOW_EX}Новая сделка: {Fore.WHITE}Пользователь {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.item.price} р.")
-                    
+                    self.logger.info(f"{PREFIX} 🛒  {Fore.LIGHTYELLOW_EX}Новая сделка: {Fore.WHITE}Пользователь {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.item.price or "?"} р.")
+                    if self.config["bot_event_notifications_chat_id"]:
+                        self.log_to_tg(f"🛒 <b>Новая сделка:</b> пользователь <code>{event.deal.user.username}</code> оплатил предмет <code>{event.deal.item.name}</code> на сумму <b>{event.deal.item.price or "?"} р.</b>")
+
                     break_flag = False
                     if self.config["auto_deliveries_enabled"]:
                         for auto_delivery in self.auto_deliveries:
@@ -352,7 +312,9 @@ class PlayerokBot:
                         if event.deal.user.id != plbot.playerok_account.id:
                             self.playerok_account.update_deal(event.deal.id, ItemDealStatuses.SENT)
                             self.logger.info(f"{PREFIX} ☑️  Заказ {Fore.LIGHTYELLOW_EX}{event.deal.id}{Fore.WHITE} от покупателя {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} был автоматически подтверждён")
-                
+                            #if self.config["bot_event_notifications_chat_id"]:
+                            #    self.log_to_tg(f"☑️ Заказ <code>{event.deal.id}</code> от покупателя <code>{event.deal.user.username}</code> был автоматически подтверждён")
+
                 except Exception as e:
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке новой сделки от {event.deal.user.username} произошла ошибка: {Fore.WHITE}{e}")
             except plapi_exceptions.RequestError as e:
@@ -390,7 +352,7 @@ class PlayerokBot:
                     elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
                         plbot.stats["orders_refunded"] += 1
                 except Exception as e:
-                    self.logger.info(f"{PREFIX} {Fore.LIGHTRED_EX}При подсчёте статистики произошла ошибка: {Fore.WHITE}{e}")
+                    self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При подсчёте статистики произошла ошибка: {Fore.WHITE}{e}")
                 finally:
                     set_stats(plbot.stats)
 

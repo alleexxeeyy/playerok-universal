@@ -15,32 +15,26 @@ init()
 from plbot.playerokbot import PlayerokBot
 from services.updater import Updater
 
-class BotsManager:
-    """ Класс для управления запусками ботов """
+from tgbot import set_telegram_bot, set_loop
 
-    def __init__(self):
-        self.tgbot = None
 
-    async def start_playerok_bot(self):
-        """ Запускает FunPay бота в отдельном потоке. """
-        this_loop = asyncio.get_running_loop()
-        self.plbot_loop = asyncio.new_event_loop()
-        self.plbot = PlayerokBot(self.tgbot, this_loop)
+async def start_playerok_bot():
+    """ Запускает FunPay бота в отдельном потоке. """
+    plbot_loop = asyncio.new_event_loop()
+    plbot = PlayerokBot()
 
-        def run():
-            self.plbot_loop.run_until_complete(self.plbot.run_bot())
-        
-        self.plbot_thread = Thread(target=run, daemon=True)
-        self.plbot_thread.start()
+    def run():
+        plbot_loop.run_until_complete(plbot.run_bot())
+    Thread(target=run, daemon=True).start()
 
-    async def start_telegram_bot(self):
-        """ Запускает Telegram бота. """
-        from tgbot.telegrambot import TelegramBot
-        config = Config.get()
-        self.tgbot = TelegramBot(config["tg_bot_token"])
-        
-        await self.start_playerok_bot()
-        await self.tgbot.run_bot()
+async def start_telegram_bot():
+    """ Запускает Telegram бота. """
+    from tgbot.telegrambot import TelegramBot
+    config = Config.get()
+    tgbot = TelegramBot(config["tg_bot_token"])
+    set_telegram_bot(tgbot)
+    set_loop(asyncio.get_running_loop())
+    await tgbot.run_bot()
 
 if __name__ == "__main__":
     """ Запуск всех ботов """
@@ -93,6 +87,7 @@ if __name__ == "__main__":
         handle_on_init()
         
         print(f"{Fore.WHITE}🤖 Запускаю бота...\n")
-        asyncio.run(BotsManager().start_telegram_bot())
+        asyncio.run(start_playerok_bot())
+        asyncio.run(start_telegram_bot())
     except Exception as e:
-        print(traceback.print_exc())
+        traceback.print_exc()

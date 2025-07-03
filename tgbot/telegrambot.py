@@ -21,8 +21,7 @@ class TelegramBot:
     """ Класс, запускающий и инициализирующий Telegram бота """
 
     def __init__(self, bot_token: str):
-        self.config = Config.get()
-        self.admin_id = self.config["tg_admin_id"]
+        self.admin_id = Config.get().get("tg_admin_id")
         self.bot_token = bot_token
         
         logging.getLogger("aiogram").setLevel(logging.CRITICAL)
@@ -92,6 +91,26 @@ class TelegramBot:
         """
         await self.bot.send_message(chat_id=self.admin_id, 
                                     text=Templates.Callbacks.CallSeller.text(calling_name, f"https://playerok.com/chats/{chat_id}"),
+                                    parse_mode="HTML")
+        
+    async def log_event(self, text: str):
+        """
+        Логирует событие в чат TG бота.
+                
+        :param text: Текст лога
+        :type text: `str`
+        """
+        def is_int(txt) -> bool:
+            try:
+                int(txt)
+                return True
+            except ValueError:
+                return False
+
+        config = Config.get()
+        chat_id = "-100"+str(config["bot_event_notifications_chat_id"]).replace("-100", "") if is_int(config["bot_event_notifications_chat_id"]) else config["bot_event_notifications_chat_id"]
+        await self.bot.send_message(chat_id=chat_id, 
+                                    text=text,
                                     parse_mode="HTML")
 
 if __name__ == "__main__":

@@ -195,6 +195,34 @@ async def handler_entering_playerokapi_listener_requests_delay(message: types.Me
     except Exception as e:
         await message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 
+@router.message(BotSettingsNavigationStates.entering_bot_event_notifications_chat_id)
+async def handler_entering_bot_event_notifications_chat_id(message: types.Message, state: FSMContext):
+    """ Считывает введённый пользователем bot_event_notifications_chat_id и изменяет его в конфиге """ 
+    try:
+        await state.set_state(None)
+        def is_int(txt) -> bool:
+            try:
+                int(txt)
+                return True
+            except ValueError:
+                return False
+        
+        if is_int(message.text.strip()) and int(message.text.strip()) < 0:
+            return await message.answer(text=Templates.System.Error.text("Слишком низкое значение"), parse_mode="HTML")
+        
+        elif len(message.text.strip()) <= 0:
+            return await message.answer(text=Templates.System.Error.text("Слишком короткое значение"), parse_mode="HTML")
+
+        config = Config.get()
+        config["bot_event_notifications_chat_id"] = message.text.strip()
+        Config.set(config)
+        await message.answer(
+            text=Templates.Navigation.Settings.Notifications.ChatIdChanged.text(message.text.strip()),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        await message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
 @router.message(CustomCommandsNavigationStates.entering_custom_commands_page)
 async def handler_entering_custom_commands_page(message: types.Message, state: FSMContext):
     """ Считывает введёный пользователем номер страницы пользовательских комманд и переходит на неё """

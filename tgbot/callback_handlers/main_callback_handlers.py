@@ -38,8 +38,8 @@ async def callback_menu_navigation(callback: CallbackQuery, callback_data: Callb
                                              reply_markup=Templates.Navigation.MenuNavigation.Default.kb(),
                                              parse_mode="HTML")
         elif to == "settings":
-            await callback.message.edit_text(text=Templates.Navigation.SettingsNavigation.Default.text(),
-                                             reply_markup=Templates.Navigation.SettingsNavigation.Default.kb(),
+            await callback.message.edit_text(text=Templates.Navigation.Settings.Default.Default.text(),
+                                             reply_markup=Templates.Navigation.Settings.Default.Default.kb(),
                                              parse_mode="HTML")
         elif to == "stats":
             try:
@@ -168,6 +168,19 @@ async def callback_botsettings_navigation(callback: CallbackQuery, callback_data
                                                 reply_markup=Templates.Navigation.Settings.Items.Default.kb(),
                                                 parse_mode="HTML")
                 raise e
+        if to == "notifications":
+            try:
+                await callback.message.edit_text(text=Templates.Navigation.Settings.Notifications.Loading.text(),
+                                                    reply_markup=Templates.Navigation.Settings.Notifications.Default.kb(),
+                                                    parse_mode="HTML")
+                await callback.message.edit_text(text=Templates.Navigation.Settings.Notifications.Default.text(),
+                                                    reply_markup=Templates.Navigation.Settings.Notifications.Default.kb(),
+                                                    parse_mode="HTML")
+            except Exception as e:
+                await callback.message.edit_text(text=Templates.Navigation.Settings.Notifications.Error.text(),
+                                                reply_markup=Templates.Navigation.Settings.Notifications.Default.kb(),
+                                                parse_mode="HTML")
+                raise e
         if to == "other":
             try:
                 await callback.message.edit_text(text=Templates.Navigation.Settings.Other.Loading.text(),
@@ -269,6 +282,40 @@ async def callback_default_auto_restore_items_priority_status(call: CallbackQuer
         Config.set(config)
         callback_data = CallbackDatas.BotSettingsNavigation(to="items")
         return await callback_botsettings_navigation(call, callback_data)
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.callback_query(F.data == "enable_bot_event_notifications")
+async def callback_enable_bot_event_notifications(call: CallbackQuery):
+    """ Включает bot_event_notifications_enabled в конфиге """
+    try:
+        config = Config.get()
+        config["bot_event_notifications_enabled"] = True
+        Config.set(config)
+        callback_data = CallbackDatas.BotSettingsNavigation(to="notifications")
+        return await callback_botsettings_navigation(call, callback_data)
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.callback_query(F.data == "disable_bot_event_notifications")
+async def callback_disable_bot_event_notifications(call: CallbackQuery):
+    """ Выключает bot_event_notifications_enabled в конфиге """
+    try:
+        config = Config.get()
+        config["bot_event_notifications_enabled"] = False
+        Config.set(config)
+        callback_data = CallbackDatas.BotSettingsNavigation(to="notifications")
+        return await callback_botsettings_navigation(call, callback_data)
+    except Exception as e:
+        await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
+
+@router.callback_query(F.data == "enter_bot_event_notifications_chat_id")
+async def callback_enter_bot_event_notifications_chat_id(call: CallbackQuery, state: FSMContext):
+    """ Отрабатывает ввод bot_event_notifications_chat_id """
+    try:
+        await state.set_state(BotSettingsNavigationStates.entering_bot_event_notifications_chat_id)
+        await call.message.answer(text=Templates.Navigation.Settings.Notifications.EnterChatId.text(),
+                                  parse_mode="HTML") 
     except Exception as e:
         await call.message.answer(text=Templates.System.Error.text(e), parse_mode="HTML")
 

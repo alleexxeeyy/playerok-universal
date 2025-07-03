@@ -7,3 +7,4 @@ fpbot/bot_data/*.json
 .vscode
 
 modules/
+modules1/

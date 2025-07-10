@@ -8,3 +8,5 @@ fpbot/bot_data/*.json
 
 modules/
 modules1/
+
+./.gitignore

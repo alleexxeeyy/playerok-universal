@@ -291,9 +291,9 @@ class PlayerokBot:
             try:
                 try:
                     this_chat = event.chat
-                    self.logger.info(f"{PREFIX} 🛒  {Fore.LIGHTYELLOW_EX}Новая сделка: {Fore.WHITE}Пользователь {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.item.price or "?"} р.")
+                    self.logger.info(f"{PREFIX} 🛒  {Fore.LIGHTYELLOW_EX}Новая сделка: {Fore.WHITE}Пользователь {Fore.LIGHTYELLOW_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTYELLOW_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTYELLOW_EX}{event.deal.item.price or '?'} р.")
                     if self.config["bot_event_notifications_chat_id"]:
-                        self.log_to_tg(f"🛒 <b>Новая сделка:</b> пользователь <code>{event.deal.user.username}</code> оплатил предмет <code>{event.deal.item.name}</code> на сумму <b>{event.deal.item.price or "?"} р.</b>")
+                        self.log_to_tg(f"🛒 <b>Новая сделка:</b> пользователь <code>{event.deal.user.username}</code> оплатил предмет <code>{event.deal.item.name}</code> на сумму <b>{event.deal.item.price or '?'} р.</b>")
 
                     break_flag = False
                     if self.config["auto_deliveries_enabled"]:

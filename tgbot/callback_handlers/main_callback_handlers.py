@@ -693,7 +693,7 @@ async def callback_enter_new_auto_delivery_message(call: CallbackQuery, state: F
     try:
         data = await state.get_data()
         auto_delivery_index = data.get("auto_delivery_index")
-        if not auto_delivery_index is None:
+        if auto_delivery_index is None:
             raise Exception("Автовыдача не была найдена, повторите процесс с самого начала")
         
         await state.set_state(AutoDeliveryPageNavigationStates.entering_new_auto_delivery_message)
@@ -708,7 +708,7 @@ async def callback_confirm_deleting_auto_delivery(call: CallbackQuery, state: FS
     try:
         data = await state.get_data()
         auto_delivery_index = data.get("auto_delivery_index")
-        if not auto_delivery_index:
+        if auto_delivery_index is None:
             raise Exception("Автовыдача не была найдена, повторите процесс с самого начала")
         
         await call.message.answer(text=Templates.Navigation.Settings.AutoDeliveries.ConfirmDeletingAutoDelivery.text(auto_delivery_index),
@@ -724,7 +724,7 @@ async def callback_delete_auto_delivery(call: CallbackQuery, state: FSMContext):
         data = await state.get_data()
         auto_deliveries = AutoDeliveries.get()
         auto_delivery_index = data.get("auto_delivery_index")
-        if not auto_delivery_index:
+        if auto_delivery_index is None:
             raise Exception("Автовыдача не была найдена, повторите процесс с самого начала")
         
         del auto_deliveries[auto_delivery_index]

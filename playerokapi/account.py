@@ -23,12 +23,21 @@ class Account:
     :type https_proxy: `str`
 
     :param requests_timeout: Таймаут ожидания ответов на запросы.
-    :type user_agent: `int`
+    :type requests_timeout: `int`
+
+    :param request_max_retries: Максимальное количество повторных попыток отправки запроса, если была обнаружена CloudFlare защита.
+    :type request_max_retries: `int`
     """
 
-    def __init__(self, token: str, user_agent: str = "", 
-                 requests_timeout: int = 15, https_proxy: str = None, 
-                 **kwargs):
+    def __init__(
+            self, 
+            token: str, 
+            user_agent: str = "", 
+            https_proxy: str = None, 
+            requests_timeout: int = 15,
+            request_max_retries: int = 30,
+            **kwargs
+        ):
         from . import set_account
         self.token = token
         """ Токен сессии аккаунта. """
@@ -38,6 +47,8 @@ class Account:
         """ Таймаут ожидания ответов на запросы. """
         self.https_proxy = https_proxy
         """ Прокси. """
+        self.request_max_retries = request_max_retries
+        """ Максимальное количество повторных попыток отправки запроса. """
 
         self.base_url = "https://playerok.com"
         """ Базовый URL для всех запросов. """
@@ -98,23 +109,27 @@ class Account:
         :return: Ответа запроса requests.
         :rtype: `requests.Response`
         """
-        headers["Accept-Language"] = "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
-        headers["Cookie"] = f"token={self.token}"
-        if self.user_agent:
-            headers["User-Agent"] = self.user_agent
-        headers["x-apollo-operation-name"] = 'SomeName'
-        headers["apollo-require-preflight"] = 'true'
 
-        client = tls_requests.Client(proxy=self.https_proxy)
-        if method == "get":
-            r = client.get(url=url, params=payload, headers=headers, 
-                           timeout=self.requests_timeout)
-        elif method == "post":
-            r = client.post(url=url, json=payload if not files else None, 
-                            data=payload if files else None, headers=headers, 
-                            files=files, timeout=self.requests_timeout)
-        else: 
-            return
+        def make_req():
+            headers["Accept-Language"] = "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
+            headers["Cookie"] = f"token={self.token}"
+            if self.user_agent:
+                headers["User-Agent"] = self.user_agent
+            headers["x-apollo-operation-name"] = 'SomeName'
+            headers["apollo-require-preflight"] = 'true'
+
+            client = tls_requests.Client(proxy=self.https_proxy)
+            if method == "get":
+                r = client.get(url=url, params=payload, headers=headers, 
+                            timeout=self.requests_timeout)
+            elif method == "post":
+                r = client.post(url=url, json=payload if not files else None, 
+                                data=payload if files else None, headers=headers, 
+                                files=files, timeout=self.requests_timeout)
+            else: 
+                return
+            return r
+        resp = make_req()
 
         cloudflare_signatures = [
             "<title>Just a moment...</title>",
@@ -123,13 +138,18 @@ class Account:
             "Checking your browser before accessing",
             "cf-browser-verification"
         ]
-        if any(sig in r.text for sig in cloudflare_signatures):
-            raise CloudflareDetectedException(r)
-        if "errors" in r.text:
-           raise RequestError(r)
-        if r.status_code != 200:
-           raise RequestFailedError(r)
-        return r
+        if any(sig in resp.text for sig in cloudflare_signatures):
+            for _ in range(self.request_max_retries):
+                resp = make_req()
+                if not any(sig in resp.text for sig in cloudflare_signatures):
+                    break
+            else:
+                raise CloudflareDetectedException(resp)
+        if "errors" in resp.text:
+           raise RequestError(resp)
+        if resp.status_code != 200:
+           raise RequestFailedError(resp)
+        return resp
     
     def get(self) -> Account:
         """

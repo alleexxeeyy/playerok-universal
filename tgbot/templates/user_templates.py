@@ -1264,7 +1264,7 @@ class Navigation:
             class ConfirmDeletingAutoDelivery:
                 def text(index: int) -> str:
                     auto_deliveries = AutoDeliveries.get()
-                    keywords = auto_deliveries[index].get("keywords") or "❌ Не задано"
+                    keywords = ", ".join(auto_deliveries[index].get("keywords")) or "❌ Не задано"
                     msg = f"🗑️ <b>Подтвердите удаление авто-выдачи</b>" \
                             f"\nЭто действие удалит авто-выдачу для ключевых слов:\n<code>{keywords}</code>" 
                     return msg

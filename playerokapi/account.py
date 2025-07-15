@@ -1,5 +1,5 @@
 from __future__ import annotations
-import cloudscraper
+import tls_requests
 from typing import *
 import json
 
@@ -73,8 +73,6 @@ class Account:
         self.profile: AccountProfile | None = None
         """ Профиль аккаунта (не путать с профилем пользователя). \n\n_Заполняется при первом использовании get()_ """
 
-        self.scraper = cloudscraper.create_scraper()
-
         set_account(self) # сохранение объекта аккаунта
 
     def request(self, method: str, url: str, headers: dict[str, str], 
@@ -107,13 +105,14 @@ class Account:
         headers["x-apollo-operation-name"] = 'SomeName'
         headers["apollo-require-preflight"] = 'true'
 
+        client = tls_requests.Client(proxy=self.https_proxy)
         if method == "get":
-            r = self.scraper.get(url=url, params=payload, headers=headers, 
-                            timeout=self.requests_timeout)
+            r = client.get(url=url, params=payload, headers=headers, 
+                           timeout=self.requests_timeout)
         elif method == "post":
-            r = self.scraper.post(url=url, json=payload if not files else None, 
-                             data=payload if files else None, headers=headers, 
-                             files=files, timeout=self.requests_timeout)
+            r = client.post(url=url, json=payload if not files else None, 
+                            data=payload if files else None, headers=headers, 
+                            files=files, timeout=self.requests_timeout)
         else: 
             return
 

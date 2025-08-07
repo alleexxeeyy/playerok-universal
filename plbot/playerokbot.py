@@ -356,11 +356,10 @@ class PlayerokBot:
                 finally:
                     set_stats(plbot.stats)
 
-                if event.deal.status is ItemDealStatuses.CONFIRMED or event.deal.status is ItemDealStatuses.ROLLED_BACK:
-                    if event.deal.status is ItemDealStatuses.CONFIRMED:
-                        plbot.playerok_account.send_message(this_chat.id, 
-                                                            plbot.msg("deal_confirmed"),
-                                                            self.config.get("read_chat_before_sending_message_enabled") or False)
+                if event.deal.status is ItemDealStatuses.CONFIRMED:
+                    plbot.playerok_account.send_message(this_chat.id, 
+                                                        plbot.msg("deal_confirmed"),
+                                                        self.config.get("read_chat_before_sending_message_enabled") or False)
             except plapi_exceptions.RequestError as e:
                 if e.error_code == "TOO_MANY_REQUESTS":
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента смены статуса сделки произошла ошибка 429 слишком частых запросов. Ждём 10 секунд и пробуем снова")

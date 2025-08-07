@@ -145,8 +145,11 @@ class Account:
                     break
             else:
                 raise CloudflareDetectedException(resp)
-        if "errors" in resp.text:
-           raise RequestError(resp)
+        try:
+            if "errors" in resp.json():
+                raise RequestError(resp)
+        except:
+            pass
         if resp.status_code != 200:
            raise RequestFailedError(resp)
         return resp

@@ -44,6 +44,9 @@
   | Ивент | Когда вызывается | Передающиеся аргументы |
   |-------|------------------|------------------------|
   | `ON_MODULE_CONNECTED` | При подключении модуля | `Module` |
+  | `ON_MODULE_ENABLED` | При включении модуля | `Module` |
+  | `ON_MODULE_DISABLED` | При выключении модуля | `Module` |
+  | `ON_MODULE_RELOADED` | При перезагрузке модуля | `Module` |
   | `ON_INIT` | При инициализации бота | `-` |
   | `ON_PLAYEROK_BOT_INIT` | При инициализации (запуске) Playerok бота | `PlayerokBot` |
   | `ON_TELEGRAM_BOT_INIT` | При инициализации (запуске) Telegram бота | `TelegramBot` |

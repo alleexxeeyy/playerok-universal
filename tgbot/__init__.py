@@ -25,10 +25,10 @@ def set_telegram_bot(new: 'TelegramBot') -> 'TelegramBot':
 
 _loop: 'asyncio.AbstractEventLoop' = None
 
-def get_loop() -> 'asyncio.AbstractEventLoop':
+def get_telegram_bot_loop() -> 'asyncio.AbstractEventLoop':
     global _loop
     return _loop
 
-def set_loop(new: 'asyncio.AbstractEventLoop') -> 'asyncio.AbstractEventLoop':
+def set_telegram_bot_loop(new: 'asyncio.AbstractEventLoop') -> 'asyncio.AbstractEventLoop':
     global _loop
     _loop = new

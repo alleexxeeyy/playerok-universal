@@ -5,19 +5,16 @@ import io
 import shutil
 import sys
 from colorama import Fore
-
+from __init__ import VERSION, SKIP_UPDATES
 from core.console import restart
-from bot_settings.app import CURRENT_VERSION, SKIP_UPDATES
+
 
 class Updater:
-    """ Класс-обновлятор бота. """
-
     REPO = "alleexxeeyy/playerok-universal"
     API_URL = f"https://api.github.com/repos/{REPO}/releases/latest"
 
     @staticmethod
     def check_for_updates():
-        """ Проверяет бота на наличие обновлений на GitHub. """
         try:
             response = requests.get(Updater.API_URL)
             if response.status_code != 200:
@@ -25,13 +22,13 @@ class Updater:
             
             latest_release = response.json()
             latest_version = latest_release["tag_name"]
-            if latest_version == CURRENT_VERSION:
-                print(f"{Fore.WHITE}У вас установлена последняя версия: {Fore.LIGHTWHITE_EX}{CURRENT_VERSION}\n")
-                return False
+            if latest_version == VERSION:
+                print(f"{Fore.WHITE}У вас установлена последняя версия: {Fore.LIGHTWHITE_EX}{VERSION}\n")
+                return
             print(f"\n{Fore.LIGHTYELLOW_EX}Доступна новая версия: {Fore.LIGHTWHITE_EX}{latest_version}")
             if SKIP_UPDATES:
                 print(f"{Fore.WHITE}Пропускаем установку обновления. Если вы хотите автоматически скачивать обновления, измените значение "
-                      f"{Fore.LIGHTWHITE_EX}SKIP_UPDATES{Fore.WHITE} на {Fore.LIGHTYELLOW_EX}False {Fore.WHITE}в файле настроек {Fore.LIGHTWHITE_EX}(bot_settings/app.py)\n")
+                      f"{Fore.LIGHTWHITE_EX}SKIP_UPDATES{Fore.WHITE} на {Fore.LIGHTYELLOW_EX}False {Fore.WHITE}в файле инициализации {Fore.LIGHTWHITE_EX}(__init__.py)\n")
                 return
             
             print(f"{Fore.WHITE}Скачиваем: {Fore.LIGHTWHITE_EX}{latest_release['html_url']}\n")
@@ -44,11 +41,9 @@ class Updater:
                     restart()
         except Exception as e:
             print(f"{Fore.LIGHTRED_EX}При проверке на наличие обновлений произошла ошибка: {Fore.WHITE}{e}")
-        return False
 
     @staticmethod
     def download_update(release_info: str):
-        """ Скачивает архив с обновлением. """
         try:
             zip_url = release_info['zipball_url']
             zip_response = requests.get(zip_url)
@@ -61,7 +56,6 @@ class Updater:
     
     @staticmethod
     def install_update(zip_response_content: bytes):
-        """Устанавливает обновление."""
         temp_dir = ".temp_update"
         try:
             with zipfile.ZipFile(io.BytesIO(zip_response_content), 'r') as zip_ref:

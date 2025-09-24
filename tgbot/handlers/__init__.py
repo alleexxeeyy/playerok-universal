@@ -1,7 +1,8 @@
 from aiogram import Router
 
-from .user_handlers import router as user_handlers_router
+from .commands import router as commands_router
+from .entering import router as entering_router
 
 router = Router()
  
-router.include_router(user_handlers_router)
+router.include_routers(commands_router, entering_router)

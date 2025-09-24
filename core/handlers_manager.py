@@ -58,7 +58,6 @@ class HandlersManager:
 
     @staticmethod
     def register_bot_event_handlers(handlers):
-        """ Устанавливает ивент хендлеры бота. """
         global _bot_event_handlers
         for event_type, funcs in handlers.items():
             if event_type not in _bot_event_handlers:
@@ -67,7 +66,6 @@ class HandlersManager:
 
     @staticmethod
     def register_playerok_event_handlers(handlers):
-        """ Устанавливает хендлеры фанпей ивентов. """
         global _playerok_event_handlers
         for event_type, funcs in handlers.items():
             if event_type not in _playerok_event_handlers:
@@ -76,7 +74,6 @@ class HandlersManager:
 
     @staticmethod
     def remove_handlers(bot_event_handlers, playerok_event_handlers):
-        """ Удаляет все хендлеры модуля из глобальных списков. """
         global _bot_event_handlers, _playerok_event_handlers
         for event, funcs in bot_event_handlers.items():
             if event in _bot_event_handlers:

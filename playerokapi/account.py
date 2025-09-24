@@ -2,6 +2,8 @@ from __future__ import annotations
 import tls_requests
 from typing import *
 import json
+import random
+import time
 
 from . import types
 from .exceptions import *
@@ -19,8 +21,8 @@ class Account:
     :param user_agent: Юзер-агент браузера, _опционально_.
     :type user_agent: `str`
 
-    :param https_proxy: HTTPS прокси в формате: `https://user:pass@ip:port` или `https://ip:port`, _опционально_.
-    :type https_proxy: `str`
+    :param proxy: IPV4 прокси в формате: `user:pass@ip:port` или `ip:port`, _опционально_.
+    :type proxy: `str`
 
     :param requests_timeout: Таймаут ожидания ответов на запросы.
     :type requests_timeout: `int`
@@ -33,9 +35,9 @@ class Account:
             self, 
             token: str, 
             user_agent: str = "", 
-            https_proxy: str = None, 
+            proxy: str = None, 
             requests_timeout: int = 15,
-            request_max_retries: int = 30,
+            request_max_retries: int = 6,
             **kwargs
         ):
         from . import set_account
@@ -45,7 +47,7 @@ class Account:
         """ Юзер-агент браузера. """
         self.requests_timeout = requests_timeout
         """ Таймаут ожидания ответов на запросы. """
-        self.https_proxy = https_proxy
+        self.proxy = proxy
         """ Прокси. """
         self.request_max_retries = request_max_retries
         """ Максимальное количество повторных попыток отправки запроса. """
@@ -110,15 +112,29 @@ class Account:
         :rtype: `requests.Response`
         """
 
+        agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.132 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.96 Safari/537.36",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.5993.90 Mobile Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edg/118.0.2088.62 Chrome/118.0.5993.90 Safari/537.36",
+            "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:119.0) Gecko/20100101 Firefox/119.0",
+            "Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36 OPR/88.0.0.0",
+            "Opera/9.80 (Windows NT 6.3; U; en) Presto/2.12.388 Version/12.16"
+        ]
+
         def make_req():
+            headers["Origin"] = self.base_url
+            headers["Referer"] = f"{self.base_url}/"
             headers["Accept-Language"] = "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
             headers["Cookie"] = f"token={self.token}"
             if self.user_agent:
-                headers["User-Agent"] = self.user_agent
+                headers["User-Agent"] = self.user_agent if self.user_agent else random.choice(agents)
             headers["x-apollo-operation-name"] = 'SomeName'
             headers["apollo-require-preflight"] = 'true'
 
-            client = tls_requests.Client(proxy=self.https_proxy)
+            client = tls_requests.Client(proxy=f"https://{self.proxy.replace('https://', '').replace('http://', '')}" if self.proxy else None)
             if method == "get":
                 r = client.get(url=url, params=payload, headers=headers, 
                             timeout=self.requests_timeout)
@@ -129,6 +145,7 @@ class Account:
             else: 
                 return
             return r
+        #time.sleep(random.uniform(0.5, 1.5))
         resp = make_req()
 
         cloudflare_signatures = [
@@ -136,13 +153,16 @@ class Account:
             "window._cf_chl_opt",
             "Enable JavaScript and cookies to continue",
             "Checking your browser before accessing",
-            "cf-browser-verification"
+            "cf-browser-verification",
+            "Cloudflare Ray ID"
         ]
         if any(sig in resp.text for sig in cloudflare_signatures):
-            for _ in range(self.request_max_retries):
+            for attempt in range(self.request_max_retries):
                 resp = make_req()
                 if not any(sig in resp.text for sig in cloudflare_signatures):
                     break
+                delay = min(120.0, 5.0 * (2 ** attempt))
+                time.sleep(delay)
             else:
                 raise CloudflareDetectedException(resp)
         try:
@@ -188,11 +208,14 @@ class Account:
         self.has_confirmed_phone_number = data.get("hasConfirmedPhoneNumber")
         self.can_publish_items = data.get("canPublishItems")
         
-        headers = {"Accept": "*/*", "Content-Type": "application/json", "Origin": self.base_url}
+        headers = {
+            "Accept": "*/*", 
+            "Content-Type": "application/json"
+        }
         payload = {
             "operationName": "user",
-            "variables": json.dumps({"username": self.username}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "6dff0b984047e79aa4e416f0f0cb78c5175f071e08c051b07b6cf698ecd7f865"}}, ensure_ascii=False)
+            "variables": json.dumps({"username": self.username, "hasSupportAccess": False}, ensure_ascii=False),
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "3d6b0e2bea1da55fdeb4d25a64047315542da02271908712292433ed9de07a26"}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         data: dict = r["data"]["user"]
@@ -216,13 +239,12 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "user",
-            "variables": json.dumps({"id": id, "username": username}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "6dff0b984047e79aa4e416f0f0cb78c5175f071e08c051b07b6cf698ecd7f865"}}, ensure_ascii=False)
+            "variables": json.dumps({"id": id, "username": username, "hasSupportAccess": False}, ensure_ascii=False),
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "3d6b0e2bea1da55fdeb4d25a64047315542da02271908712292433ed9de07a26"}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         data: dict = r["data"]["user"]
@@ -260,8 +282,7 @@ class Account:
         str_direction = direction.name if direction else None
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "deals",
@@ -283,13 +304,12 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "deal",
-            "variables": json.dumps({"id": deal_id}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "65167f8820a53e382591a149453946df78de59299819b2e4a4a7b85b053fb3a3"}}, ensure_ascii=False)
+            "variables": json.dumps({"id": deal_id, "hasSupportAccess": False, "showForbiddenImage": True}, ensure_ascii=False),
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "1a9015540fceaa065033750a98d3613ee1c8e73371cedd4d8ef0e7eb5b8ff470"}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return item_deal(r["data"]["deal"])
@@ -310,8 +330,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "updateDeal",
@@ -346,8 +365,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "games",
@@ -373,8 +391,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "GamePage",
@@ -404,8 +421,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "GamePageCategory",
@@ -437,8 +453,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "gameCategoryAgreements",
@@ -467,8 +482,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "gameCategoryObtainingTypes",
@@ -503,8 +517,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "gameCategoryInstructions",
@@ -539,8 +552,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "gameCategoryDataFields",
@@ -572,13 +584,12 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "chats",
-            "variables": json.dumps({"pagination": {"first": count}, "after": after_cursor, "filter": {"userId": self.id, "type": type.name if type else None, "status": status.name if status else None}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "c942a7060d50ffebc87bab2105d43abbefb0862d765399b907f0fbed0983582d"}}, ensure_ascii=False)
+            "variables": json.dumps({"pagination": {"first": count}, "after": after_cursor, "filter": {"userId": self.id, "type": type.name if type else None, "status": status.name if status else None}, "hasSupportAccess": False}, ensure_ascii=False),
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "f7e6ee4fbb892abbd196342110e2abb0be309e2bd6671abb2963d0809c511d05"}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return chat_list(r["data"]["chats"])
@@ -595,8 +606,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "chat",
@@ -649,8 +659,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "chatMessages",
@@ -672,8 +681,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "markChatAsRead",
@@ -708,8 +716,7 @@ class Account:
             self.mark_chat_as_read(chat_id=chat_id)
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "createChatMessage",
@@ -767,8 +774,7 @@ class Account:
             payload_data_fields.append({"fieldId": field.id, "value": field.value})
 
         headers = {
-            "Accept": "*/*",
-            "Origin": self.base_url,
+            "Accept": "*/*"
         }
         operations = {
             "operationName": "createItem",
@@ -846,8 +852,7 @@ class Account:
                 payload_data_fields.append({"fieldId": field.id, "value": field.value})
 
         headers = {
-            "Accept": "*/*",
-            "Origin": self.base_url,
+            "Accept": "*/*"
         }
         operations = {
             "operationName": "updateItem",
@@ -890,8 +895,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "removeItem",
@@ -922,8 +926,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "publishItem",
@@ -940,7 +943,7 @@ class Account:
         return item(r["data"]["publishItem"])
 
     def get_items(self, game_id: str | None = None, category_id: str | None = None, count: int = 24,
-                       status: ItemStatuses = ItemStatuses.APPROVED, after_cursor: str | None = None) -> types.ItemProfileList:
+                  status: ItemStatuses = ItemStatuses.APPROVED, after_cursor: str | None = None) -> types.ItemProfileList:
         """
         Получает предметы игры/приложения.\n
         Можно получить по любому из двух параметров: `game_id`, `category_id`.
@@ -965,8 +968,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         filter = {"gameId": game_id, "status": [status.name] if status else None} if not category_id else {"gameCategoryId": category_id, "status": [status.name] if status else None}
         payload = {
@@ -993,8 +995,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "item",
@@ -1019,8 +1020,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "itemPriorityStatuses",
@@ -1055,8 +1055,7 @@ class Account:
         """
         headers = {
             "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": self.base_url,
+            "Content-Type": "application/json"
         }
         payload = {
             "operationName": "increaseItemPriorityStatus",

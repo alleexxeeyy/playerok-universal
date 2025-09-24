@@ -1,37 +1,36 @@
-import importlib.resources
 import os
 import sys
 import importlib
-import pkg_resources
 import uuid
 from uuid import UUID
-from pathlib import Path
-import subprocess
-from colorama import Fore, Style
+from colorama import Fore
+from logging import getLogger
+logger = getLogger("universal")
 
-from core.handlers_manager import HandlersManager
+from core.handlers_manager import HandlersManager as handlers_m
+from core.console import install_requirements
 
 class ModuleMeta:
     """
-    Класс, содержащий метаданные модуля.
+    Подкласс, содержащий метаданные модуля.
 
     :param prefix: Префикс модуля.
-    :type prefix: str
+    :type prefix: `str`
 
     :param version: Версия модуля.
-    :type version: str
+    :type version: `str`
 
     :param name: Название модуля.
-    :type name: str
+    :type name: `str`
 
     :param description: Описание модуля.
-    :type description: str
+    :type description: `str`
 
     :param authors: Авторы модуля.
-    :type authors: str
+    :type authors: `str`
 
     :param links: Ссылки на авторов модуля.
-    :type links: str
+    :type links: `str`
     """
     def __init__(self, prefix: str, version: str, name: str,
                  description: str, authors: str, links: str):
@@ -53,25 +52,25 @@ class Module:
     Объект модуля.
 
     :param uuid: UUID модуля (генерируется при инициализации).
-    :type uuid: `UUID`
+    :type uuid: `uuid.UUID`
 
     :param enabled: Включен ли модуль.
-    :type enabled: bool
+    :type enabled: `bool`
 
     :param meta: Метаданные модуля.
     :type meta: `ModuleMeta`
 
     :param bot_event_handlers: Хендлеры ивентов бота.
-    :type bot_event_handlers: dict
+    :type bot_event_handlers: `dict`
 
     :param playerok_event_handlers: Хендлеры ивентов Playerok.
-    :type playerok_event_handlers: dict
+    :type playerok_event_handlers: `dict`
 
     :param telegram_bot_routers: Роутеры Telegram бота.
-    :type telegram_bot_routers: list[`Router`]
+    :type telegram_bot_routers: `list` of `aiogram.types.Router`
 
     :param _dir_name: Имя директории бота в папке модулей.
-    :type _dir_name: str
+    :type _dir_name: `str`
     """
     def __init__(self, enabled: bool, meta: ModuleMeta, bot_event_handlers: dict, 
                  playerok_event_handlers: dict, telegram_bot_routers: list, _dir_name: str):
@@ -88,7 +87,7 @@ class Module:
         self.telegram_bot_routers: list = telegram_bot_routers
         """ Роутеры Telegram бота. """
         self._dir_name: str = _dir_name
-        """ Имя директории бота в папке модулей. """
+        """ Имя директории модуля в папке modules. """
 
 
 _loaded_modules: list[Module] = []
@@ -114,7 +113,7 @@ class ModulesManager:
         Получает модуль по UUID.
         
         :param module_uuid: UUID модуля.
-        :type module_uuid: UUID
+        :type module_uuid: `uuid.UUID`
 
         :return: Объект модуля.
         :rtype: `Module`
@@ -131,7 +130,10 @@ class ModulesManager:
         Включает модуль и добавляет его хендлеры.
 
         :param module_uuid: UUID модуля.
-        :type module_uuid: UUID
+        :type module_uuid: `uuid.UUID`
+
+        :return: True, если модуль был включен. False, если не был включен
+        :rtype: `bool`
         """
         global _loaded_modules
         try:
@@ -139,12 +141,27 @@ class ModulesManager:
             if not module:
                 raise Exception("Модуль не найден в загруженных")
         
-            HandlersManager.register_bot_event_handlers(module.bot_event_handlers)
-            HandlersManager.register_playerok_event_handlers(module.playerok_event_handlers)
+            handlers_m.register_bot_event_handlers(module.bot_event_handlers)
+            handlers_m.register_playerok_event_handlers(module.playerok_event_handlers)
             i = _loaded_modules.index(module)
             module.enabled = True
             _loaded_modules[i] = module
             print(f"{Fore.WHITE}🔌 Модуль {Fore.LIGHTWHITE_EX}{module.meta.name} {Fore.WHITE}подключен")
+
+            def handle_on_module_enabled():
+                """ 
+                Запускается при первом подключении модуля.
+                Запускает за собой все хендлеры ON_MODULE_ENABLED
+                """
+                if "ON_MODULE_ENABLED" in module.bot_event_handlers and module.enabled:
+                    event_handlers = module.bot_event_handlers.get("ON_MODULE_ENABLED")
+                    if event_handlers:
+                        for handler in event_handlers:
+                            try:
+                                handler(module)
+                            except Exception as e:
+                                logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера ивента ON_MODULE_ENABLED: {Fore.WHITE}{e}")
+            handle_on_module_enabled()
             return True
         except Exception as e:
             print(f"{Fore.LIGHTRED_EX}Ошибка при подключении модуля {module_uuid}: {Fore.WHITE}{e}")
@@ -156,7 +173,10 @@ class ModulesManager:
         Полностью выключает модуль и удаляет его хендлеры.
         
         :param module_uuid: UUID модуля.
-        :type module_uuid: UUID
+        :type module_uuid: `uuid.UUID`
+
+        :return: True, если модуль был выключен. False, если не был выключен
+        :rtype: `bool`
         """
         global _loaded_modules
         try:
@@ -164,11 +184,26 @@ class ModulesManager:
             if not module:
                 raise Exception("Модуль не найден в загруженных")
             
-            HandlersManager.remove_handlers(module.bot_event_handlers, module.playerok_event_handlers)
+            handlers_m.remove_handlers(module.bot_event_handlers, module.playerok_event_handlers)
             i = _loaded_modules.index(module)
             module.enabled = False
             _loaded_modules[i] = module
             print(f"{Fore.LIGHTRED_EX}🚫 Модуль {module.meta.name} отключен")
+            
+            def handle_on_module_disabled():
+                """ 
+                Запускается при первом подключении модуля.
+                Запускает за собой все хендлеры ON_MODULE_DISABLED
+                """
+                if "ON_MODULE_DISABLED" in module.bot_event_handlers:
+                    event_handlers = module.bot_event_handlers.get("ON_MODULE_DISABLED")
+                    if event_handlers:
+                        for handler in event_handlers:
+                            try:
+                                handler(module)
+                            except Exception as e:
+                                logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера ивента ON_MODULE_DISABLED: {Fore.WHITE}{e}")
+            handle_on_module_disabled()
             return True
         except Exception as e:
             print(f"{Fore.LIGHTRED_EX}Ошибка при отключении модуля {module_uuid}: {Fore.WHITE}{e}")
@@ -180,7 +215,10 @@ class ModulesManager:
         Перезагружает модуль (отгружает и импортирует снова).
         
         :param module_uuid: UUID модуля.
-        :type module_uuid: UUID
+        :type module_uuid: `uuid.UUID`
+
+        :return: True, если модуль был перезагружен. False, если не был перезагружен
+        :rtype: `bool`
         """
         try:
             module = ModulesManager.get_module_by_uuid(module_uuid)
@@ -190,7 +228,23 @@ class ModulesManager:
             if module._dir_name in sys.modules:
                 del sys.modules[f"modules.{module._dir_name}"]
             mod = importlib.import_module(f"modules.{module._dir_name}")
+                
             print(f"{Fore.WHITE}🔄  Модуль {Fore.LIGHTWHITE_EX}{module.meta.name} {Fore.WHITE}был перезагружен")
+
+            def handle_on_module_reloaded():
+                """ 
+                Запускается при первом подключении модуля.
+                Запускает за собой все хендлеры ON_MODULE_RELOADED
+                """
+                if "ON_MODULE_RELOADED" in module.bot_event_handlers:
+                    event_handlers = module.bot_event_handlers.get("ON_MODULE_RELOADED")
+                    if event_handlers:
+                        for handler in event_handlers:
+                            try:
+                                handler(module)
+                            except Exception as e:
+                                logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера ивента ON_MODULE_RELOADED: {Fore.WHITE}{e}")
+            handle_on_module_reloaded()
             return mod
         except Exception as e:
             print(f"{Fore.LIGHTRED_EX}Ошибка при перезагрузке модуля {module_uuid}: {Fore.WHITE}{e}")
@@ -202,38 +256,6 @@ class ModulesManager:
         modules = []
         modules_path = "modules"
         os.makedirs(modules_path, exist_ok=True)
-
-        def is_package_installed(requirement_string: str) -> bool:
-            """ Проверяет, установлена ли библотека. """
-            try:
-                pkg_resources.require(requirement_string)
-                return True
-            except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
-                return False
-
-        def install_requirements(requirements_path: str):
-            """
-            Устанавливает зависимости с файла requirements.txt,
-            если они не установлены.
-
-            :param requirements_path: Путь к файлу requirements.txt.
-            :type requirements_path: str
-            """
-            if not os.path.exists(requirements_path):
-                return
-            with open(requirements_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-
-            missing_packages = []
-            for line in lines:
-                pkg = line.strip()
-                if not pkg or pkg.startswith("#"):
-                    continue
-                if not is_package_installed(pkg):
-                    missing_packages.append(pkg)
-
-            if missing_packages:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", *missing_packages])
 
         for name in os.listdir(modules_path):
             bot_event_handlers = {}
@@ -249,8 +271,8 @@ class ModulesManager:
                     if hasattr(module, "BOT_EVENT_HANDLERS"):
                         for key, funcs in module.BOT_EVENT_HANDLERS.items():
                             bot_event_handlers.setdefault(key, []).extend(funcs)
-                    if hasattr(module, "PLAYEROK_EVENT_HANDLERS"):
-                        for key, funcs in module.PLAYEROK_EVENT_HANDLERS.items():
+                    if hasattr(module, "FUNPAY_EVENT_HANDLERS"):
+                        for key, funcs in module.FUNPAY_EVENT_HANDLERS.items():
                             playerok_event_handlers.setdefault(key, []).extend(funcs)
                     if hasattr(module, "TELEGRAM_BOT_ROUTERS"):
                         telegram_bot_routers.extend(module.TELEGRAM_BOT_ROUTERS)
@@ -273,8 +295,6 @@ class ModulesManager:
                     modules.append(module_data)
                 except Exception as e:
                     print(f"{Fore.LIGHTRED_EX}Ошибка при загрузке модуля {name}: {Fore.WHITE}{e}")
-                    import traceback
-                    traceback.print_exc()
         return modules
 
     @staticmethod
@@ -284,8 +304,8 @@ class ModulesManager:
         names = []
         for module in modules:
             try:
-                HandlersManager.register_bot_event_handlers(module.bot_event_handlers)
-                HandlersManager.register_playerok_event_handlers(module.playerok_event_handlers)
+                handlers_m.register_bot_event_handlers(module.bot_event_handlers)
+                handlers_m.register_playerok_event_handlers(module.playerok_event_handlers)
                 i = _loaded_modules.index(module)
                 module.enabled = True
                 _loaded_modules[i] = module
@@ -293,4 +313,20 @@ class ModulesManager:
             except Exception as e:
                 print(f"{Fore.LIGHTRED_EX}Ошибка при подключении модуля {module.meta.name}: {Fore.WHITE}{e}")
                 continue
-        print(f'{Fore.WHITE}🔌 Подключено {Fore.LIGHTWHITE_EX}{len(modules)} модуля(-ей): {f"{Fore.WHITE}, ".join(names)}')
+        print(f'{Fore.WHITE}🔌  Подключено {Fore.LIGHTWHITE_EX}{len(modules)} модуля(-ей): {f"{Fore.WHITE}, ".join(names)}')
+        
+        def handle_on_module_connected():
+            """ 
+            Запускается при первом подключении модуля.
+            Запускает за собой все хендлеры ON_INIT
+            """
+            for module in modules:
+                if "ON_MODULE_CONNECTED" in module.bot_event_handlers and module.enabled:
+                    event_handlers = module.bot_event_handlers.get("ON_MODULE_CONNECTED")
+                    if event_handlers:
+                        for handler in event_handlers:
+                            try:
+                                handler(module)
+                            except Exception as e:
+                                logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера ивента ON_MODULE_CONNECTED: {Fore.WHITE}{e}")
+        handle_on_module_connected()

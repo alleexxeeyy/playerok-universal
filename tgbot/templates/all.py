@@ -101,7 +101,6 @@ def stats_text():
 
         <b>Статистика с момента запуска:</b>
         ┣ Выполнено: <b>{stats.orders_completed}</b>
-        ┣ Активных: <b>{stats.active_orders}</b>
         ┣ Возвратов: <b>{stats.orders_refunded}</b>
         ┗ Заработано: <b>{stats.earned_money}</b>₽
 

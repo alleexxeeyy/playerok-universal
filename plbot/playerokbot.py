@@ -216,6 +216,7 @@ class PlayerokBot:
             """ Начальный хендлер ON_INIT. """
             
             self.stats.bot_launch_time = datetime.now()
+            set_stats(self.stats)
 
             def endless_loop(cycle_delay=5):
                 while True:
@@ -224,7 +225,6 @@ class PlayerokBot:
                         balance = self.playerok_account.profile.balance.value if self.playerok_account.profile.balance is not None else "?"
                         set_title(f"Playerok Universal v{VERSION} | {self.playerok_account.username}: {balance}₽")
                         
-                        if plbot.stats != get_stats(): set_stats(plbot.stats)
                         if data.get("initialized_users") != plbot.initialized_users: data.set("initialized_users", plbot.initialized_users)
                         if sett.get("config") != plbot.config: plbot.config = sett.get("config")
                         if sett.get("messages") != plbot.messages: plbot.messages = sett.get("messages")
@@ -354,11 +354,14 @@ class PlayerokBot:
                     plbot.log_to_tg(log_text(f'🔄️📋 Статус <a href="https://playerok.com/deal/{event.deal.id}/">сделки</a> изменился', f"<b>Новый статус:</b> {status}"))
                 try:
                     if event.deal.status is ItemDealStatuses.CONFIRMED:
+                        plbot.stats.orders_completed += 1
                         plbot.stats.earned_money += round(event.deal.transaction.value or 0, 2)
                     elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
                         plbot.stats.orders_refunded += 1
                 except Exception as e:
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При подсчёте статистики произошла ошибка: {Fore.WHITE}{e}")
+                finally:
+                    set_stats(plbot.stats)
 
                 if event.deal.status is ItemDealStatuses.CONFIRMED:
                     plbot.send_message(this_chat.id, plbot.msg("deal_confirmed"))

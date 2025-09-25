@@ -663,8 +663,8 @@ class Account:
         }
         payload = {
             "operationName": "chatMessages",
-            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"chatId": chat_id}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "1531b5a6398cbbe354b17de4aaa545e2c6d346dbd96649e4934d2829098c75fc"}}, ensure_ascii=False)
+            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"chatId": chat_id}, "hasSupportAccess": False, "showForbiddenImage": True}, ensure_ascii=False),
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "8640a1c606ed878f15836a3ae5d5a3da9dccb0bd809f073d010680a8e4dcd06a"}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return chat_message_list(r["data"]["chatMessages"])

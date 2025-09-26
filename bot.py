@@ -16,8 +16,9 @@ from __init__ import ACCENT_COLOR, VERSION
 
 
 
-async def start_telegram_bot():
+async def start_telegram_bot(token: str):
     from tgbot.telegrambot import TelegramBot
+    config = sett.get("config")
     tgbot = TelegramBot(config["telegram"]["api"]["token"])
     await tgbot.run_bot()
 
@@ -52,7 +53,7 @@ if __name__ == "__main__":
         if len(modules) == 0:
             print(f"{Fore.WHITE}Модулей не обнаружено")
         ModulesManager.set_modules(modules)
-        
+
         if len(modules) > 0:
             ModulesManager.connect_modules(modules)
 

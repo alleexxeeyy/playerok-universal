@@ -308,15 +308,17 @@ class PlayerokBot:
             try:
                 this_chat = event.chat
                 self.logger.info(f"{PREFIX} {ACCENT_COLOR}📋  Новая сделка: {Fore.LIGHTWHITE_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTWHITE_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTWHITE_EX}{event.deal.item.price or '?'}₽")
-                if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and plbot.config["playerok"]["bot"]["tg_logging_events"]["new_order"]:
+                if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and plbot.config["playerok"]["bot"]["tg_logging_events"]["new_deal"]:
                     plbot.log_to_tg(log_text(f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"))
 
                 if self.config["playerok"]["bot"]["auto_deliveries_enabled"]:
                     for auto_delivery in self.auto_deliveries:
+                        correct = 0
                         for keyphrase in auto_delivery["keyphrases"]:
                             if keyphrase in event.deal.item.name or event.deal.item.name == keyphrase:
-                                plbot.send_message(this_chat.id, 
-                                                   "\n".join(auto_delivery["message"]))
+                                correct += 1
+                        if correct == len(auto_delivery["keyphrases"]):
+                            plbot.send_message(this_chat.id, "\n".join(auto_delivery["message"]))
 
                 if self.config["playerok"]["bot"]["auto_complete_deals_enabled"]:
                     if event.deal.user.id != plbot.playerok_account.id:

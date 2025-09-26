@@ -272,7 +272,7 @@ class ModulesManager:
                         for key, funcs in module.BOT_EVENT_HANDLERS.items():
                             bot_event_handlers.setdefault(key, []).extend(funcs)
                     if hasattr(module, "FUNPAY_EVENT_HANDLERS"):
-                        for key, funcs in module.FUNPAY_EVENT_HANDLERS.items():
+                        for key, funcs in module.PLAYEROK_EVENT_HANDLERS.items():
                             playerok_event_handlers.setdefault(key, []).extend(funcs)
                     if hasattr(module, "TELEGRAM_BOT_ROUTERS"):
                         telegram_bot_routers.extend(module.TELEGRAM_BOT_ROUTERS)

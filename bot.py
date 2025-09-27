@@ -3,12 +3,14 @@ from core.handlers_manager import HandlersManager
 
 from core.console import set_title, setup_logger, install_requirements, patch_requests
 import asyncio
+import time
 from threading import Thread
 from settings import Settings as sett
 import traceback
 from logging import getLogger
 logger = getLogger("universal")
 from colorama import init, Fore, Style
+from plbot import get_playerok_bot
 init()
 
 from services.updater import Updater
@@ -73,6 +75,12 @@ if __name__ == "__main__":
         
         print(f"{Fore.WHITE}🤖 Запускаю бота...\n")
         asyncio.run(start_playerok_bot())
+        for _ in range(30):
+            if get_playerok_bot() is not None:
+                break
+            time.sleep(1)
+        else:
+            raise Exception("Не удалось запустить Playerok бота")
         asyncio.run(start_telegram_bot())
     except Exception as e:
         traceback.print_exc()

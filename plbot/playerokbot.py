@@ -352,7 +352,7 @@ class PlayerokBot:
                 elif event.deal.status is ItemDealStatuses.CONFIRMED: status = "Подтверждён"
                 elif event.deal.status is ItemDealStatuses.ROLLED_BACK: status = "Возврат"
                 self.logger.info(f"{PREFIX} {ACCENT_COLOR}🔄️📋  Статус сделки {Fore.LIGHTWHITE_EX}{event.deal.id}{ACCENT_COLOR} от {Fore.LIGHTWHITE_EX}{event.deal.user.username}{ACCENT_COLOR} изменился на {Fore.LIGHTWHITE_EX}«{status}»")
-                if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and plbot.config["playerok"]["bot"]["tg_logging_events"]["order_status_changed"]:
+                if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and plbot.config["playerok"]["bot"]["tg_logging_events"]["deal_status_changed"]:
                     plbot.log_to_tg(log_text(f'🔄️📋 Статус <a href="https://playerok.com/deal/{event.deal.id}/">сделки</a> изменился', f"<b>Новый статус:</b> {status}"))
                 try:
                     if event.deal.status is ItemDealStatuses.CONFIRMED:

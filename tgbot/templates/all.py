@@ -125,30 +125,31 @@ def profile_text():
     txt = textwrap.dedent(f"""
         👤 <b>Мой профиль</b>
 
-        ID: <code>{profile.id}</code>
-        Никнейм: <b>{profile.username}</b>
-        Email: <b>{profile.email}</b>
-        Роль: <b>{profile.role.name}</b>
-        Рейтинг: <b>{profile.rating}</b>
-        Кол-во отзывов: <b>{profile.reviews_count}</b>
+        <b>🆔 ID:</b> <code>{profile.id}</code>
+        <b>👤 Никнейм:</b> {profile.username}
+        <b>📪 Email:</b> {profile.email}
+        <b>💬 Отзывы:</b> {profile.reviews_count} (<b>Рейтинг:</b> {profile.rating} ⭐)
         
-        Баланс:
-        ┣ Всего: <b>{profile.balance.value}</b>
-        ┣ Доступно: <b>{profile.balance.available}</b>
-        ┣ Ожидает зачисления: <b>{profile.balance.pending_income}</b>
-        ┗ Заморожено: <b>{profile.balance.frozen}</b>
+        <b>💰 Баланс:</b> {profile.balance.value}₽
+          ┣ <b>👜 Доступно:</b> {profile.balance.available}₽
+          ┣ <b>⌛ В процессе:</b> {profile.balance.pending_income}₽
+          ┗ <b>❄️ Заморожено:</b> {profile.balance.frozen}₽
         
-        Предметы:
-        ┣ Всего: <b>{profile.stats.items.total}</b>
-        ┗ Истёкших: <b>{profile.stats.items.finished}</b>
+        <b>📦 Предметы:</b>
+          ┣ <b>➖ Истёкших:</b> {profile.stats.items.finished}
+          ┗ <b>♾️ Всего:</b> {profile.stats.items.total}
         
-        Сделки:
-        ┣ Всего входящих: <b>{profile.stats.deals.incoming.total}</b>
-        ┣ Завершено входящих: <b>{profile.stats.deals.incoming.finished}</b>
-        ┣ Всего исходящих: <b>{profile.stats.deals.outgoing.total}</b>
-        ┗ Завершено исходящих: <b>{profile.stats.deals.outgoing.finished}</b>
+        <b>🛍️ Покупки:</b>
+          ┣ <b>➕ Активные:</b> {profile.stats.deals.incoming.total - profile.stats.deals.incoming.finished}
+          ┣ <b>➖ Завершённые:</b> {profile.stats.deals.incoming.finished}
+          ┗ <b>♾️ Всего:</b> {profile.stats.deals.incoming.total}
+
+        <b>🛒 Продажи:</b>
+          ┣ <b>➕ Активные:</b> {profile.stats.deals.outgoing.total - profile.stats.deals.outgoing.finished}
+          ┣ <b>➖ Завершено:</b> {profile.stats.deals.outgoing.finished}
+          ┗ <b>♾️ Всего:</b> {profile.stats.deals.outgoing.total}
         
-        Дата создания: <b>{datetime.fromisoformat(profile.created_at.replace('Z', '+00:00')).strftime('%d.%m.%Y %H:%M:%S')}</b>
+        <b>📅 Дата регистрации:</b> {datetime.fromisoformat(profile.created_at.replace('Z', '+00:00')).strftime('%d.%m.%Y %H:%M:%S')}
 
         Выберите действие ↓
     """)

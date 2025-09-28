@@ -24,6 +24,7 @@ DATA = {
                     "custom_commands_enabled": True,
                     "auto_deliveries_enabled": True,
                     "auto_restore_items_enabled": True,
+                    "auto_restore_items_priority_status": "DEFAULT",
                     "auto_complete_deals_enabled": True,
                     "tg_logging_enabled": True,
                     "tg_logging_chat_id": "",

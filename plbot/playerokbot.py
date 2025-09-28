@@ -313,6 +313,7 @@ class PlayerokBot:
                         for phrase in auto_delivery["keyphrases"]:
                             if phrase.lower() in event.deal.item.name.lower() or event.deal.item.name.lower() == phrase.lower():
                                 plbot.send_message(this_chat.id, "\n".join(auto_delivery["message"]))
+                                break
 
                 if self.config["playerok"]["bot"]["auto_complete_deals_enabled"]:
                     if event.deal.user.id != plbot.playerok_account.id:

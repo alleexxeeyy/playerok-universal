@@ -524,6 +524,7 @@ def my_item(data: dict) -> 'MyItem':
         priority_price=data.get("priorityPrice"),
         status_expiration_date=data.get("statusExpirationDate"),
         status_description=data.get("statusDescription"),
+        status_payment=transaction(data.get("statusPayment")),
         views_counter=data.get("viewsCounter"),
         is_editable=data.get("isEditable"),
         approval_date=data.get("approvalDate"),
@@ -694,6 +695,11 @@ def item_deal(data: dict) -> 'ItemDeal':
     if data_logs:
         for log in data_logs:
             logs.append(item_log(log))
+    obtaining_fields = []
+    data_obtaining_fields = data.get("obtainingFields")
+    if data_obtaining_fields:
+        for field in data_obtaining_fields:
+            obtaining_fields.append(game_category_data_field(field))
     return ItemDeal(
         id=data.get("id"),
         status=ItemDealStatuses.__members__.get(data.get("status")),
@@ -713,8 +719,8 @@ def item_deal(data: dict) -> 'ItemDeal':
         user=user_profile(data.get("user")),
         chat=chat(data.get("chat")),
         item=item(data.get("item")),
-        review=review(data.get("review")),
-        obtaining_fields=data.get("obtainingFields"),
+        review=review(data.get("testimonial")),
+        obtaining_fields=obtaining_fields,
         comment_from_buyer=data.get("commentFromBuyer")
     )
 

@@ -86,4 +86,4 @@ if __name__ == "__main__":
         traceback.print_exc()
     print(f"\n   {Fore.LIGHTRED_EX}Ваш бот словил непредвиденную ошибку и был выключен."
           f"\n   {Fore.WHITE}Пожалуйста, напишите в Telegram разработчика {Fore.LIGHTWHITE_EX}@alleexxeeyy{Fore.WHITE}, для уточнения причин")
-    input()
+    raise SystemExit(1)

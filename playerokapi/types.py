@@ -492,7 +492,7 @@ class ItemDeal:
     :type review: `types.Review` or `None`
 
     :param obtaining_fields: Получаемые поля.
-    :type obtaining_fields: `dict` or `None`
+    :type obtaining_fields: `list[types.GameCategoryDataField]` or `None`
 
     :param comment_from_buyer: Комментарий от покупателя.
     :type comment_from_buyer: `str` or `None`
@@ -501,7 +501,7 @@ class ItemDeal:
                  direction: ItemDealDirections, obtaining: str | None, has_problem: bool, report_problem_enabled: bool | None, 
                  completed_user: UserProfile | None, props: str | None, previous_status: ItemDealStatuses | None, 
                  completed_at: str, created_at: str, logs: list[ItemLog] | None, transaction: Transaction | None,
-                 user: UserProfile, chat: Chat | None, item: Item, review: Review | None, obtaining_fields: dict | None,
+                 user: UserProfile, chat: Chat | None, item: Item, review: Review | None, obtaining_fields: list[GameCategoryDataField] | None,
                  comment_from_buyer: str | None):
         self.id: str = id
         """ ID сделки. """
@@ -541,7 +541,7 @@ class ItemDeal:
         """ Предмет сделки. """
         self.review: Review | None = review
         """ Отзыв по сделке. """
-        self.obtaining_fields: dict | None = obtaining_fields
+        self.obtaining_fields: list[GameCategoryDataField] | None = obtaining_fields
         """ Получаемые поля. """
         self.comment_from_buyer: str | None = comment_from_buyer
         """ Комментарий от покупателя. """
@@ -1484,6 +1484,9 @@ class MyItem:
     :param status_description: Описание статуса приоритета.
     :type status_description: `str` or `None`
 
+    :param status_payment: Платёж статуса (транзакция).
+    :type status_payment: `types.Transaction` or `None`
+
     :param views_counter: Количество просмотров предмета.
     :type views_counter: `int`
 
@@ -1507,8 +1510,8 @@ class MyItem:
                  data_fields: list[GameCategoryDataField] | None, fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses,
                  user: UserProfile, prev_price: int, prev_fee_multiplier: float, seller_notified_about_fee_change: bool, 
                  priority: PriorityTypes, priority_price: int, status_expiration_date: str | None, status_description: str | None,
-                 views_counter: int, is_editable: bool, approval_date: str | None, deleted_at: str | None, updated_at: str | None, 
-                 created_at: str | None):
+                 status_payment: Transaction | None, views_counter: int, is_editable: bool, approval_date: str | None, deleted_at: str | None, 
+                 updated_at: str | None, created_at: str | None):
         self.id: str = id
         """ ID предмета. """
         self.slug: str = slug
@@ -1561,6 +1564,8 @@ class MyItem:
         """ Дата истечения статуса приоритета. """
         self.status_description: str | None = status_description
         """ Описание статуса приоритета. """
+        self.status_payment: str | None = status_payment
+        """ Платёж статуса (транзакция). """
         self.views_counter: int = views_counter
         """ Количество просмотров предмета. """
         self.is_editable: bool = is_editable

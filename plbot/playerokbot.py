@@ -66,9 +66,6 @@ class PlayerokBot:
         self.stats = get_stats()
         """ Словарь статистика бота с момента запуска. """
 
-        self.refresh_account_next_time = datetime.now() + timedelta(seconds=3600)
-        """ Время следующего обновление данных об аккаунте. """
-
         self.__saved_chats: dict[str, Chat] = {}
         """ 
         Словарь последних запомненных чатов.\n
@@ -96,6 +93,26 @@ class PlayerokBot:
             return self.__saved_chats[username]
         self.__saved_chats[username] = self.playerok_account.get_chat_by_username(username)
         return self.get_chat_by_username(username)
+
+    def get_my_items(self, statuses: list[ItemStatuses] | None = None) -> list[types.ItemProfile]:
+        """
+        Получает все предметы аккаунта.
+        """
+        user = self.playerok_account.get_user(self.playerok_account.id)
+        my_items: list[types.ItemProfile] = []
+        next_cursor = None
+        stop = False
+        while not stop:
+            _items = user.get_items(statuses=statuses, after_cursor=next_cursor)
+            for _item in _items.items:
+                if _item.id not in [item.id for item in my_items]:
+                    my_items.append(_item)
+            if not _items.page_info.has_next_page:
+                break
+            next_cursor = _items.page_info.end_cursor
+            time.sleep(0.1)
+        return my_items
+    
 
     def msg(self, message_name: str, exclude_watermark: bool = False, **kwargs) -> str:
         """ 
@@ -227,13 +244,6 @@ class PlayerokBot:
                         if sett.get("messages") != plbot.messages: plbot.messages = sett.get("messages")
                         if sett.get("custom_commands") != plbot.custom_commands: plbot.custom_commands = sett.get("custom_commands")
                         if sett.get("auto_deliveries") != plbot.auto_deliveries: plbot.auto_deliveries = sett.get("auto_deliveries")
-                                    
-                        if datetime.now() > self.refresh_account_next_time:
-                            self.playerok_account = Account(token=self.config["playerok"]["api"]["token"],
-                                                            user_agent=self.config["playerok"]["api"]["user_agent"],
-                                                            requests_timeout=self.config["playerok"]["api"]["requests_timeout"],
-                                                            proxy=self.config["playerok"]["api"]["proxy"] or None).get()
-                            self.refresh_account_next_time = datetime.now() + timedelta(seconds=3600)
                     except Exception:
                         self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}В бесконечном цикле произошла ошибка: {Fore.WHITE}")
                         traceback.print_exc()
@@ -261,7 +271,7 @@ class PlayerokBot:
 
                 if self.config["playerok"]["bot"]["first_message_enabled"]:
                     if event.message.user is not None:
-                        if event.message.user.id == event.message.user.id and event.message.user.id not in plbot.initialized_users:
+                        if event.message.user.id != plbot.playerok_account.id and event.message.user.id not in plbot.initialized_users and event.chat.id not in [plbot.playerok_account.system_chat_id, plbot.playerok_account.support_chat_id]:
                             try:
                                 plbot.send_message(this_chat.id, 
                                                    plbot.msg("user_not_initialized", username=event.message.user.username))

@@ -6,7 +6,7 @@ from colorlog import ColoredFormatter
 from colorama import Fore
 import pkg_resources
 import subprocess
-import requests
+import tls_requests
 import time
 import random
 
@@ -105,28 +105,14 @@ def patch_requests():
     Патчит запросы requests на кастомные, с обработкой
     429 Too Many Requests, 520 Bat Gateway и повторной отправкой запроса при этих ошибках.
     """
-    _orig_request = requests.Session.request
+    _orig_request = tls_requests.Client.request
 
     def _request(self, method, url, **kwargs):  # type: ignore
         for attempt in range(6):
             resp = _orig_request(self, method, url, **kwargs)
-            try:
-                text_head = (resp.text or "")[:1200]
-            except Exception:
-                text_head = ""
-            statuses = {
-                "429": "Too Many Requests",
-                "502": "Bad Gateway",
-                "503": "Service Unavailable",
-                "0": "Connection"
-            }
-            if str(resp.status_code) not in statuses.keys():
-                for status in statuses.values():
-                    if status in text_head:
-                        break
-                else: 
-                    return resp
-
+            statuses = [429, 502, 503, 0]
+            if resp.status_code not in statuses:
+                return resp
             retry_hdr = resp.headers.get("Retry-After")
             try:
                 delay = float(retry_hdr) if retry_hdr else min(120.0, 5.0 * (2 ** attempt))
@@ -135,4 +121,4 @@ def patch_requests():
             delay += random.uniform(0.2, 0.8)  # небольшой джиттер
             time.sleep(delay)
         return resp
-    requests.Session.request = _request  # type: ignore
+    tls_requests.Client.request = _request  # type: ignore

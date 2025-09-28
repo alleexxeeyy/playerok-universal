@@ -941,7 +941,7 @@ class Account:
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return item_profile_list(r["data"]["items"])
 
-    def get_item(self, id: str | None = None, slug: str | None = None) -> types.Item:
+    def get_item(self, id: str | None = None, slug: str | None = None) -> types.MyItem | types.Item | types.ItemProfile:
         """
         Получает предмет (товар).\n
         Можно получить по любому из двух параметров:
@@ -953,7 +953,7 @@ class Account:
         :type slug: `str` or `None`
         
         :return: Объект предмета.
-        :rtype: `PlayerokAPI.types.Item`
+        :rtype: `PlayerokAPI.types.MyItem` or `PlayerokAPI.types.Item` or `PlayerokAPI.types.ItemProfile`
         """
         headers = {"accept": "*/*"}
         payload = {
@@ -962,7 +962,15 @@ class Account:
             "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "e3e341306a7c3400d7e5d47d1f716406d8fe02b74d3faacd733af9b2d64304d0"}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
-        return item(r["data"]["item"])
+        data: dict = r["data"]["item"]
+        _item = None
+        if data["__typename"] == "MyItem":
+            _item = my_item(data)
+        elif data["__typename"] == "ItemProfile":
+            _item = item_profile(data)
+        elif data["__typename"] in ["Item", "ForeignItem"]:
+            _item = item(data)
+        return _item
 
     def get_item_priority_statuses(self, item_id: str, item_price: str) -> list[types.ItemPriorityStatus]:
         """

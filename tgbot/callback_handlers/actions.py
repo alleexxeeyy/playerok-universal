@@ -87,13 +87,6 @@ async def callback_switch_auto_restore_items_enabled(callback: CallbackQuery, st
     sett.set("config", config)
     return await callback_settings_navigation(callback, calls.SettingsNavigation(to="items"), state)
 
-@router.callback_query(F.data == "switch_auto_restore_items_priority_status")
-async def callback_switch_auto_restore_items_priority_status(callback: CallbackQuery, state: FSMContext):
-    config = sett.get("config")
-    config["playerok"]["bot"]["auto_restore_items_priority_status"] = "DEFAULT" if config["playerok"]["bot"]["auto_restore_items_priority_status"] == "PREMIUM" else "PREMIUM"
-    sett.set("config", config)
-    return await callback_settings_navigation(callback, calls.SettingsNavigation(to="items"), state)
-
 @router.callback_query(F.data == "switch_read_chat_before_sending_message_enabled")
 async def callback_switch_read_chat_before_sending_message_enabled(callback: CallbackQuery, state: FSMContext):
     config = sett.get("config")

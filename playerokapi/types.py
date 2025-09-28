@@ -1309,14 +1309,14 @@ class Item:
     :param id: ID предмета.
     :type id: `str`
 
-    :param status: Имя страницы предмета.
-    :type status: `enums.ItemStatuses`
-
     :param name: Название предмета.
     :type name: `str`
 
     :param description: Описание предмета.
     :type description: `str`
+
+    :param status: Статус предмета.
+    :type status: `enums.ItemStatuses`
 
     :param obtaining_type: Способ получения.
     :type obtaining_type: `types.GameCategoryObtainingType` or `None`
@@ -1335,9 +1335,6 @@ class Item:
 
     :param attributes: Аттрибуты предмета.
     :type attributes: `dict`
-
-    :param buyer: Профиль покупателя предмета (если продан).
-    :type buyer: `types.UserProfile`
 
     :param category: Категория игры предмета.
     :type category: `types.GameCategory`
@@ -1364,9 +1361,8 @@ class Item:
     :type user: `types.UserProfile`
     """
     def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int, priority_position: int,
-                 attachments: list[FileObject], attributes: dict, buyer: UserProfile, category: GameCategory, comment: str | None,
-                 data_fields: list[GameCategoryDataField] | None, fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses,
-                 user: UserProfile):
+                 attachments: list[FileObject], attributes: dict, category: GameCategory, comment: str | None, data_fields: list[GameCategoryDataField] | None, 
+                 fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses, user: UserProfile):
         self.id: str = id
         """ ID предмета. """
         self.slug: str = slug
@@ -1387,8 +1383,6 @@ class Item:
         """ Файлы-приложения. """
         self.attributes: dict = attributes
         """ Аттрибуты предмета. """
-        self.buyer: UserProfile = buyer
-        """ Профиль покупателя предмета (если продан). """
         self.category: GameCategory = category
         """ Категория игры предмета. """
         self.comment: str | None = comment
@@ -1407,6 +1401,178 @@ class Item:
         """ Статус предмета. """
         self.user: UserProfile = user
         """ Профиль продавца. """
+
+class MyItem:
+    """
+    Объект своего предмета.
+
+    :param id: ID предмета.
+    :type id: `str`
+
+    :param slug: Имя страницы предмета.
+    :type slug: `str`
+
+    :param name: Название предмета.
+    :type name: `str`
+
+    :param description: Описание предмета.
+    :type description: `str`
+
+    :param status: Статус предмета.
+    :type status: `enums.ItemStatuses`
+
+    :param obtaining_type: Способ получения.
+    :type obtaining_type: `types.GameCategoryObtainingType` or `None`
+
+    :param price: Цена предмета.
+    :type price: `int`
+
+    :param prev_price: Предыдущая цена.
+    :type prev_price: `int`
+
+    :param raw_price: Цена без учёта скидки.
+    :type raw_price: `int`
+
+    :param priority_position: Приоритетная позиция.
+    :type priority_position: `int`
+
+    :param attachments: Файлы-приложения.
+    :type attachments: `list[types.FileObject]`
+
+    :param attributes: Аттрибуты предмета.
+    :type attributes: `dict`
+
+    :param category: Категория игры предмета.
+    :type category: `types.GameCategory`
+
+    :param comment: Комментарий предмета.
+    :type comment: `str` or `None`
+
+    :param data_fields: Поля данных предмета.
+    :type data_fields: `list[types.GameCategoryDataField]` or `None`
+
+    :param fee_multiplier: Множитель комиссии.
+    :type fee_multiplier: `float`
+
+    :param prev_fee_multiplier: Предыдущий множитель комиссии.
+    :type prev_fee_multiplier: `float`
+
+    :param seller_notified_about_fee_change: Оповещён ли продавец о смене комиссии.
+    :type seller_notified_about_fee_change: `bool`
+
+    :param game: Профиль игры предмета.
+    :type game: `types.GameProfile`
+
+    :param seller_type: Тип продавца.
+    :type seller_type: `enums.UserTypes`
+
+    :param user: Профиль продавца.
+    :type user: `types.UserProfile`
+
+    :param buyer: Профиль продавца.
+    :type user: `types.UserProfile`
+
+    :param priority: Статус приоритета предмета.
+    :type priority: `types.PriorityTypes`
+
+    :param priority_price: Цены статуса приоритета.
+    :type priority_price: `int`
+
+    :param status_expiration_date: Дата истечения статуса приоритета.
+    :type status_expiration_date: `str` or `None`
+
+    :param status_description: Описание статуса приоритета.
+    :type status_description: `str` or `None`
+
+    :param views_counter: Количество просмотров предмета.
+    :type views_counter: `int`
+
+    :param is_editable: Можно ли редактировать товар.
+    :type is_editable: `bool`
+
+    :param approval_date: Дата публикации товара.
+    :type approval_date: `str` or `None`
+
+    :param deleted_at: Дата удаления товара.
+    :type deleted_at: `str` or `None`
+
+    :param updated_at: Дата последнего обновления товара.
+    :type updated_at: `str` or `None`
+
+    :param created_at: Дата создания товара.
+    :type created_at: `str` or `None`
+    """
+    def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int, priority_position: int,
+                 attachments: list[FileObject], attributes: dict, buyer: UserProfile, category: GameCategory, comment: str | None,
+                 data_fields: list[GameCategoryDataField] | None, fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses,
+                 user: UserProfile, prev_price: int, prev_fee_multiplier: float, seller_notified_about_fee_change: bool, 
+                 priority: PriorityTypes, priority_price: int, status_expiration_date: str | None, status_description: str | None,
+                 views_counter: int, is_editable: bool, approval_date: str | None, deleted_at: str | None, updated_at: str | None, 
+                 created_at: str | None):
+        self.id: str = id
+        """ ID предмета. """
+        self.slug: str = slug
+        """ Имя страницы предмета. """
+        self.name: str = name
+        """ Название предмета. """
+        self.status: ItemStatuses = status
+        """ Статус предмета. """
+        self.description: str = description
+        """ Описание предмета. """
+        self.obtaining_type: GameCategoryObtainingType | None = obtaining_type
+        """ Способ получения. """
+        self.price: int = price
+        """ Цена предмета. """
+        self.prev_price: int = prev_price
+        """ Предыдущая цена. """
+        self.raw_price: int = raw_price
+        """ Цена без учёта скидки. """
+        self.priority_position: int = priority_position
+        """ Приоритетная позиция. """
+        self.attachments: list[FileObject] = attachments
+        """ Файлы-приложения. """
+        self.attributes: dict = attributes
+        """ Аттрибуты предмета. """
+        self.category: GameCategory = category
+        """ Категория игры предмета. """
+        self.comment: str | None = comment
+        """ Комментарий предмета. """
+        self.data_fields: list[GameCategoryDataField] | None = data_fields
+        """ Поля данных предмета. """
+        self.fee_multiplier: float = fee_multiplier
+        """ Множитель комиссии. """
+        self.prev_fee_multiplier: float = prev_fee_multiplier
+        """ Предыдущий множитель комиссии. """
+        self.seller_notified_about_fee_change: bool = seller_notified_about_fee_change
+        """ Оповещён ли продавец о смене комиссии. """
+        self.game: GameProfile = game
+        """ Профиль игры предмета. """
+        self.seller_type: UserTypes = seller_type
+        """ Тип продавца. """
+        self.user: UserProfile = user
+        """ Профиль продавца. """
+        self.buyer: UserProfile = buyer
+        """ Профиль покупателя предмета (если продан). """
+        self.priority: PriorityTypes = priority
+        """ Статус приоритета предмета. """
+        self.priority_price: int = priority_price
+        """ Цены статуса приоритета. """
+        self.status_expiration_date: str | None = status_expiration_date
+        """ Дата истечения статуса приоритета. """
+        self.status_description: str | None = status_description
+        """ Описание статуса приоритета. """
+        self.views_counter: int = views_counter
+        """ Количество просмотров предмета. """
+        self.is_editable: bool = is_editable
+        """ Можно ли редактировать товар. """
+        self.approval_date: str | None = approval_date
+        """ Дата публикации товара. """
+        self.deleted_at: str | None = deleted_at
+        """ Дата удаления товара. """
+        self.updated_at: str | None = updated_at
+        """ Дата последнего обновления товара. """
+        self.created_at: str | None = created_at
+        """ Дата создания товара. """
 
 class ItemProfile:
     """

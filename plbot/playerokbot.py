@@ -68,8 +68,6 @@ class PlayerokBot:
 
         self.refresh_account_next_time = datetime.now() + timedelta(seconds=3600)
         """ Время следующего обновление данных об аккаунте. """
-        self.try_restore_items_next_time = datetime.now()
-        """ Время следующей попытки восстановить предметы. """
 
         self.__saved_chats: dict[str, Chat] = {}
         """ 
@@ -180,19 +178,18 @@ class PlayerokBot:
             items = profile.get_items(count=24, statuses=[ItemStatuses.SOLD]).items
             _item = [profile_item for profile_item in items if profile_item.name == item.name]
             if len(_item) <= 0: return
-            item = _item[0]
-            
+            try: item: types.MyItem = self.playerok_account.get_item(_item[0].id)
+            except: item = _item[0]
+
             priority_statuses = self.playerok_account.get_item_priority_statuses(item.id, item.price)
             priority_status = None
             for status in priority_statuses:
-                if status.type is PriorityTypes.__members__.get(self.config["playerok"]["bot"]["auto_restore_items_priority_status"]):
-                    priority_status = status
-                    break
-            else:
-                for status in priority_statuses:
-                    if status.type is PriorityTypes.DEFAULT:
+                if isinstance(item, types.MyItem) and item.priority:
+                    if status.type.name == item.priority.name:
                         priority_status = status
-                        break
+                elif status.type is PriorityTypes.DEFAULT:
+                    priority_status = status
+                if priority_status: break
 
             new_item = self.playerok_account.publish_item(item.id, priority_status.id)
             if new_item.status is ItemStatuses.PENDING_APPROVAL or new_item.status is ItemStatuses.APPROVED:
@@ -313,12 +310,9 @@ class PlayerokBot:
 
                 if self.config["playerok"]["bot"]["auto_deliveries_enabled"]:
                     for auto_delivery in self.auto_deliveries:
-                        correct = 0
-                        for keyphrase in auto_delivery["keyphrases"]:
-                            if keyphrase in event.deal.item.name or event.deal.item.name == keyphrase:
-                                correct += 1
-                        if correct == len(auto_delivery["keyphrases"]):
-                            plbot.send_message(this_chat.id, "\n".join(auto_delivery["message"]))
+                        for phrase in auto_delivery["keyphrases"]:
+                            if phrase.lower() in event.deal.item.name.lower() or event.deal.item.name.lower() == phrase.lower():
+                                plbot.send_message(this_chat.id, "\n".join(auto_delivery["message"]))
 
                 if self.config["playerok"]["bot"]["auto_complete_deals_enabled"]:
                     if event.deal.user.id != plbot.playerok_account.id:

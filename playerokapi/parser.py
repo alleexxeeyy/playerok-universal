@@ -472,7 +472,6 @@ def item(data: dict) -> 'Item':
         priority_position=data.get("priorityPosition"),
         attachments=attachments,
         attributes=data.get("attributes"),
-        buyer=user_profile(data.get("buyer")),
         category=game_category(data.get("category")),
         comment=data.get("comment"),
         data_fields=data_fields,
@@ -481,6 +480,56 @@ def item(data: dict) -> 'Item':
         seller_type=data.get("sellerType"),
         status=ItemStatuses.__members__.get(data.get("status")),
         user=user_profile(data.get("user"))
+    )
+
+def my_item(data: dict) -> 'MyItem':
+    from .types import MyItem
+    if not data:
+        return None
+    attachments = []
+    data_attachments = data.get("attachments")
+    if data_attachments:
+        for att in data_attachments:
+            attachments.append(file(att))
+    data_fields = []
+    data_data_fields = data.get("dataFields")
+    if data_data_fields:
+        for field in data_data_fields:
+            data_fields.append(game_category_data_field(field))
+    
+    return MyItem(
+        id=data.get("id"),
+        slug=data.get("slug"),
+        name=data.get("name"),
+        description=data.get("description"),
+        obtaining_type=game_category_obtaining_type(data.get("obtainingType")),
+        price=data.get("price"),
+        prev_price=data.get("prevPrice"),
+        raw_price=data.get("rawPrice"),
+        priority_position=data.get("priorityPosition"),
+        attachments=attachments,
+        attributes=data.get("attributes"),
+        buyer=user_profile(data.get("buyer")),
+        category=game_category(data.get("category")),
+        comment=data.get("comment"),
+        data_fields=data_fields,
+        fee_multiplier=data.get("feeMultiplier"),
+        prev_fee_multiplier=data.get("prevFeeMultiplier"),
+        seller_notified_about_fee_change=data.get("sellerNotifiedAboutFeeChange"),
+        game=game_profile(data.get("game")),
+        seller_type=data.get("sellerType"),
+        status=ItemStatuses.__members__.get(data.get("status")),
+        user=user_profile(data.get("user")),
+        priority=PriorityTypes.__members__.get(data.get("priority")),
+        priority_price=data.get("priorityPrice"),
+        status_expiration_date=data.get("statusExpirationDate"),
+        status_description=data.get("statusDescription"),
+        views_counter=data.get("viewsCounter"),
+        is_editable=data.get("isEditable"),
+        approval_date=data.get("approvalDate"),
+        deleted_at=data.get("deletedAt"),
+        updated_at=data.get("updatedAt"),
+        created_at=data.get("createdAt")
     )
     
 def item_profile(data: dict) -> 'ItemProfile':

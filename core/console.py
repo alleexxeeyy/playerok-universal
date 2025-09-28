@@ -117,9 +117,10 @@ def patch_requests():
             statuses = {
                 "429": "Too Many Requests",
                 "502": "Bad Gateway",
-                "503": "Service Unavailable"
+                "503": "Service Unavailable",
+                "0": "Connection"
             }
-            if str(resp.status_code) not in statuses:
+            if str(resp.status_code) not in statuses.keys():
                 for status in statuses.values():
                     if status in text_head:
                         break

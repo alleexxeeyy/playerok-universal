@@ -329,20 +329,13 @@ def settings_conn_float_text(placeholder: str):
 def settings_items_text():
     config = sett.get("config")
     auto_restore_items_enabled = "🟢 Включено" if config["playerok"]["bot"]["auto_restore_items_enabled"] else "🔴 Выключено"
-    if config["playerok"]["bot"]["auto_restore_items_priority_status"] == "DEFAULT": auto_restore_items_priority_status = "🆓 Бесплатный"
-    elif config["playerok"]["bot"]["auto_restore_items_priority_status"] == "PREMIUM": auto_restore_items_priority_status = "⚡ Премиум"
-    else: auto_restore_items_priority_status = "❌ Не задано"
     txt = textwrap.dedent(f"""
         ⚙️ <b>Настройки → 📦 Предметы</b>
 
         ♻️ <b>Авто-восстановление предметов:</b> {auto_restore_items_enabled}
-        📊 <b>Приоритет восстановленных предметов:</b> {auto_restore_items_priority_status}
 
         <b>Что такое автоматическое восстановление предметов?</b>
-        На Playerok как только ваш товар покупают - он исчезает из продажи. Эта функция позволит автоматически восстанавливать (заново выставлять) предмет, который только что купили, чтобы он снова был на продаже.
-        
-        <b>Что такое cтатус приоритета для восстановленных предметов?</b>
-        С каким статусом будет выставлять на продажу предмет, который был автоматически восстановлен. Учтите, что за премиум статус нужно платить, и если у вас не будет денег на балансе аккаунта для этого, товар будет выставляен по бесплатному приоритету.
+        На Playerok как только ваш товар покупают - он исчезает из продажи. Эта функция позволит автоматически восстанавливать (заново выставлять) предмет, который только что купили, чтобы он снова был на продаже. Предмет будет выставлен с тем же статусом приоритета, что и был раньше.
 
         Выберите параметр для изменения ↓
     """)
@@ -351,12 +344,8 @@ def settings_items_text():
 def settings_items_kb():
     config = sett.get("config")
     auto_restore_items_enabled = "🟢 Включено" if config["playerok"]["bot"]["auto_restore_items_enabled"] else "🔴 Выключено"
-    if config["playerok"]["bot"]["auto_restore_items_priority_status"] == "DEFAULT": auto_restore_items_priority_status = "🆓 Бесплатный"
-    elif config["playerok"]["bot"]["auto_restore_items_priority_status"] == "PREMIUM": auto_restore_items_priority_status = "⚡ Премиум"
-    else: auto_restore_items_priority_status = "❌ Не задано"
     rows = [
         [InlineKeyboardButton(text=f"♻️ Авто-восстановление предметов: {auto_restore_items_enabled}", callback_data="switch_auto_restore_items_enabled")],
-        [InlineKeyboardButton(text=f"📊 Приоритет восстановленных предметов: {auto_restore_items_priority_status}", callback_data="switch_auto_restore_items_priority_status")],
         [
         InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack()),
         InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.SettingsNavigation(to="items").pack())

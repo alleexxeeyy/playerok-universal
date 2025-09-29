@@ -240,11 +240,11 @@ class PlayerokBot:
                         balance = self.playerok_account.profile.balance.value if self.playerok_account.profile.balance is not None else "?"
                         set_title(f"Playerok Universal v{VERSION} | {self.playerok_account.username}: {balance}₽")
                         
-                        if data.get("initialized_users") != plbot.initialized_users: data.set("initialized_users", plbot.initialized_users)
-                        if sett.get("config") != plbot.config: plbot.config = sett.get("config")
-                        if sett.get("messages") != plbot.messages: plbot.messages = sett.get("messages")
-                        if sett.get("custom_commands") != plbot.custom_commands: plbot.custom_commands = sett.get("custom_commands")
-                        if sett.get("auto_deliveries") != plbot.auto_deliveries: plbot.auto_deliveries = sett.get("auto_deliveries")
+                        if data.get("initialized_users") != self.initialized_users: data.set("initialized_users", self.initialized_users)
+                        if sett.get("config") != self.config: self.config = sett.get("config")
+                        if sett.get("messages") != self.messages: self.messages = sett.get("messages")
+                        if sett.get("custom_commands") != self.custom_commands: self.custom_commands = sett.get("custom_commands")
+                        if sett.get("auto_deliveries") != self.auto_deliveries: self.auto_deliveries = sett.get("auto_deliveries")
                     except Exception:
                         self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}В бесконечном цикле произошла ошибка: {Fore.WHITE}")
                         traceback.print_exc()
@@ -259,56 +259,56 @@ class PlayerokBot:
         async def handler_new_message(plbot: PlayerokBot, event: NewMessageEvent):
             try:
                 this_chat = event.chat
-                if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and (plbot.config["playerok"]["bot"]["tg_logging_events"]["new_user_message"] or plbot.config["playerok"]["bot"]["tg_logging_events"]["new_system_message"]):
-                    if event.message.user.username != plbot.playerok_account.username:
+                if self.config["playerok"]["bot"]["tg_logging_enabled"] and (self.config["playerok"]["bot"]["tg_logging_events"]["new_user_message"] or self.config["playerok"]["bot"]["tg_logging_events"]["new_system_message"]):
+                    if event.message.user.username != self.playerok_account.username:
                         do = False
-                        if plbot.config["playerok"]["bot"]["tg_logging_events"]["new_user_message"] and event.message.user.username not in ["Playerok.com", "Поддержка"]: do = True 
-                        if plbot.config["playerok"]["bot"]["tg_logging_events"]["new_system_message"] and event.message.user.username in ["Playerok.com", "Поддержка"]: do = True 
+                        if self.config["playerok"]["bot"]["tg_logging_events"]["new_user_message"] and event.message.user.username not in ["Playerok.com", "Поддержка"]: do = True 
+                        if self.config["playerok"]["bot"]["tg_logging_events"]["new_system_message"] and event.message.user.username in ["Playerok.com", "Поддержка"]: do = True 
                         if do:
                             text = f"<b>{event.message.user.username}:</b> {event.message.text or ''}"
                             if event.message.file:
                                 text += f' <b><a href="{event.message.file.url}">{event.message.file.filename}</a></b>'
-                            plbot.log_to_tg(text=log_text(f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', text.strip()),
+                            self.log_to_tg(text=log_text(f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', text.strip()),
                                             kb=log_new_mess_kb(event.message.user.username))
 
                 if self.config["playerok"]["bot"]["first_message_enabled"]:
                     if event.message.user is not None:
-                        if event.message.user.id != plbot.playerok_account.id and event.message.user.id not in plbot.initialized_users and event.chat.id not in [plbot.playerok_account.system_chat_id, plbot.playerok_account.support_chat_id]:
+                        if event.message.user.id != self.playerok_account.id and event.message.user.id not in self.initialized_users and event.chat.id not in [self.playerok_account.system_chat_id, self.playerok_account.support_chat_id]:
                             try:
-                                plbot.send_message(this_chat.id, 
-                                                   plbot.msg("user_not_initialized", username=event.message.user.username))
-                                plbot.initialized_users.append(event.message.user.id)
+                                self.send_message(this_chat.id, 
+                                                   self.msg("user_not_initialized", username=event.message.user.username))
+                                self.initialized_users.append(event.message.user.id)
                             except Exception as e:
                                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При отправке приветственного сообщения для {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
 
                 if event.message.user is not None:
-                    if event.message.user.id != plbot.playerok_account.id:
+                    if event.message.user.id != self.playerok_account.id:
                         if self.config["playerok"]["bot"]["custom_commands_enabled"]:
                             if event.message.text in self.custom_commands.keys():
                                 try:
                                     msg = "\n".join(self.custom_commands[event.message.text]) + (f'\n{self.config["playerok"]["bot"]["messages_watermark"]}' if self.config["playerok"]["bot"]["messages_watermark_enabled"] else "")
-                                    plbot.send_message(this_chat.id, msg)
+                                    self.send_message(this_chat.id, msg)
                                 except Exception as e:
                                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе пользовательской команды \"{event.message.text}\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
-                                    plbot.send_message(this_chat.id, 
-                                                       plbot.msg("command_error"))
+                                    self.send_message(this_chat.id, 
+                                                       self.msg("command_error"))
                         if str(event.message.text).lower() == "!команды" or str(event.message.text).lower() == "!commands":
                             try:
-                                plbot.send_message(this_chat.id, 
-                                                   plbot.msg("buyer_command_commands"))
+                                self.send_message(this_chat.id, 
+                                                   self.msg("buyer_command_commands"))
                             except Exception as e:
                                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе команды \"!команды\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
-                                plbot.send_message(this_chat.id, 
-                                                   plbot.msg("command_error"))
+                                self.send_message(this_chat.id, 
+                                                   self.msg("command_error"))
                         if str(event.message.text).lower() == "!продавец" or str(event.message.text).lower() == "!seller":
                             try:
                                 asyncio.run_coroutine_threadsafe(get_telegram_bot().call_seller(event.message.user.username, this_chat.id), get_telegram_bot_loop())
-                                plbot.send_message(this_chat.id, 
-                                                   plbot.msg("buyer_command_seller"))
+                                self.send_message(this_chat.id, 
+                                                   self.msg("buyer_command_seller"))
                             except Exception as e:
                                 self.logger.log(f"{PREFIX} {Fore.LIGHTRED_EX}При вводе команды \"!продавец\" у {event.message.user.username} произошла ошибка: {Fore.WHITE}{e}")
-                                plbot.send_message(this_chat.id, 
-                                                   plbot.msg("command_error"))
+                                self.send_message(this_chat.id, 
+                                                   self.msg("command_error"))
             except Exception:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()
@@ -317,19 +317,19 @@ class PlayerokBot:
             try:
                 this_chat = event.chat
                 self.logger.info(f"{PREFIX} {ACCENT_COLOR}📋  Новая сделка: {Fore.LIGHTWHITE_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTWHITE_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTWHITE_EX}{event.deal.item.price or '?'}₽")
-                if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and plbot.config["playerok"]["bot"]["tg_logging_events"]["new_deal"]:
-                    plbot.log_to_tg(text=log_text(f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"),
+                if self.config["playerok"]["bot"]["tg_logging_enabled"] and self.config["playerok"]["bot"]["tg_logging_events"]["new_deal"]:
+                    self.log_to_tg(text=log_text(f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"),
                                     kb=log_new_deal_kb(event.deal.user.username, event.deal.id))
 
                 if self.config["playerok"]["bot"]["auto_deliveries_enabled"]:
                     for auto_delivery in self.auto_deliveries:
                         for phrase in auto_delivery["keyphrases"]:
                             if phrase.lower() in event.deal.item.name.lower() or event.deal.item.name.lower() == phrase.lower():
-                                plbot.send_message(this_chat.id, "\n".join(auto_delivery["message"]))
+                                self.send_message(this_chat.id, "\n".join(auto_delivery["message"]))
                                 break
 
                 if self.config["playerok"]["bot"]["auto_complete_deals_enabled"]:
-                    if event.deal.user.id != plbot.playerok_account.id:
+                    if event.deal.user.id != self.playerok_account.id:
                         self.playerok_account.update_deal(event.deal.id, ItemDealStatuses.SENT)
             except Exception:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новой сделки произошла ошибка: {Fore.WHITE}")
@@ -346,8 +346,8 @@ class PlayerokBot:
         async def handler_new_problem(plbot: PlayerokBot, event: ItemPaidEvent):
             try:
                 self.logger.info(f"{PREFIX} {ACCENT_COLOR}🤬  Новая жалоба: {Fore.LIGHTWHITE_EX}{event.deal.user.username}{Fore.WHITE} открыл жалобу в сделке на покупку {Fore.LIGHTWHITE_EX}«{event.deal.item.name}»{Fore.WHITE}")
-                if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and plbot.config["playerok"]["bot"]["tg_logging_events"]["new_problem"]:
-                    plbot.log_to_tg(log_text(f'🤬 Новая жалоба в <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n"))
+                if self.config["playerok"]["bot"]["tg_logging_enabled"] and self.config["playerok"]["bot"]["tg_logging_events"]["new_problem"]:
+                    self.log_to_tg(log_text(f'🤬 Новая жалоба в <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n"))
             except Exception:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()
@@ -360,21 +360,21 @@ class PlayerokBot:
                 elif event.deal.status is ItemDealStatuses.CONFIRMED: status = "Подтверждён"
                 elif event.deal.status is ItemDealStatuses.ROLLED_BACK: status = "Возврат"
                 self.logger.info(f"{PREFIX} {ACCENT_COLOR}🔄️📋  Статус сделки {Fore.LIGHTWHITE_EX}{event.deal.id}{ACCENT_COLOR} от {Fore.LIGHTWHITE_EX}{event.deal.user.username}{ACCENT_COLOR} изменился на {Fore.LIGHTWHITE_EX}«{status}»")
-                if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and plbot.config["playerok"]["bot"]["tg_logging_events"]["deal_status_changed"]:
-                    plbot.log_to_tg(log_text(f'🔄️📋 Статус <a href="https://playerok.com/deal/{event.deal.id}/">сделки</a> изменился', f"<b>Новый статус:</b> {status}"))
+                if self.config["playerok"]["bot"]["tg_logging_enabled"] and self.config["playerok"]["bot"]["tg_logging_events"]["deal_status_changed"]:
+                    self.log_to_tg(log_text(f'🔄️📋 Статус <a href="https://playerok.com/deal/{event.deal.id}/">сделки</a> изменился', f"<b>Новый статус:</b> {status}"))
                 try:
                     if event.deal.status is ItemDealStatuses.CONFIRMED:
-                        plbot.stats.orders_completed += 1
-                        plbot.stats.earned_money += round(event.deal.transaction.value or 0, 2)
+                        self.stats.orders_completed += 1
+                        self.stats.earned_money += round(event.deal.transaction.value or 0, 2)
                     elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
-                        plbot.stats.orders_refunded += 1
+                        self.stats.orders_refunded += 1
                 except Exception as e:
                     self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При подсчёте статистики произошла ошибка: {Fore.WHITE}{e}")
                 finally:
-                    set_stats(plbot.stats)
+                    set_stats(self.stats)
 
                 if event.deal.status is ItemDealStatuses.CONFIRMED:
-                    plbot.send_message(this_chat.id, plbot.msg("deal_confirmed"))
+                    self.send_message(this_chat.id, self.msg("deal_confirmed"))
             except Exception:
                 self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}При обработке ивента смены статуса сделки произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()

@@ -1,5 +1,9 @@
 from aiogram.fsm.state import State, StatesGroup
 
+
+class ActionsStates(StatesGroup):
+    entering_message_text = State()
+
 class SystemStates(StatesGroup):
     entering_password = State()
 

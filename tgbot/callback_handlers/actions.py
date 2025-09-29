@@ -11,6 +11,9 @@ from .. import states as states
 from ..helpful import throw_float_message
 from .navigation import *
 
+from plbot import get_playerok_bot
+from playerokapi.enums import ItemDealStatuses
+
 router = Router()
 
 
@@ -18,6 +21,67 @@ router = Router()
 @router.callback_query(F.data == "destroy")
 async def callback_back(callback: CallbackQuery):
     await callback.message.delete()
+
+
+@router.callback_query(calls.RememberUsername.filter())
+async def callback_remember_username(callback: CallbackQuery, callback_data: calls.RememberUsername, state: FSMContext):
+    await state.set_state(None)
+    username = callback_data.name
+    do = callback_data.do
+    await state.update_data(username=username)
+    if do == "send_mess":
+        await state.set_state(states.ActionsStates.entering_message_text)
+        await throw_float_message(state=state, 
+                                    message=callback.message, 
+                                    text=templ.do_action_text(f"💬 Введите <b>сообщение</b> для отправки <b>{username}</b> ↓"), 
+                                    reply_markup=templ.destroy_kb(),
+                                    callback=callback,
+                                    send=True)
+
+@router.callback_query(calls.RememberDealId.filter())
+async def callback_remember_deal_id(callback: CallbackQuery, callback_data: calls.RememberDealId, state: FSMContext):
+    await state.set_state(None)
+    deal_id = callback_data.de_id
+    do = callback_data.do
+    await state.update_data(deal_id=deal_id)
+    if do == "refund":
+        await throw_float_message(state=state, 
+                                  message=callback.message, 
+                                  text=templ.do_action_text(f'📦✔️ Подтвердите <b>возврат</b> <a href="https://playerok.com/deal/{deal_id}">сделки</a> ↓'), 
+                                  reply_markup=templ.confirm_kb(confirm_cb="refund_deal", cancel_cb="destroy"),
+                                  callback=callback,
+                                  send=True)
+    if do == "complete":
+        await throw_float_message(state=state, 
+                                  message=callback.message, 
+                                  text=templ.do_action_text(f'☑️✔️ Подтвердите <b>выполнение</b> <a href="https://playerok.com/deal/{deal_id}">сделки</a> ↓'), 
+                                  reply_markup=templ.confirm_kb(confirm_cb="complete_deal", cancel_cb="destroy"),
+                                  callback=callback,
+                                  send=True)
+        
+@router.callback_query(F.data == "refund_deal")
+async def callback_refund_deal(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(None)
+    plbot = get_playerok_bot()
+    data = await state.get_data()
+    deal_id = data.get("deal_id")
+    plbot.playerok_account.update_deal(deal_id, ItemDealStatuses.ROLLED_BACK)
+    await throw_float_message(state=state, 
+                              message=callback.message, 
+                              text=templ.do_action_text(f"✅ По сделке <b>https://playerok.com/deal/{deal_id}</b> был оформлен возврат"), 
+                              reply_markup=templ.destroy_kb())
+        
+@router.callback_query(F.data == "complete_deal")
+async def callback_complete_deal(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(None)
+    plbot = get_playerok_bot()
+    data = await state.get_data()
+    deal_id = data.get("deal_id")
+    plbot.playerok_account.update_deal(deal_id, ItemDealStatuses.SENT)
+    await throw_float_message(state=state, 
+                              message=callback.message, 
+                              text=templ.do_action_text(f"✅ Сделка <b>https://playerok.com/deal/{deal_id}</b> была помечена вами, как выполненная"), 
+                              reply_markup=templ.destroy_kb())
 
 
 @router.callback_query(F.data == "enter_token")

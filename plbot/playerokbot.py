@@ -5,6 +5,7 @@ import time
 import traceback
 from threading import Thread
 from colorama import Fore, Style
+from aiogram.types import InlineKeyboardMarkup
 
 import settings
 from settings import Settings as sett
@@ -25,7 +26,7 @@ from core.handlers_manager import HandlersManager
 
 from . import set_playerok_bot
 from tgbot import get_telegram_bot, get_telegram_bot_loop
-from tgbot.templates import log_text
+from tgbot.templates import log_text, log_new_mess_kb, log_new_deal_kb
 
 PREFIX = F"{Fore.CYAN}[PL]{Fore.WHITE}"
 
@@ -173,14 +174,14 @@ class PlayerokBot:
         text = text.replace('\n', '').strip()
         self.logger.error(f"{PREFIX} {Fore.LIGHTRED_EX}Не удалось отправить сообщение {Fore.LIGHTWHITE_EX}«{text}» {Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id}")
 
-    def log_to_tg(self, text: str):
+    def log_to_tg(self, text: str, kb: InlineKeyboardMarkup | None = None):
         """
         Логгирует ивент в Telegram бота.
 
         :param text: Текст лога.
         :type text: str
         """
-        asyncio.run_coroutine_threadsafe(get_telegram_bot().log_event(text), get_telegram_bot_loop())
+        asyncio.run_coroutine_threadsafe(get_telegram_bot().log_event(text, kb), get_telegram_bot_loop())
 
 
     async def restore_last_sold_item(self, item: Item):
@@ -267,7 +268,8 @@ class PlayerokBot:
                             text = f"<b>{event.message.user.username}:</b> {event.message.text or ''}"
                             if event.message.file:
                                 text += f' <b><a href="{event.message.file.url}">{event.message.file.filename}</a></b>'
-                            plbot.log_to_tg(log_text(f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', text.strip()))
+                            plbot.log_to_tg(text=log_text(f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', text.strip()),
+                                            kb=log_new_mess_kb(event.message.user.username))
 
                 if self.config["playerok"]["bot"]["first_message_enabled"]:
                     if event.message.user is not None:
@@ -316,7 +318,8 @@ class PlayerokBot:
                 this_chat = event.chat
                 self.logger.info(f"{PREFIX} {ACCENT_COLOR}📋  Новая сделка: {Fore.LIGHTWHITE_EX}{event.deal.user.username}{Fore.WHITE} оплатил предмет {Fore.LIGHTWHITE_EX}«{event.deal.item.name}»{Fore.WHITE} на сумму {Fore.LIGHTWHITE_EX}{event.deal.item.price or '?'}₽")
                 if plbot.config["playerok"]["bot"]["tg_logging_enabled"] and plbot.config["playerok"]["bot"]["tg_logging_events"]["new_deal"]:
-                    plbot.log_to_tg(log_text(f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"))
+                    plbot.log_to_tg(text=log_text(f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"),
+                                    kb=log_new_deal_kb(event.deal.user.username, event.deal.id))
 
                 if self.config["playerok"]["bot"]["auto_deliveries_enabled"]:
                     for auto_delivery in self.auto_deliveries:

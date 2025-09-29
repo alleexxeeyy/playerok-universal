@@ -9,6 +9,7 @@ from .. import callback_datas as calls
 from ..helpful import throw_float_message
 
 from settings import Settings as sett
+from plbot import get_playerok_bot
 
 router = Router()
 
@@ -24,6 +25,31 @@ def is_int(txt: str) -> bool:
 def is_eng_str(str: str):
     pattern = r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:\'",.<>/?\\|`~ ]+$'
     return bool(re.match(pattern, str))
+
+
+@router.message(states.ActionsStates.entering_message_text, F.text)
+async def handler_entering_password(message: types.Message, state: FSMContext):
+    try: 
+        await state.set_state(None)
+        if len(message.text.strip()) <= 0:
+            raise Exception("❌ Слишком короткий текст")
+
+        data = await state.get_data()
+        plbot = get_playerok_bot()
+        username = data.get("username")
+        chat = plbot.get_chat_by_username(username)
+        plbot.send_message(chat_id=chat.id, text=message.text.strip())
+
+        await throw_float_message(state=state,
+                                  message=message,
+                                  text=templ.do_action_text(f"✅ Пользователю <b>{username}</b> было отправлено сообщение: <blockquote>{message.text.strip()}</blockquote>"),
+                                  reply_markup=templ.destroy_kb())
+    except Exception as e:
+        if e is not TelegramAPIError:
+            await throw_float_message(state=state,
+                                      message=message,
+                                      text=templ.do_action_text(e), 
+                                      reply_markup=templ.destroy_kb())
 
 
 @router.message(states.SystemStates.entering_password, F.text)

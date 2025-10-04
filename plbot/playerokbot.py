@@ -142,17 +142,21 @@ class PlayerokBot:
                 pass
         return "Не удалось получить сообщение"
     
-    def send_message(self, chat_id: str, text: str, mark_chat_as_read: bool = None,
-                     max_attempts: int = 3) -> types.ChatMessage:
+    def send_message(self, chat_id: str, text: str | None = None, photo_file_path: str | None = None,
+                     mark_chat_as_read: bool = None, max_attempts: int = 3) -> types.ChatMessage:
         """
         Кастомный метод отправки сообщения в чат Playerok.
-        Пытается отправить за 3 попытки, если не удалось - выдаёт ошибку в консоль.
+        Пытается отправить за 3 попытки, если не удалось - выдаёт ошибку в консоль.\n
+        Можно отправить текстовое сообщение `text` или фотографию `photo_file_path`.
 
         :param chat_id: ID чата, в который нужно отправить сообщение.
         :type chat_id: `str`
 
-        :param text: Текст сообщения.
-        :type text: `str`
+        :param text: Текст сообщения, _опционально_.
+        :type text: `str` or `None`
+
+        :param photo_file_path: Путь к файлу фотографии, _опционально_.
+        :type photo_file_path: `str` or `None`
 
         :param mark_chat_as_read: Пометить чат, как прочитанный перед отправкой, _опционально_.
         :type mark_chat_as_read: `bool`
@@ -163,7 +167,7 @@ class PlayerokBot:
         for _ in range(max_attempts):
             try:
                 mark_chat_as_read = (self.config["playerok"]["bot"]["read_chat_before_sending_message_enabled"] or False) if mark_chat_as_read is None else mark_chat_as_read
-                mess = self.playerok_account.send_message(chat_id, text, mark_chat_as_read)
+                mess = self.playerok_account.send_message(chat_id, text, photo_file_path, mark_chat_as_read)
                 return mess
             except plapi_exceptions.RequestFailedError:
                 continue

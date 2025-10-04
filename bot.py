@@ -75,11 +75,9 @@ if __name__ == "__main__":
         
         print(f"{Fore.WHITE}🤖 Запускаю бота...\n")
         asyncio.run(start_playerok_bot())
-        for _ in range(30):
-            if get_playerok_bot() is not None:
-                break
-            time.sleep(1)
-        else:
+        while get_playerok_bot() is None:
+            time.sleep(0.5)
+        if get_playerok_bot() is None:
             raise Exception("Не удалось запустить Playerok бота")
         asyncio.run(start_telegram_bot())
     except Exception as e:

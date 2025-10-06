@@ -346,7 +346,7 @@ class UserProfile:
         payload = {
             "operationName": "items",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "status": payload_status}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "d79d6e2921fea03c5f1515a8925fbb816eacaa7bcafe03eb47a40425ef49601e"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "29ff7e8c607c7b3f2fa3c7a9e02a3a184bf92905e8ea75ba237c8c7f005287a3"}}, ensure_ascii=False)
         }
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
         return parser.item_profile_list(r["data"]["items"])
@@ -419,7 +419,7 @@ class UserProfile:
         payload = {
             "operationName": "testimonials",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": filters, "sort": {"direction": sort_direction.name if sort_direction else None, "field": sort_field}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "bd4f2f6b77502701689193a1ab4cee28b683fc66164c54fba96fd01873b08a01"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "773d40b7efec82a4b86021ba8bcaa462f68eb236e255926f2168c5cd4685e881"}}, ensure_ascii=False)
         }
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
         return parser.review_list(r["data"]["testimonials"])

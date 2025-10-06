@@ -345,7 +345,7 @@ class UserProfile:
         }
         payload = {
             "operationName": "items",
-            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "status": payload_status}}, ensure_ascii=False),
+            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "status": payload_status}, "showForbiddenImage": False}, ensure_ascii=False),
             "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "29ff7e8c607c7b3f2fa3c7a9e02a3a184bf92905e8ea75ba237c8c7f005287a3"}}, ensure_ascii=False)
         }
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()

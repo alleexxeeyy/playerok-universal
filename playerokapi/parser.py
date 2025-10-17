@@ -1,22 +1,27 @@
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from .types import *
 
 from .enums import *
 
-def file(data: dict) -> 'FileObject':
+
+def file(data: dict) -> "FileObject":
     from .types import FileObject
+
     if not data:
         return None
     return FileObject(
         id=data.get("id"),
-        url=data.get("url"), 
+        url=data.get("url"),
         filename=data.get("filename"),
-        mime=data.get("mime")
+        mime=data.get("mime"),
     )
 
-def transaction(data: dict) -> 'Transaction':
+
+def transaction(data: dict) -> "Transaction":
     from .types import Transaction
+
     if not data:
         return None
     return Transaction(
@@ -28,37 +33,45 @@ def transaction(data: dict) -> 'Transaction':
         value=data.get("value"),
         created_at=data.get("createdAt"),
         payment_method_id=data.get("paymentMethodId"),
-        status_expiration_date=data.get("statusExpirationDate")
+        status_expiration_date=data.get("statusExpirationDate"),
     )
 
-def game_category_data_field(data: dict) -> 'GameCategoryDataField':
+
+def game_category_data_field(data: dict) -> "GameCategoryDataField":
     from .types import GameCategoryDataField
+
     if not data:
         return None
     return GameCategoryDataField(
         id=data.get("id"),
         label=data.get("label"),
         type=GameCategoryDataFieldTypes.__members__.get(data.get("type")),
-        input_type=GameCategoryDataFieldInputTypes.__members__.get(data.get("inputType")),
+        input_type=GameCategoryDataFieldInputTypes.__members__.get(
+            data.get("inputType")
+        ),
         copyable=data.get("copyable"),
         hidden=data.get("hidden"),
         required=data.get("required"),
-        value=data.get("value")
+        value=data.get("value"),
     )
 
-def game_category_data_field_page_info(data: dict) -> 'GameCategoryDataFieldPageInfo':
+
+def game_category_data_field_page_info(data: dict) -> "GameCategoryDataFieldPageInfo":
     from .types import GameCategoryDataFieldPageInfo
+
     if not data:
         return None
     return GameCategoryDataFieldPageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def game_category_data_field_list(data: dict) -> 'GameCategoryDataFieldList':
+
+def game_category_data_field_list(data: dict) -> "GameCategoryDataFieldList":
     from .types import GameCategoryDataFieldList
+
     if not data:
         return None
     data_fields = []
@@ -69,20 +82,24 @@ def game_category_data_field_list(data: dict) -> 'GameCategoryDataFieldList':
     return GameCategoryDataFieldList(
         data_fields=data_fields,
         page_info=game_category_data_field_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
-def game_category_props(data: dict) -> 'GameCategoryProps':
+
+def game_category_props(data: dict) -> "GameCategoryProps":
     from .types import GameCategoryProps
+
     if not data:
         return None
     return GameCategoryProps(
         min_reviews=data.get("minTestimonials"),
-        min_reviews_for_seller=data.get("minTestimonialsForSeller")
+        min_reviews_for_seller=data.get("minTestimonialsForSeller"),
     )
 
-def game_category_option(data: dict) -> 'GameCategoryOption':
+
+def game_category_option(data: dict) -> "GameCategoryOption":
     from .types import GameCategoryOption
+
     if not data:
         return None
     return GameCategoryOption(
@@ -92,33 +109,39 @@ def game_category_option(data: dict) -> 'GameCategoryOption':
         type=GameCategoryOptionTypes.__members__.get(data.get("type")),
         field=data.get("field"),
         value=data.get("value"),
-        value_range_limit=data.get("valueRangeLimit")
+        value_range_limit=data.get("valueRangeLimit"),
     )
 
-def game_category_agreement(data: dict) -> 'GameCategoryAgreement':
+
+def game_category_agreement(data: dict) -> "GameCategoryAgreement":
     from .types import GameCategoryAgreement
+
     if not data:
         return None
     return GameCategoryAgreement(
         id=data.get("id"),
         description=data.get("description"),
         icontype=GameCategoryAgreementIconTypes.__members__.get(data.get("iconType")),
-        sequence=data.get("sequence")
+        sequence=data.get("sequence"),
     )
 
-def game_category_agreement_page_info(data: dict) -> 'GameCategoryAgreementPageInfo':
+
+def game_category_agreement_page_info(data: dict) -> "GameCategoryAgreementPageInfo":
     from .types import GameCategoryAgreementPageInfo
+
     if not data:
         return None
     return GameCategoryAgreementPageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def game_category_agreement_list(data: dict) -> 'GameCategoryAgreementList':
+
+def game_category_agreement_list(data: dict) -> "GameCategoryAgreementList":
     from .types import GameCategoryAgreementList
+
     if not data:
         return None
     agreements = []
@@ -129,11 +152,13 @@ def game_category_agreement_list(data: dict) -> 'GameCategoryAgreementList':
     return GameCategoryAgreementList(
         agreements=agreements,
         page_info=game_category_agreement_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
-def game_category_obtaining_type(data: dict) -> 'GameCategoryObtainingType':
+
+def game_category_obtaining_type(data: dict) -> "GameCategoryObtainingType":
     from .types import GameCategoryObtainingType
+
     if not data:
         return None
     agrs = []
@@ -152,22 +177,28 @@ def game_category_obtaining_type(data: dict) -> 'GameCategoryObtainingType':
         sequence=data.get("sequence"),
         fee_multiplier=data.get("feeMultiplier"),
         agreements=agrs,
-        props=game_category_props(data.get("props"))
+        props=game_category_props(data.get("props")),
     )
 
-def game_category_obtaining_type_page_info(data: dict) -> 'GameCategoryObtainingTypePageInfo':
+
+def game_category_obtaining_type_page_info(
+    data: dict,
+) -> "GameCategoryObtainingTypePageInfo":
     from .types import GameCategoryObtainingTypePageInfo
+
     if not data:
         return None
     return GameCategoryObtainingTypePageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def game_category_obtaining_type_list(data: dict) -> 'GameCategoryObtainingTypeList':
+
+def game_category_obtaining_type_list(data: dict) -> "GameCategoryObtainingTypeList":
     from .types import GameCategoryObtainingTypeList
+
     if not data:
         return None
     types = []
@@ -178,31 +209,36 @@ def game_category_obtaining_type_list(data: dict) -> 'GameCategoryObtainingTypeL
     return GameCategoryObtainingTypeList(
         obtaining_types=types,
         page_info=game_category_obtaining_type_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
-def game_category_instruction(data: dict) -> 'GameCategoryInstruction':
+
+def game_category_instruction(data: dict) -> "GameCategoryInstruction":
     from .types import GameCategoryInstruction
+
     if not data:
         return None
-    return GameCategoryInstruction(
-        id=data.get("id"),
-        text=data.get("text")
-    )
+    return GameCategoryInstruction(id=data.get("id"), text=data.get("text"))
 
-def game_category_instruction_page_info(data: dict) -> 'GameCategoryInstructionPageInfo':
+
+def game_category_instruction_page_info(
+    data: dict,
+) -> "GameCategoryInstructionPageInfo":
     from .types import GameCategoryInstructionPageInfo
+
     if not data:
         return None
     return GameCategoryInstructionPageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def game_category_instruction_list(data: dict) -> 'GameCategoryInstructionList':
+
+def game_category_instruction_list(data: dict) -> "GameCategoryInstructionList":
     from .types import GameCategoryInstructionList
+
     if not data:
         return None
     instructions = []
@@ -213,11 +249,13 @@ def game_category_instruction_list(data: dict) -> 'GameCategoryInstructionList':
     return GameCategoryInstructionList(
         instructions=instructions,
         page_info=game_category_instruction_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
-def game_category(data: dict) -> 'GameCategory':
+
+def game_category(data: dict) -> "GameCategory":
     from .types import GameCategory
+
     if not data:
         return None
     options = []
@@ -243,14 +281,18 @@ def game_category(data: dict) -> 'GameCategory':
         instruction_for_buyer=data.get("instructionForBuyer"),
         instruction_for_seller=data.get("instructionForSeller"),
         use_custom_obtaining=data.get("useCustomObtaining"),
-        auto_confirm_period=GameCategoryAutoConfirmPeriods.__members__.get(data.get("autoConfirmPeriod")),
+        auto_confirm_period=GameCategoryAutoConfirmPeriods.__members__.get(
+            data.get("autoConfirmPeriod")
+        ),
         auto_moderation_mode=data.get("autoModerationMode"),
         agreements=agrs,
-        fee_multiplier=data.get("feeMultiplier")
+        fee_multiplier=data.get("feeMultiplier"),
     )
 
-def game(data: dict) -> 'Game':
+
+def game(data: dict) -> "Game":
     from .types import Game
+
     if not data:
         return None
     cats = []
@@ -266,11 +308,13 @@ def game(data: dict) -> 'Game':
         logo=file(data.get("logo")),
         banner=file(data.get("banner")),
         categories=cats,
-        created_at=data.get("createdAt")
+        created_at=data.get("createdAt"),
     )
 
-def game_profile(data: dict) -> 'GameProfile':
+
+def game_profile(data: dict) -> "GameProfile":
     from .types import GameProfile
+
     if not data:
         return None
     return GameProfile(
@@ -281,19 +325,23 @@ def game_profile(data: dict) -> 'GameProfile':
         logo=file(data.get("logo")),
     )
 
-def game_page_info(data: dict) -> 'GamePageInfo':
+
+def game_page_info(data: dict) -> "GamePageInfo":
     from .types import GamePageInfo
+
     if not data:
         return None
     return GamePageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def game_list(data: dict) -> 'GameList':
+
+def game_list(data: dict) -> "GameList":
     from .types import GameList
+
     if not data:
         return None
     games = []
@@ -304,12 +352,13 @@ def game_list(data: dict) -> 'GameList':
     return GameList(
         games=games,
         page_info=game_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
-def user_profile(data: dict) -> 'UserProfile':
+
+def user_profile(data: dict) -> "UserProfile":
     from .types import UserProfile
-    from . import get_account
+
     if not data:
         return None
     u = UserProfile(
@@ -323,73 +372,78 @@ def user_profile(data: dict) -> 'UserProfile':
         reviews_count=data.get("testimonialCounter"),
         created_at=data.get("createdAt"),
         support_chat_id=data.get("supportChatId"),
-        system_chat_id=data.get("systemChatId")
+        system_chat_id=data.get("systemChatId"),
     )
-    u.set_account(get_account())
     return u
 
-def account_items_stats(data: dict) -> 'AccountItemsStats':
+
+def account_items_stats(data: dict) -> "AccountItemsStats":
     from .types import AccountItemsStats
+
     if not data:
         return None
-    return AccountItemsStats(
-        total=data.get("total"), 
-        finished=data.get("finished")
-    )
+    return AccountItemsStats(total=data.get("total"), finished=data.get("finished"))
 
-def account_incoming_deals_stats(data: dict) -> 'AccountIncomingDealsStats':
+
+def account_incoming_deals_stats(data: dict) -> "AccountIncomingDealsStats":
     from .types import AccountIncomingDealsStats
+
     if not data:
         return None
     return AccountIncomingDealsStats(
-        total=data.get("total"), 
-        finished=data.get("finished")
+        total=data.get("total"), finished=data.get("finished")
     )
 
-def account_outgoing_deals_stats(data: dict) -> 'AccountOutgoingDealsStats':
+
+def account_outgoing_deals_stats(data: dict) -> "AccountOutgoingDealsStats":
     from .types import AccountOutgoingDealsStats
+
     if not data:
         return None
     return AccountOutgoingDealsStats(
-        total=data.get("total"), 
-        finished=data.get("finished")
+        total=data.get("total"), finished=data.get("finished")
     )
 
-def account_deals_stats(data: dict) -> 'AccountDealsStats':
+
+def account_deals_stats(data: dict) -> "AccountDealsStats":
     from .types import AccountDealsStats
+
     if not data:
         return None
     return AccountDealsStats(
-        incoming=account_incoming_deals_stats(data.get("incoming")), 
-        outgoing=account_outgoing_deals_stats(data.get("outgoing"))
+        incoming=account_incoming_deals_stats(data.get("incoming")),
+        outgoing=account_outgoing_deals_stats(data.get("outgoing")),
     )
 
-def account_stats(data: dict) -> 'AccountStats':
+
+def account_stats(data: dict) -> "AccountStats":
     from .types import AccountStats
+
     if not data:
         return None
     items = account_items_stats(data.get("items"))
     deals = account_deals_stats(data.get("deals"))
-    return AccountStats(
-        items=items, 
-        deals=deals
-    )
+    return AccountStats(items=items, deals=deals)
 
-def account_balance(data: dict) -> 'AccountBalance':
+
+def account_balance(data: dict) -> "AccountBalance":
     from .types import AccountBalance
+
     if not data:
         return None
     return AccountBalance(
-        id=data.get("id"), 
-        value=data.get("value"), 
-        frozen=data.get("frozen"), 
+        id=data.get("id"),
+        value=data.get("value"),
+        frozen=data.get("frozen"),
         available=data.get("available"),
-        withdrawable=data.get("withdrawable"), 
-        pending_income=data.get("pendingIncome")
+        withdrawable=data.get("withdrawable"),
+        pending_income=data.get("pendingIncome"),
     )
 
-def account_profile(data: dict) -> 'AccountProfile':
+
+def account_profile(data: dict) -> "AccountProfile":
     from .types import AccountProfile
+
     if not data:
         return None
     profile: dict = data.get("profile")
@@ -411,20 +465,21 @@ def account_profile(data: dict) -> 'AccountProfile':
         support_chat_id=profile.get("supportChatId"),
         system_chat_id=profile.get("systemChatId"),
         has_frozen_balance=data.get("hasFrozenBalance"),
-        has_enabled_notifications=data.get("hasEnabledNotifications")
+        has_enabled_notifications=data.get("hasEnabledNotifications"),
     )
 
-def item_priority_status_price_range(data: dict) -> 'ItemPriorityStatusPriceRange':
+
+def item_priority_status_price_range(data: dict) -> "ItemPriorityStatusPriceRange":
     from .types import ItemPriorityStatusPriceRange
+
     if not data:
         return None
-    return ItemPriorityStatusPriceRange(
-        min=data.get("min"),
-        max=data.get("max")
-    )
+    return ItemPriorityStatusPriceRange(min=data.get("min"), max=data.get("max"))
 
-def item_priority_status(data: dict) -> 'ItemPriorityStatus':
+
+def item_priority_status(data: dict) -> "ItemPriorityStatus":
     from .types import ItemPriorityStatus
+
     if not data:
         return None
     return ItemPriorityStatus(
@@ -433,22 +488,26 @@ def item_priority_status(data: dict) -> 'ItemPriorityStatus':
         name=data.get("name"),
         type=PriorityTypes.__members__.get(data.get("type")),
         period=data.get("period"),
-        price_range=item_priority_status_price_range(data.get("priceRange"))
+        price_range=item_priority_status_price_range(data.get("priceRange")),
     )
 
-def item_log(data: dict) -> 'ItemLog':
+
+def item_log(data: dict) -> "ItemLog":
     from .types import ItemLog
+
     if not data:
         return None
     return ItemLog(
         id=data.get("id"),
         event=ItemLogEvents.__members__.get(data.get("event")),
         created_at=data.get("createdAt"),
-        user=user_profile(data.get("user"))
+        user=user_profile(data.get("user")),
     )
 
-def item(data: dict) -> 'Item':
+
+def item(data: dict) -> "Item":
     from .types import Item
+
     if not data:
         return None
     attachments = []
@@ -479,11 +538,13 @@ def item(data: dict) -> 'Item':
         game=game_profile(data.get("game")),
         seller_type=data.get("sellerType"),
         status=ItemStatuses.__members__.get(data.get("status")),
-        user=user_profile(data.get("user"))
+        user=user_profile(data.get("user")),
     )
 
-def my_item(data: dict) -> 'MyItem':
+
+def my_item(data: dict) -> "MyItem":
     from .types import MyItem
+
     if not data:
         return None
     attachments = []
@@ -496,7 +557,7 @@ def my_item(data: dict) -> 'MyItem':
     if data_data_fields:
         for field in data_data_fields:
             data_fields.append(game_category_data_field(field))
-    
+
     return MyItem(
         id=data.get("id"),
         slug=data.get("slug"),
@@ -530,11 +591,13 @@ def my_item(data: dict) -> 'MyItem':
         approval_date=data.get("approvalDate"),
         deleted_at=data.get("deletedAt"),
         updated_at=data.get("updatedAt"),
-        created_at=data.get("createdAt")
+        created_at=data.get("createdAt"),
     )
-    
-def item_profile(data: dict) -> 'ItemProfile':
+
+
+def item_profile(data: dict) -> "ItemProfile":
     from .types import ItemProfile
+
     if not data:
         return None
     return ItemProfile(
@@ -552,22 +615,26 @@ def item_profile(data: dict) -> 'ItemProfile':
         priority_position=data.get("priorityPosition"),
         views_counter=data.get("viewsCounter"),
         fee_multiplier=data.get("feeMultiplier"),
-        created_at=data.get("createdAt")
+        created_at=data.get("createdAt"),
     )
 
-def item_profile_page_info(data: dict) -> 'ItemProfilePageInfo':
+
+def item_profile_page_info(data: dict) -> "ItemProfilePageInfo":
     from .types import ItemProfilePageInfo
+
     if not data:
         return None
     return ItemProfilePageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def item_profile_list(data: dict) -> 'ItemProfileList':
+
+def item_profile_list(data: dict) -> "ItemProfileList":
     from .types import ItemProfileList
+
     if not data:
         return None
     items = []
@@ -578,17 +645,19 @@ def item_profile_list(data: dict) -> 'ItemProfileList':
     return ItemProfileList(
         items=items,
         page_info=item_profile_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
-def moderator(data: dict) -> 'Moderator':
-    ... # TODO: Сделать парсинг класса Moderator
 
-def event(data: dict):
-    ... # TODO: Сделать парсинг класса Event
+def moderator(data: dict) -> "Moderator": ...  # TODO: Сделать парсинг класса Moderator
 
-def chat(data: dict) -> 'Chat':
+
+def event(data: dict): ...  # TODO: Сделать парсинг класса Event
+
+
+def chat(data: dict) -> "Chat":
     from .types import Chat
+
     if not data:
         return None
     users = []
@@ -613,22 +682,26 @@ def chat(data: dict) -> 'Chat':
         started_at=data.get("startedAt"),
         finished_at=data.get("finishedAt"),
         last_message=chat_message(data.get("lastMessage")),
-        users=users
+        users=users,
     )
 
-def chat_page_info(data: dict) -> 'ChatPageInfo':
+
+def chat_page_info(data: dict) -> "ChatPageInfo":
     from .types import ChatPageInfo
+
     if not data:
         return None
     return ChatPageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def chat_list(data: dict) -> 'ChatList':
+
+def chat_list(data: dict) -> "ChatList":
     from .types import ChatList
+
     if not data:
         return None
     chats = []
@@ -639,11 +712,13 @@ def chat_list(data: dict) -> 'ChatList':
     return ChatList(
         chats=chats,
         page_info=chat_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
-def review(data: dict) -> 'Review':
+
+def review(data: dict) -> "Review":
     from .types import Review
+
     if not data:
         return None
     return Review(
@@ -656,22 +731,26 @@ def review(data: dict) -> 'Review':
         deal=item_deal(data.get("deal")),
         creator=user_profile(data.get("creator")),
         moderator=moderator(data.get("moderator")),
-        user=user_profile(data.get("user"))
+        user=user_profile(data.get("user")),
     )
 
-def review_page_info(data: dict) -> 'ReviewPageInfo':
+
+def review_page_info(data: dict) -> "ReviewPageInfo":
     from .types import ReviewPageInfo
+
     if not data:
         return None
     return ReviewPageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def review_list(data: dict) -> 'ReviewList':
+
+def review_list(data: dict) -> "ReviewList":
     from .types import ReviewList
+
     if not data:
         return None
     reviews = []
@@ -682,12 +761,13 @@ def review_list(data: dict) -> 'ReviewList':
     return ReviewList(
         reviews=reviews,
         page_info=review_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
 
-def item_deal(data: dict) -> 'ItemDeal':
+def item_deal(data: dict) -> "ItemDeal":
     from .types import ItemDeal
+
     if not data:
         return None
     logs = []
@@ -721,22 +801,26 @@ def item_deal(data: dict) -> 'ItemDeal':
         item=item(data.get("item")),
         review=review(data.get("testimonial")),
         obtaining_fields=obtaining_fields,
-        comment_from_buyer=data.get("commentFromBuyer")
+        comment_from_buyer=data.get("commentFromBuyer"),
     )
 
-def item_deal_page_info(data: dict) -> 'ItemDealPageInfo':
+
+def item_deal_page_info(data: dict) -> "ItemDealPageInfo":
     from .types import ItemDealPageInfo
+
     if not data:
         return None
     return ItemDealPageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def item_deal_list(data: dict) -> 'ItemDealList':
+
+def item_deal_list(data: dict) -> "ItemDealList":
     from .types import ItemDealList
+
     if not data:
         return None
     deals = []
@@ -747,21 +831,25 @@ def item_deal_list(data: dict) -> 'ItemDealList':
     return ItemDealList(
         deals=deals,
         page_info=item_deal_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )
 
-def chat_message_button(data: dict) -> 'ChatMessageButton':
+
+def chat_message_button(data: dict) -> "ChatMessageButton":
     from .types import ChatMessageButton
+
     if not data:
         return None
     return ChatMessageButton(
         type=ChatMessageButtonTypes.__members__.get(data.get("type")),
         url=data.get("url"),
-        text=data.get("text")
+        text=data.get("text"),
     )
 
-def chat_message(data: dict) -> 'ChatMessage':
+
+def chat_message(data: dict) -> "ChatMessage":
     from .types import ChatMessage
+
     if not data:
         return None
     btns = []
@@ -788,22 +876,26 @@ def chat_message(data: dict) -> 'ChatMessage':
         event_by_user=user_profile(data.get("eventByUser")),
         event_to_user=user_profile(data.get("eventToUser")),
         is_auto_response=data.get("isAutoResponse"),
-        buttons=btns
+        buttons=btns,
     )
 
-def chat_message_page_info(data: dict) -> 'ChatMessagePageInfo':
+
+def chat_message_page_info(data: dict) -> "ChatMessagePageInfo":
     from .types import ChatMessagePageInfo
+
     if not data:
         return None
     return ChatMessagePageInfo(
         start_cursor=data.get("startCursor"),
         end_cursor=data.get("endCursor"),
         has_previous_page=data.get("hasPreviousPage"),
-        has_next_page=data.get("hasNextPage")
+        has_next_page=data.get("hasNextPage"),
     )
 
-def chat_message_list(data: dict) -> 'ChatMessageList':
+
+def chat_message_list(data: dict) -> "ChatMessageList":
     from .types import ChatMessageList
+
     if not data:
         return None
     messages = []
@@ -814,5 +906,5 @@ def chat_message_list(data: dict) -> 'ChatMessageList':
     return ChatMessageList(
         messages=messages,
         page_info=chat_message_page_info(data.get("pageInfo")),
-        total_count=data.get("totalCount")
+        total_count=data.get("totalCount"),
     )

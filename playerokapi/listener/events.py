@@ -2,6 +2,7 @@ from ..enums import EventTypes
 from .. import types
 import time
 
+
 class BaseEvent:
     """
     Базовый класс события.
@@ -12,6 +13,7 @@ class BaseEvent:
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, event_type: EventTypes, chat_obj: types.Chat):
         self.type = event_type
         """ Тип события. """
@@ -20,6 +22,7 @@ class BaseEvent:
         self.time = time.time()
         """ Время события. """
 
+
 class ChatInitializedEvent(BaseEvent):
     """
     Класс события: обнаружен чат при первом запросе Runner'а.
@@ -27,10 +30,14 @@ class ChatInitializedEvent(BaseEvent):
     :param chat_obj: Объект обнаруженного чата.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, chat_obj: types.Chat):
-        super(ChatInitializedEvent, self).__init__(EventTypes.CHAT_INITIALIZED, chat_obj)
+        super(ChatInitializedEvent, self).__init__(
+            EventTypes.CHAT_INITIALIZED, chat_obj
+        )
         self.chat: types.Chat = chat_obj
         """ Объект обнаруженного чата. """
+
 
 class NewMessageEvent(BaseEvent):
     """
@@ -42,10 +49,12 @@ class NewMessageEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, message_obj: types.ChatMessage, chat_obj: types.Chat):
         super(NewMessageEvent, self).__init__(EventTypes.NEW_MESSAGE, chat_obj)
         self.message: types.ChatMessage = message_obj
         """ Объект полученного сообщения. """
+
 
 class NewDealEvent(BaseEvent):
     """
@@ -57,10 +66,12 @@ class NewDealEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
         super(NewDealEvent, self).__init__(EventTypes.NEW_DEAL, chat_obj)
         self.deal: types.ItemDeal = deal_obj
         """ Объект сделки. """
+
 
 class DealConfirmedEvent(BaseEvent):
     """
@@ -72,10 +83,12 @@ class DealConfirmedEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
         super(DealConfirmedEvent, self).__init__(EventTypes.DEAL_CONFIRMED, chat_obj)
         self.deal: types.ItemDeal = deal_obj
         """ Объект сделки. """
+
 
 class DealRolledBackEvent(BaseEvent):
     """
@@ -87,10 +100,12 @@ class DealRolledBackEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
         super(DealRolledBackEvent, self).__init__(EventTypes.DEAL_ROLLED_BACK, chat_obj)
         self.deal: types.ItemDeal = deal_obj
         """ Объект сделки. """
+
 
 class DealHasProblemEvent(BaseEvent):
     """
@@ -102,10 +117,12 @@ class DealHasProblemEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
         super(DealHasProblemEvent, self).__init__(EventTypes.DEAL_HAS_PROBLEM, chat_obj)
         self.deal: types.ItemDeal = deal_obj
         """ Объект сделки. """
+
 
 class DealProblemResolvedEvent(BaseEvent):
     """
@@ -117,10 +134,14 @@ class DealProblemResolvedEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
-        super(DealProblemResolvedEvent, self).__init__(EventTypes.DEAL_PROBLEM_RESOLVED, chat_obj)
+        super(DealProblemResolvedEvent, self).__init__(
+            EventTypes.DEAL_PROBLEM_RESOLVED, chat_obj
+        )
         self.deal: types.ItemDeal = deal_obj
         """ Объект сделки. """
+
 
 class DealStatusChangedEvent(BaseEvent):
     """
@@ -132,10 +153,14 @@ class DealStatusChangedEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
-        super(DealStatusChangedEvent, self).__init__(EventTypes.DEAL_STATUS_CHANGED, chat_obj)
+        super(DealStatusChangedEvent, self).__init__(
+            EventTypes.DEAL_STATUS_CHANGED, chat_obj
+        )
         self.deal: types.ItemDeal = deal_obj
         """ Объект сделки. """
+
 
 class ItemPaidEvent(BaseEvent):
     """
@@ -147,10 +172,12 @@ class ItemPaidEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
         super(ItemPaidEvent, self).__init__(EventTypes.ITEM_PAID, chat_obj)
         self.deal: types.ItemDeal = deal_obj
         """ Объект сделки. """
+
 
 class ItemSentEvent(BaseEvent):
     """
@@ -162,6 +189,7 @@ class ItemSentEvent(BaseEvent):
     :param chat_obj: Объект чата, в котором произошло событие.
     :type chat_obj: `PlayerokAPI.types.Chat`
     """
+
     def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
         super(ItemSentEvent, self).__init__(EventTypes.ITEM_SENT, chat_obj)
         self.deal: types.ItemDeal = deal_obj

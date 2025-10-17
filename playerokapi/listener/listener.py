@@ -1,9 +1,14 @@
+from typing import Generator
+from logging import getLogger
+import time
+
 from ..account import Account
 from ..types import ChatList, ChatMessage, Chat
 from .events import *
-from typing import Generator
 
-import time
+
+logger = getLogger("playerokapi.listener")
+
 
 class EventListener:
     """
@@ -12,7 +17,7 @@ class EventListener:
     :param account: Объект аккаунта.
     :type account: `PlayerokAPI.account.Account`
     """
-    
+
     def __init__(self, account: Account):
         self.account: Account = account
         """ Объект аккаунта. """
@@ -28,7 +33,7 @@ class EventListener:
         :rtype: `list` of
         `PlayerokAPI.listener.events.ChatInitializedEvent`
         """
-        
+
         if chat:
             return [ChatInitializedEvent(chat)]
         return []
@@ -36,7 +41,7 @@ class EventListener:
     def get_chat_events(self, chats: ChatList):
         """
         Получает новые ивенты чатов.
-        
+
         :param chats: Страница чатов.
         :type chats: `PlayerokAPI.types.ChatList`
 
@@ -52,9 +57,19 @@ class EventListener:
                 events.append(event)
         return events
 
-    def parse_message_event(self, message: ChatMessage, chat: Chat) -> list[NewMessageEvent | NewDealEvent | ItemPaidEvent
-                                                                            | ItemSentEvent | DealConfirmedEvent | DealRolledBackEvent | DealHasProblemEvent
-                                                                            | DealProblemResolvedEvent | DealStatusChangedEvent]:
+    def parse_message_event(
+        self, message: ChatMessage, chat: Chat
+    ) -> list[
+        NewMessageEvent
+        | NewDealEvent
+        | ItemPaidEvent
+        | ItemSentEvent
+        | DealConfirmedEvent
+        | DealRolledBackEvent
+        | DealHasProblemEvent
+        | DealProblemResolvedEvent
+        | DealStatusChangedEvent
+    ]:
         """
         Получает ивент с сообщения.
         
@@ -74,7 +89,7 @@ class EventListener:
         _or_ `PlayerokAPI.listener.events.DealProblemResolvedEvent` \
         _or_ `PlayerokAPI.listener.events.DealStatusChangedEvent(message.deal)`
         """
-        
+
         if not message:
             return []
         if message.text == "{{ITEM_PAID}}" and message.deal is not None:
@@ -82,14 +97,26 @@ class EventListener:
         elif message.text == "{{ITEM_SENT}}" and message.deal is not None:
             return [ItemSentEvent(message.deal, chat)]
         elif message.text == "{{DEAL_CONFIRMED}}" and message.deal is not None:
-            return [DealConfirmedEvent(message.deal, chat), DealStatusChangedEvent(message.deal, chat)]
+            return [
+                DealConfirmedEvent(message.deal, chat),
+                DealStatusChangedEvent(message.deal, chat),
+            ]
         elif message.text == "{{DEAL_ROLLED_BACK}}" and message.deal is not None:
-            return [DealRolledBackEvent(message.deal, chat), DealStatusChangedEvent(message.deal, chat)]
+            return [
+                DealRolledBackEvent(message.deal, chat),
+                DealStatusChangedEvent(message.deal, chat),
+            ]
         elif message.text == "{{DEAL_HAS_PROBLEM}}" and message.deal is not None:
-            return [DealHasProblemEvent(message.deal, chat), DealStatusChangedEvent(message.deal, chat)]
+            return [
+                DealHasProblemEvent(message.deal, chat),
+                DealStatusChangedEvent(message.deal, chat),
+            ]
         elif message.text == "{{DEAL_PROBLEM_RESOLVED}}" and message.deal is not None:
-            return [DealProblemResolvedEvent(message.deal, chat), DealStatusChangedEvent(message.deal, chat)]
-        
+            return [
+                DealProblemResolvedEvent(message.deal, chat),
+                DealStatusChangedEvent(message.deal, chat),
+            ]
+
         return [NewMessageEvent(message, chat)]
 
     def get_message_events(self, old_chats: ChatList, new_chats: ChatList):
@@ -115,12 +142,12 @@ class EventListener:
         _or_ `PlayerokAPI.listener.events.DealProblemResolvedEvent` \
         _or_ `PlayerokAPI.listener.events.DealStatusChangedEvent(message.deal)`
         """
-        
+
         events = []
         old_chat_map = {chat.id: chat for chat in old_chats.chats}
         for new_chat in new_chats.chats:
             old_chat = old_chat_map.get(new_chat.id)
-            
+
             if not old_chat:
                 # если это новый чат, парсим ивенты только последнего сообщения, ведь это - покупка товара
                 events.extend(self.parse_message_event(new_chat.last_message, new_chat))
@@ -140,12 +167,24 @@ class EventListener:
 
             for msg in reversed(new_msgs):
                 events.extend(self.parse_message_event(msg, new_chat))
-        return events      
-                
-    def listen(self, requests_delay: int | float = 4) -> Generator[ChatInitializedEvent | NewMessageEvent | NewDealEvent | ItemPaidEvent
-                                                                  | ItemSentEvent | DealConfirmedEvent | DealRolledBackEvent | DealHasProblemEvent
-                                                                  | DealProblemResolvedEvent | DealStatusChangedEvent,
-                                                                  None, None]:
+        return events
+
+    def listen(
+        self, requests_delay: int | float = 4
+    ) -> Generator[
+        ChatInitializedEvent
+        | NewMessageEvent
+        | NewDealEvent
+        | ItemPaidEvent
+        | ItemSentEvent
+        | DealConfirmedEvent
+        | DealRolledBackEvent
+        | DealHasProblemEvent
+        | DealProblemResolvedEvent
+        | DealStatusChangedEvent,
+        None,
+        None,
+    ]:
         """
         "Слушает" события в чатах. 
         Бесконечно отправляет запросы, узнавая новые события из чатов.
@@ -183,6 +222,6 @@ class EventListener:
                 chats = next_chats
                 time.sleep(requests_delay)
             except Exception as e:
-                print(f"Ошибка при получении ивентов: {e}")
-                time.sleep(requests_delay)  
+                logger.error(f"Ошибка при получении ивентов: {e}")
+                time.sleep(requests_delay)
                 continue

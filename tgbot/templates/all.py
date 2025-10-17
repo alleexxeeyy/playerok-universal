@@ -1,19 +1,14 @@
-from __init__ import VERSION
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 import math
 import textwrap
-from datetime import datetime, timedelta
-
-from .. import callback_datas as calls
-from plbot import get_playerok_bot
-from settings import Settings as sett
-from data import Data as data
-from plbot.stats import get_stats
-
+from datetime import datetime
 from uuid import UUID
 
+from __init__ import VERSION
+from core.modules import Module, get_modules, get_module_by_uuid
+from .. import callback_datas as calls
+from settings import Settings as sett
+from plbot.stats import get_stats
 
 
 def error_text(placeholder: str):
@@ -123,8 +118,8 @@ def stats_text():
         Дата запуска бота: <b>{stats.bot_launch_time.strftime("%d.%m.%Y %H:%M:%S") or 'Не запущен'}</b>
 
         <b>Статистика с момента запуска:</b>
-        ┣ Выполнено: <b>{stats.orders_completed}</b>
-        ┣ Возвратов: <b>{stats.orders_refunded}</b>
+        ┣ Выполнено: <b>{stats.deals_completed}</b>
+        ┣ Возвратов: <b>{stats.deals_refunded}</b>
         ┗ Заработано: <b>{stats.earned_money}</b>₽
 
         Выберите действие ↓
@@ -143,6 +138,7 @@ def stats_kb():
 
 
 def profile_text():
+    from plbot.playerokbot import get_playerok_bot
     plbot = get_playerok_bot()
     profile = plbot.playerok_account.profile
     txt = textwrap.dedent(f"""
@@ -611,9 +607,10 @@ def settings_mess_kb(page: int = 0):
     start_offset = page * items_per_page
     end_offset = start_offset + items_per_page
 
-    for mess_id, mess_text in list(messages.items())[start_offset:end_offset]:
-        mess_text_joined = "\n".join(mess_text)
-        rows.append([InlineKeyboardButton(text=f"{mess_id} | {mess_text_joined}", callback_data=calls.MessagePage(message_id=mess_id).pack())])
+    for mess_id, info in list(messages.items())[start_offset:end_offset]:
+        enabled = "🟢" if info["enabled"] else "🔴"
+        text_joined = "\n".join(info["text"])
+        rows.append([InlineKeyboardButton(text=f"{enabled} {mess_id} | {text_joined}", callback_data=calls.MessagePage(message_id=mess_id).pack())])
 
     buttons_row = []
     btn_back = InlineKeyboardButton(text="←", callback_data=calls.MessagesPagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="123")
@@ -639,11 +636,13 @@ def settings_mess_float_text(placeholder: str):
 
 def settings_mess_page_text(message_id: int):
     messages = sett.get("messages")
-    message_text = "\n".join(messages[message_id]) or "❌ Не задано"
+    enabled = "🟢 Включено" if messages[message_id]["enabled"] else "🔴 Выключено"
+    message_text = "\n".join(messages[message_id]["text"]) or "❌ Не задано"
     txt = textwrap.dedent(f"""
         ✒️ <b>Редактирование сообщения</b>
 
         🆔 <b>ID сообщения:</b> {message_id}
+        💡 <b>Состояние:</b> {enabled}
         💬 <b>Текст сообщения:</b> <blockquote>{message_text}</blockquote>
 
         Выберите параметр для изменения ↓
@@ -652,8 +651,10 @@ def settings_mess_page_text(message_id: int):
 
 def settings_mess_page_kb(message_id: int, page: int = 0):
     messages = sett.get("messages")
-    message_text = "\n".join(messages[message_id]) or "❌ Не задано"
+    enabled = "🟢 Включено" if messages[message_id]["enabled"] else "🔴 Выключено"
+    message_text = "\n".join(messages[message_id]["text"]) or "❌ Не задано"
     rows = [
+        [InlineKeyboardButton(text=f"💡 Состояние: {enabled}", callback_data="switch_message_enabled")],
         [InlineKeyboardButton(text=f"💬 Текст сообщения: {message_text}", callback_data="enter_message_text")],
         [
         InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MessagesPagination(page=page).pack()),
@@ -741,7 +742,6 @@ def settings_other_text():
     config = sett.get("config")
     read_chat_before_sending_message_enabled = "🟢 Включено" if config["playerok"]["bot"]["read_chat_before_sending_message_enabled"] else "🔴 Выключено"
     auto_complete_deals_enabled = "🟢 Включено" if config["playerok"]["bot"]["auto_complete_deals_enabled"] else "🔴 Выключено"
-    first_message_enabled = "🟢 Включено" if config["playerok"]["bot"]["first_message_enabled"] else "🔴 Выключено"
     custom_commands_enabled = "🟢 Включено" if config["playerok"]["bot"]["custom_commands_enabled"] else "🔴 Выключено"
     auto_deliveries_enabled = "🟢 Включено" if config["playerok"]["bot"]["auto_deliveries_enabled"] else "🔴 Выключено"
     messages_watermark_enabled = "🟢 Включено" if config["playerok"]["bot"]["messages_watermark_enabled"] else "🔴 Выключено"
@@ -751,7 +751,6 @@ def settings_other_text():
 
         👀 <b>Чтение чата перед отправкой сообщения:</b> {read_chat_before_sending_message_enabled}
         ☑️ <b>Авто-подтверждение заказов:</b> {auto_complete_deals_enabled}
-        👋 <b>Приветственное сообщение:</b> {first_message_enabled}
         🔧 <b>Пользовательские команды:</b> {custom_commands_enabled}
         🚀 <b>Авто-выдача:</b> {auto_deliveries_enabled}
         ©️ <b>Водяной знак под сообщениями:</b> {messages_watermark_enabled}
@@ -768,7 +767,6 @@ def settings_other_kb():
     config = sett.get("config")
     read_chat_before_sending_message_enabled = "🟢 Включено" if config["playerok"]["bot"]["read_chat_before_sending_message_enabled"] else "🔴 Выключено"
     auto_complete_deals_enabled = "🟢 Включено" if config["playerok"]["bot"]["auto_complete_deals_enabled"] else "🔴 Выключено"
-    first_message_enabled = "🟢 Включено" if config["playerok"]["bot"]["first_message_enabled"] else "🔴 Выключено"
     custom_commands_enabled = "🟢 Включено" if config["playerok"]["bot"]["custom_commands_enabled"] else "🔴 Выключено"
     auto_deliveries_enabled = "🟢 Включено" if config["playerok"]["bot"]["auto_deliveries_enabled"] else "🔴 Выключено"
     messages_watermark_enabled = "🟢 Включено" if config["playerok"]["bot"]["messages_watermark_enabled"] else "🔴 Выключено"
@@ -776,7 +774,6 @@ def settings_other_kb():
     rows = [
         [InlineKeyboardButton(text=f"👀 Чтение чата перед отправкой сообщения: {read_chat_before_sending_message_enabled}", callback_data="switch_read_chat_before_sending_message_enabled")],
         [InlineKeyboardButton(text=f"☑️ Авто-подтверждение заказов: {auto_complete_deals_enabled}", callback_data="switch_auto_complete_deals_enabled")],
-        [InlineKeyboardButton(text=f"👋 Приветственное сообщение: {first_message_enabled}", callback_data="switch_first_message_enabled")],
         [InlineKeyboardButton(text=f"🔧 Пользовательские команды: {custom_commands_enabled}", callback_data="switch_custom_commands_enabled")],
         [InlineKeyboardButton(text=f"🚀 Авто-выдача: {auto_deliveries_enabled}", callback_data="switch_auto_deliveries_enabled")],
         [InlineKeyboardButton(text=f"©️ Водяной знак под сообщениями: {messages_watermark_enabled}", callback_data="switch_messages_watermark_enabled")],
@@ -798,8 +795,7 @@ def settings_other_float_text(placeholder: str):
 
                     
 def modules_text():
-    from core.modules_manager import ModulesManager
-    modules = ModulesManager.get_modules()
+    modules = get_modules()
     txt = textwrap.dedent(f"""
         🔌 <b>Модули</b>
         Всего <b>{len(modules)}</b> загруженных модулей
@@ -809,8 +805,7 @@ def modules_text():
     return txt
 
 def modules_kb(page: int = 0):
-    from core.modules_manager import ModulesManager
-    modules = ModulesManager.get_modules()
+    modules = get_modules()
     rows = []
     items_per_page = 7
     total_pages = math.ceil(len(modules) / items_per_page)
@@ -843,8 +838,7 @@ def modules_kb(page: int = 0):
 
 
 def module_page_text(module_uuid: UUID):
-    from core.modules_manager import ModulesManager, Module
-    module: Module = ModulesManager.get_module_by_uuid(module_uuid)
+    module: Module = get_module_by_uuid(module_uuid)
     if not module: raise Exception("Не удалось найти модуль")
     txt = textwrap.dedent(f"""
         🔧 <b>Управление модулем</b>
@@ -863,8 +857,7 @@ def module_page_text(module_uuid: UUID):
     return txt
 
 def module_page_kb(module_uuid: UUID, page: int = 0):
-    from core.modules_manager import ModulesManager, Module
-    module: Module = ModulesManager.get_module_by_uuid(module_uuid)
+    module: Module = get_module_by_uuid(module_uuid)
     if not module: raise Exception("Не удалось найти модуль")
     rows = [
         [InlineKeyboardButton(text="🔴 Отключить модуль" if module.enabled else "🟢 Подключить модуль", callback_data="switch_module_enabled")],

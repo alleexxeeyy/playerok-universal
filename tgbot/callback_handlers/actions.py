@@ -3,16 +3,15 @@ from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramAPIError
 
+from core.modules import get_module_by_uuid, enable_module, disable_module
+from playerokapi.enums import ItemDealStatuses
+
 from settings import Settings as sett
 from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states as states
-
 from ..helpful import throw_float_message
 from .navigation import *
-
-from plbot import get_playerok_bot
-from playerokapi.enums import ItemDealStatuses
 
 router = Router()
 
@@ -61,6 +60,7 @@ async def callback_remember_deal_id(callback: CallbackQuery, callback_data: call
         
 @router.callback_query(F.data == "refund_deal")
 async def callback_refund_deal(callback: CallbackQuery, state: FSMContext):
+    from plbot.playerokbot import get_playerok_bot
     await state.set_state(None)
     plbot = get_playerok_bot()
     data = await state.get_data()
@@ -73,6 +73,7 @@ async def callback_refund_deal(callback: CallbackQuery, state: FSMContext):
         
 @router.callback_query(F.data == "complete_deal")
 async def callback_complete_deal(callback: CallbackQuery, state: FSMContext):
+    from plbot.playerokbot import get_playerok_bot
     await state.set_state(None)
     plbot = get_playerok_bot()
     data = await state.get_data()
@@ -162,13 +163,6 @@ async def callback_switch_read_chat_before_sending_message_enabled(callback: Cal
 async def callback_switch_auto_complete_deals_enabled(callback: CallbackQuery, state: FSMContext):
     config = sett.get("config")
     config["playerok"]["bot"]["auto_complete_deals_enabled"] = not config["playerok"]["bot"]["auto_complete_deals_enabled"]
-    sett.set("config", config)
-    return await callback_settings_navigation(callback, calls.SettingsNavigation(to="other"), state)
-
-@router.callback_query(F.data == "switch_first_message_enabled")
-async def callback_switch_first_message_enabled(callback: CallbackQuery, state: FSMContext):
-    config = sett.get("config")
-    config["playerok"]["bot"]["first_message_enabled"] = False if config["playerok"]["bot"]["first_message_enabled"] else True
     sett.set("config", config)
     return await callback_settings_navigation(callback, calls.SettingsNavigation(to="other"), state)
 
@@ -482,6 +476,28 @@ async def callback_enter_messages_page(callback: CallbackQuery, state: FSMContex
                               text=templ.settings_mess_float_text(f"📃 Введите номер страницы для перехода ↓"), 
                               reply_markup=templ.back_kb(calls.MessagesPagination(page=last_page).pack()))
 
+@router.callback_query(F.data == "switch_message_enabled")
+async def callback_switch_message_enabled(callback: CallbackQuery, state: FSMContext):
+    try:
+        data = await state.get_data()
+        last_page = data.get("last_page") or 0
+        message_id = data.get("message_id")
+        if not message_id:
+            raise Exception("❌ ID сообщения не был найден, повторите процесс с самого начала")
+        
+        messages = sett.get("messages")
+        messages[message_id]["enabled"] = not messages[message_id]["enabled"]
+        sett.set("messages", messages)
+        return await callback_message_page(callback, calls.MessagePage(message_id=message_id), state)
+    except Exception as e:
+        if e is not TelegramAPIError:
+            data = await state.get_data()
+            last_page = data.get("last_page") or 0
+            await throw_float_message(state=state, 
+                                      message=callback.message, 
+                                      text=templ.settings_mess_float_text(e), 
+                                      reply_markup=templ.back_kb(calls.MessagesPagination(page=last_page).pack()))
+
 @router.callback_query(F.data == "enter_message_text")
 async def callback_enter_message_text(callback: CallbackQuery, state: FSMContext):
     try:
@@ -493,7 +509,7 @@ async def callback_enter_message_text(callback: CallbackQuery, state: FSMContext
         
         await state.set_state(states.MessagePageStates.entering_message_text)
         messages = sett.get("messages")
-        mess_text = "\n".join(messages[message_id]) or "❌ Не задано"
+        mess_text = "\n".join(messages[message_id]["text"]) or "❌ Не задано"
         await throw_float_message(state=state, 
                                   message=callback.message, 
                                   text=templ.settings_mess_float_text(f"💬 Введите новый <b>текст сообщения</b> <code>{message_id}</code> ↓\n┗ Текущее: <blockquote>{mess_text}</blockquote>"), 
@@ -570,7 +586,6 @@ async def callback_clean_tg_logging_chat_id(callback: CallbackQuery, state: FSMC
 
 @router.callback_query(F.data == "switch_module_enabled")
 async def callback_disable_module(callback: CallbackQuery, state: FSMContext):
-    from core.modules_manager import ModulesManager as modman
     try:
         data = await state.get_data()
         last_page = data.get("last_page") or 0
@@ -578,8 +593,8 @@ async def callback_disable_module(callback: CallbackQuery, state: FSMContext):
         if not module_uuid:
             raise Exception("❌ UUID модуля не был найден, повторите процесс с самого начала")
 
-        module = modman.get_module_by_uuid(module_uuid)
-        modman.disable_module(module_uuid) if module.enabled else modman.enable_module(module_uuid)
+        module = get_module_by_uuid(module_uuid)
+        disable_module(module_uuid) if module.enabled else enable_module(module_uuid)
         return await callback_module_page(callback, calls.ModulePage(uuid=module_uuid), state)
     except Exception as e:
         if e is not TelegramAPIError:

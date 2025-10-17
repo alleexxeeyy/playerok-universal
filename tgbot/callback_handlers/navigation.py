@@ -98,7 +98,7 @@ async def callback_messages_pagination(callback: CallbackQuery, callback_data: c
     await throw_float_message(state, callback.message, templ.settings_mess_text(), templ.settings_mess_kb(page), callback)
     
 @router.callback_query(calls.MessagePage.filter())
-async def callback_messages_pagination(callback: CallbackQuery, callback_data: calls.MessagePage, state: FSMContext):
+async def callback_message_page(callback: CallbackQuery, callback_data: calls.MessagePage, state: FSMContext):
     await state.set_state(None)
     message_id = callback_data.message_id
     data = await state.get_data()

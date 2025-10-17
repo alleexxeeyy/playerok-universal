@@ -12,6 +12,10 @@ from .parser import *
 from .enums import *
 
 
+def get_account() -> None | Account:
+    if hasattr(Account, "instance"):
+        return getattr(Account, "instance")
+
 class Account:
     """
     Класс, описывающий данные и методы Playerok аккаунта.
@@ -32,16 +36,20 @@ class Account:
     :type request_max_retries: `int`
     """
 
+    def __new__(cls, *args, **kwargs) -> Account:
+        if not hasattr(cls, "instance"):
+            cls.instance = super(Account, cls).__new__(cls)
+        return getattr(cls, "instance")
+
     def __init__(
             self, 
             token: str, 
             user_agent: str = "", 
             proxy: str = None, 
             requests_timeout: int = 15,
-            request_max_retries: int = 6,
+            request_max_retries: int = 5,
             **kwargs
         ):
-        from . import set_account
         self.token = token
         """ Токен сессии аккаунта. """
         self.user_agent = user_agent
@@ -87,7 +95,6 @@ class Account:
         self.profile: AccountProfile | None = None
         """ Профиль аккаунта (не путать с профилем пользователя). \n\n_Заполняется при первом использовании get()_ """
 
-        set_account(self) # сохранение объекта аккаунта
         self.__client = tls_requests.Client(proxy=f"http://{self.proxy.replace('https://', '').replace('http://', '')}" if self.proxy else None)
         self.__logger = getLogger("playerokapi")
 

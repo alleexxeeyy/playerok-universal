@@ -5,20 +5,20 @@ class Stats:
     def __init__(
             self, 
             bot_launch_time, 
-            orders_completed, 
-            orders_refunded,
+            deals_completed, 
+            deals_refunded,
             earned_money
         ):
         self.bot_launch_time: datetime = bot_launch_time 
-        self.orders_completed: int = orders_completed
-        self.orders_refunded: int = orders_refunded
+        self.deals_completed: int = deals_completed
+        self.deals_refunded: int = deals_refunded
         self.earned_money: int = earned_money
 
         
 _stats = Stats(
     bot_launch_time=None,
-    orders_completed=0,
-    orders_refunded=0,
+    deals_completed=0,
+    deals_refunded=0,
     earned_money=0
 )
 

@@ -3,24 +3,16 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramAPIError
 
+from settings import Settings as sett
+
 from .. import templates as templ
 from .. import states
 from .. import callback_datas as calls
 from ..helpful import throw_float_message
 
-from settings import Settings as sett
-from plbot import get_playerok_bot
 
 router = Router()
-
-
-
-def is_int(txt: str) -> bool:
-    try:
-        int(txt)
-        return True
-    except ValueError:
-        return False
+    
     
 def is_eng_str(str: str):
     pattern = r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:\'",.<>/?\\|`~ ]+$'
@@ -30,6 +22,7 @@ def is_eng_str(str: str):
 @router.message(states.ActionsStates.entering_message_text, F.text)
 async def handler_entering_password(message: types.Message, state: FSMContext):
     try: 
+        from plbot.playerokbot import get_playerok_bot
         await state.set_state(None)
         if len(message.text.strip()) <= 0:
             raise Exception("❌ Слишком короткий текст")
@@ -78,7 +71,7 @@ async def handler_entering_password(message: types.Message, state: FSMContext):
 async def handler_entering_messages_page(message: types.Message, state: FSMContext):
     try: 
         await state.set_state(None)
-        if not is_int(message.text):
+        if not message.text.strip().isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
         
         await state.update_data(last_page=int(message.text.strip())-1)
@@ -104,7 +97,7 @@ async def handler_entering_message_text(message: types.Message, state: FSMContex
         data = await state.get_data()
         messages = sett.get("messages")
         message_split_lines = message.text.strip().split('\n')
-        messages[data["message_id"]] = message_split_lines
+        messages[data["message_id"]]["text"] = message_split_lines
         sett.set("messages", messages)
         await throw_float_message(state=state,
                                   message=message,
@@ -187,7 +180,7 @@ async def handler_entering_proxy(message: types.Message, state: FSMContext):
 async def handler_entering_requests_timeout(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        if not is_int(message.text.strip()):
+        if not message.text.strip().isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")       
         if int(message.text.strip()) < 0:
             raise Exception("❌ Слишком низкое значение")
@@ -210,7 +203,7 @@ async def handler_entering_requests_timeout(message: types.Message, state: FSMCo
 async def handler_entering_listener_requests_delay(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        if not is_int(message.text.strip()):
+        if not message.text.strip().isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
         if int(message.text.strip()) < 0:
             raise Exception("❌ Слишком низкое значение")
@@ -237,7 +230,7 @@ async def handler_entering_tg_logging_chat_id(message: types.Message, state: FSM
         if len(message.text.strip()) < 0:
             raise Exception("❌ Слишком низкое значение")
         
-        if is_int(message.text.strip()): chat_id = "-100" + str(message.text.strip()).replace("-100", "")
+        if message.text.strip().isdigit(): chat_id = "-100" + str(message.text.strip()).replace("-100", "")
         else: chat_id = "@" + str(message.text.strip()).replace("@", "")
 
         config = sett.get("config")
@@ -259,7 +252,7 @@ async def handler_entering_tg_logging_chat_id(message: types.Message, state: FSM
 async def handler_entering_custom_commands_page(message: types.Message, state: FSMContext):
     try: 
         await state.set_state(None)
-        if not is_int(message.text):
+        if not message.text.strip().isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
         
         await state.update_data(last_page=int(message.text.strip())-1)
@@ -346,7 +339,7 @@ async def handler_entering_custom_command_answer(message: types.Message, state: 
 async def handler_entering_auto_deliveries_page(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        if not is_int(message.text):
+        if not message.text.strip().isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
         
         await state.update_data(last_page=int(message.text.strip())-1)

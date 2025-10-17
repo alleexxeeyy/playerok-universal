@@ -2,9 +2,10 @@ from __future__ import annotations
 from typing import *
 import json
 
-from .account import Account
+from .account import Account, get_account
 from . import parser
 from .enums import *
+
 
 class FileObject:
     """
@@ -286,8 +287,7 @@ class UserProfile:
     :type created_at: `str`
     """
     def __init__(self, id: str, username: str, role: UserTypes, avatar_url: str, is_online: bool, is_blocked: bool, 
-                 rating: int, reviews_count: int, support_chat_id: str, system_chat_id: str | None, created_at: str | None,
-                 __account: Account | None = None):
+                 rating: int, reviews_count: int, support_chat_id: str, system_chat_id: str | None, created_at: str | None):
         self.id: str = id
         """ ID пользователя. """
         self.username: str = username
@@ -311,11 +311,9 @@ class UserProfile:
         self.created_at: str = created_at
         """ Дата создания аккаунта пользователя. """
 
-        self.__account: Account | None = None
+        self.__account: Account | None = get_account()
         """ Объект аккаунта (для методов). """
 
-    def set_account(self, acc: Account):
-        self.__account = acc
 
     def get_items(self, count: int = 24, statuses: list[ItemStatuses] | None = None,
                   after_cursor: str | None = None) -> ItemProfileList:

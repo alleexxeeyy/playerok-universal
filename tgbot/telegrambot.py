@@ -5,13 +5,16 @@ import textwrap
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand, InlineKeyboardMarkup
 import logging
-logger = logging.getLogger(f"universal.telegram")
 
-from . import router as main_router
-from . import templates as templ
 from settings import Settings as sett
 from core.modules import get_modules
 from core.handlers import get_bot_event_handlers
+
+from . import router as main_router
+from . import templates as templ
+
+
+logger = logging.getLogger(f"universal.telegram")
 
 
 def get_telegram_bot_loop() -> None | asyncio.AbstractEventLoop:
@@ -70,7 +73,7 @@ class TelegramBot:
                 🕹️ Команды
                 💬 Вызов продавца в чат
                                         
-                ⬇️ Скачать бота: https://github.com/alleexxeeyy/funpay-universal
+                ⬇️ Скачать бота: https://github.com/alleexxeeyy/playerok-universal
                 
                 📣 Канал — @alexeyproduction
                 🤖 Бот — @alexey_production_bot
@@ -130,7 +133,7 @@ class TelegramBot:
         :type kb: `aiogram.types.InlineKeyboardMarkup` or `None`
         """
         config = sett.get("config")
-        chat_id = config["funpay"]["bot"]["tg_logging_chat_id"]
+        chat_id = config["playerok"]["bot"]["tg_logging_chat_id"]
         if not chat_id:
             for user_id in config["telegram"]["bot"]["signed_users"]:
                 await self.bot.send_message(chat_id=user_id, text=text, reply_markup=kb, parse_mode="HTML")

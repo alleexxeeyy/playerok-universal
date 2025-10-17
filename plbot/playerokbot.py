@@ -379,7 +379,7 @@ class PlayerokBot:
                 self.log_new_deal(event.deal)
                 if self.config["playerok"]["bot"]["tg_logging_enabled"] and self.config["playerok"]["bot"]["tg_logging_events"]["new_deal"]:
                     self.log_to_tg(text=log_text(f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"),
-                                    kb=log_new_deal_kb(event.deal.user.username, event.deal.id))
+                                   kb=log_new_deal_kb(event.deal.user.username, event.deal.id))
                 self.send_message(this_chat.id, self.msg("new_deal", deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
                 if self.config["playerok"]["bot"]["auto_deliveries_enabled"]:
                     for auto_delivery in self.auto_deliveries:

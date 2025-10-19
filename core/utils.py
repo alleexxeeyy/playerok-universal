@@ -10,14 +10,15 @@ import requests
 import random
 import time
 from logging import getLogger
-logger = getLogger(f"universal.core")
 
+
+logger = getLogger(f"universal.core")
 
 
 def restart():
     """Перезагружает консоль."""
-    subprocess.Popen([sys.executable] + sys.argv)
-    sys.exit()
+    python = sys.executable
+    os.execv(python, [python] + sys.argv)
 
 
 def set_title(title: str):

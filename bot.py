@@ -220,6 +220,9 @@ if __name__ == "__main__":
         
         check_for_updates()
         check_and_configure_config()
+
+        from core.utils import restart
+        restart()
         
         modules = load_modules()
         set_modules(modules)

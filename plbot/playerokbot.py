@@ -415,6 +415,7 @@ class PlayerokBot:
             try:
                 this_chat = event.chat
                 if event.deal.user.id != self.playerok_account.id:
+                    self.log_deal_status_changed(event.deal)
                     status = "Неизвестный"
                     if event.deal.status is ItemDealStatuses.PAID: status = "Оплачен"
                     elif event.deal.status is ItemDealStatuses.PENDING: status = "В ожидании отправки"

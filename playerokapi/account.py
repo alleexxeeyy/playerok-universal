@@ -310,7 +310,7 @@ class Account:
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "deals",
-            "variables": json.dumps({"pagination": {"first": count}, "after": after_cursor, "filter": {"userId": self.id, "direction": str_direction, "status": str_statuses, "showForbiddenImage": True}}, ensure_ascii=False),
+            "variables": json.dumps({"pagination": {"first": count}, "after": after_cursor, "filter": {"userId": self.id, "direction": str_direction, "status": str_statuses}, "showForbiddenImage": True}, ensure_ascii=False),
             "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "c3b623b5fe0758cf91b2335ebf36ff65f8650a6672a792a3ca7a36d270d396fb"}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()

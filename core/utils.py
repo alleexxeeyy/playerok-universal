@@ -127,19 +127,16 @@ def patch_requests():
     def _request(self, method, url, **kwargs):  # type: ignore
         for attempt in range(6):
             resp = _orig_request(self, method, url, **kwargs)
-            try:
-                text_head = (resp.text or "")[:1200]
-            except Exception:
-                text_head = ""
+            try: head_text = (resp.text or "")[:1200]
+            except Exception: head_text = ""
             statuses = {
-                "429": "Too Many Requests",
-                "502": "Bad Gateway",
-                "503": "Service Unavailable"
+                "429": "TOO_MANY_REQUESTS",
+                "502": "BAD_GATEWAY",
+                "503": "SERVICE_UNAVAIBLE"
             }
             if str(resp.status_code) not in statuses:
-                for status in statuses.values():
-                    if status in text_head:
-                        break
+                if any([status_text for status_text in statuses.values() if status_text in head_text]):
+                    break
                 else: 
                     return resp
             retry_hdr = resp.headers.get("Retry-After")

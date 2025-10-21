@@ -100,8 +100,7 @@ class PlayerokBot:
         user = self.playerok_account.get_user(self.playerok_account.id)
         my_items: list[types.ItemProfile] = []
         next_cursor = None
-        stop = False
-        while not stop:
+        while True:
             _items = user.get_items(statuses=statuses, after_cursor=next_cursor)
             for _item in _items.items:
                 if _item.id not in [item.id for item in my_items]:

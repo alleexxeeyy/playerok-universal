@@ -134,8 +134,8 @@ async def callback_enter_requests_timeout(callback: CallbackQuery, state: FSMCon
                               text=templ.settings_conn_float_text(f"🛜 Введите новый <b>таймаут подключения</b> (в секундах) ↓\n┗ Текущее: <code>{requests_timeout}</code>"), 
                               reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack()))
 
-@router.callback_query(F.data == "enter_playerokapi_listener_requests_delay")
-async def callback_enter_playerokapi_listener_requests_delay(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_listener_requests_delay")
+async def callback_enter_listener_requests_delay(callback: CallbackQuery, state: FSMContext):
     await state.set_state(states.SettingsStates.entering_listener_requests_delay)
     config = sett.get("config")
     requests_timeout = config["playerok"]["api"]["listener_requests_delay"] or "❌ Не задано"

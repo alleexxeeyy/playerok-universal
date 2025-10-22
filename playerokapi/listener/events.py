@@ -73,6 +73,23 @@ class NewDealEvent(BaseEvent):
         """ Объект сделки. """
 
 
+class NewReviewEvent(BaseEvent):
+    """
+    Класс события: новый отзыв от покупателя.
+
+    :param deal_obj: Объект сделки с отзывом.
+    :type deal_obj: `PlayerokAPI.types.ItemDeal`
+
+    :param chat_obj: Объект чата, в котором произошло событие.
+    :type chat_obj: `PlayerokAPI.types.Chat`
+    """
+
+    def __init__(self, deal_obj: types.ItemDeal, chat_obj: types.Chat):
+        super(NewReviewEvent, self).__init__(EventTypes.NEW_REVIEW, chat_obj)
+        self.deal: types.ItemDeal = deal_obj
+        """ Объект сделки. """
+
+
 class DealConfirmedEvent(BaseEvent):
     """
     Класс события: покупатель подтвердил сделку.

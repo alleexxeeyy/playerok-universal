@@ -19,6 +19,109 @@ def file(data: dict) -> "FileObject":
     )
 
 
+def sbp_bank_member(data: dict) -> "SBPBankMember":
+    from .types import SBPBankMember
+
+    if not data:
+        return None
+    return SBPBankMember(
+        id=data.get("id"),
+        name=data.get("name"),
+        icon=data.get("icon")
+    )
+
+
+def transaction_payment_method(data: dict) -> "TransactionPaymentMethod":
+    from .types import TransactionPaymentMethod
+
+    if not data:
+        return None
+    return TransactionPaymentMethod(
+        
+    )
+
+
+def transaction_payment_method(data: dict) -> "TransactionPaymentMethod":
+    from .types import TransactionPaymentMethod
+    from .parser import transaction_provider_props, transaction_provider_limits
+
+    if not data:
+        return None
+    return TransactionPaymentMethod(
+        id=TransactionPaymentMethodIds.__members__.get(data.get("id")),
+        name=data.get("name"),
+        fee=data.get("fee"),
+        provider_id=TransactionProviderIds.__members__.get(data.get("provider_id")),
+        account=account_profile(data.get("account")),
+        props=transaction_provider_props(data.get("props")),
+        limits=transaction_provider_limits(data.get("limits"))
+    )
+
+
+def transaction_provider_limit_range(data: dict) -> "TransactionProviderLimitRange":
+    from .types import TransactionProviderLimitRange
+
+    if not data:
+        return None
+    return TransactionProviderLimitRange(
+        min=data.get("min"),
+        max=data.get("max")
+    )
+
+
+def transaction_provider_limits(data: dict) -> "TransactionProviderLimits":
+    from .types import TransactionProviderLimits
+
+    if not data:
+        return None
+    return TransactionProviderLimits(
+        incoming=transaction_provider_limit_range(data.get("incoming")),
+        outgoing=transaction_provider_limit_range(data.get("outgoing"))
+    )
+
+
+def transaction_provider_required_user_data(data: dict) -> "TransactionProviderRequiredUserData":
+    from .types import TransactionProviderRequiredUserData
+
+    if not data:
+        return None
+    return TransactionProviderRequiredUserData(
+        email=data.get("email"),
+        phone_number=data.get("phoneNumber"),
+        erip_account_number=data.get("eripAccountNumber")
+    )
+
+
+def transaction_provider_props(data: dict) -> "TransactionProviderProps":
+    from .types import TransactionProviderProps
+
+    if not data:
+        return None
+    return TransactionProviderProps(
+        required_user_data=transaction_provider_required_user_data(data.get("requiredUserData")),
+        tooltip=data.get("tooltip")
+    )
+
+
+def transaction_provider(data: dict) -> "TransactionProvider":
+    from .types import TransactionProvider
+    from .parser import account_profile
+
+    if not data:
+        return None
+    return TransactionProvider(
+        id=TransactionProviderIds.__members__.get(data.get("id")),
+        name=data.get("name"),
+        fee=data.get("fee"),
+        min_fee_amount=data.get("minFeeAmount"),
+        description=data.get("description"),
+        account=account_profile(data.get("account")),
+        props=transaction_provider_props(data.get("props")),
+        limits=transaction_provider_limits(data.get("limits")),
+        payment_methods=[transaction_payment_method(method) for method in data.get("paymentMethods")]
+    )
+
+
 def transaction(data: dict) -> "Transaction":
     from .types import Transaction
 
@@ -29,11 +132,47 @@ def transaction(data: dict) -> "Transaction":
         operation=TransactionOperations.__members__.get(data.get("operation")),
         direction=TransactionDirections.__members__.get(data.get("direction")),
         provider_id=TransactionProviderIds.__members__.get(data.get("providerId")),
+        provider=transaction_provider(data.get("provider")),
+        user=user_profile(data.get("user")),
+        creator=user_profile(data.get("creator")),
         status=TransactionStatuses.__members__.get(data.get("status")),
-        value=data.get("value"),
-        created_at=data.get("createdAt"),
-        payment_method_id=data.get("paymentMethodId"),
+        status_description=data.get("statusDescription"),
         status_expiration_date=data.get("statusExpirationDate"),
+        value=data.get("value"),
+        fee=data.get("fee"),
+        created_at=data.get("createdAt"),
+        verified_at=data.get("verified_at"),
+        verified_by=data.get("verified_by"),
+        completed_at=data.get("completed_at"),
+        completed_by=data.get("completed_by"),
+        payment_method_id=data.get("paymentMethodId"), 
+        is_suspicious=data.get("is_suspicious"), 
+        spb_bank_name=data.get("spb_bank_name")
+    )
+
+
+def transaction_page_info(data: dict) -> "TransactionPageInfo":
+    from .types import TransactionPageInfo
+
+    if not data:
+        return None
+    return TransactionPageInfo(
+        start_cursor=data.get("startCursor"),
+        end_cursor=data.get("endCursor"),
+        has_previous_page=data.get("hasPreviousPage"),
+        has_next_page=data.get("hasNextPage")
+    )
+
+
+def transaction_list(data: dict) -> "TransactionList":
+    from .types import TransactionList
+
+    if not data:
+        return None
+    return TransactionList(
+        transactions=[transaction(edge.get("node")) for edge in data.get("edges")],
+        page_info=transaction_page_info(data.get("pageInfo")),
+        total_count=data.get("totalCount")
     )
 
 

@@ -11,6 +11,7 @@ _playerok_event_handlers: dict[EventTypes, list[callable]] = {
     EventTypes.CHAT_INITIALIZED: [],
     EventTypes.NEW_MESSAGE : [],
     EventTypes.NEW_DEAL : [],
+    EventTypes.NEW_REVIEW : [],
     EventTypes.DEAL_CONFIRMED : [],
     EventTypes.DEAL_ROLLED_BACK : [],
     EventTypes.DEAL_HAS_PROBLEM : [],

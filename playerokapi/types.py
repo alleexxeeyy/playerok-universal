@@ -7,6 +7,7 @@ from . import parser
 from .enums import *
 
 
+
 class FileObject:
     """
     Объект файла.
@@ -33,6 +34,7 @@ class FileObject:
         """ Имя файла. """
         self.mime: str | None = mime
         """ Mime файла. """
+
 
 class AccountBalance:
     """
@@ -71,6 +73,7 @@ class AccountBalance:
         self.pending_income: int = pending_income
         """ Ожидаемый доход. """
 
+
 class AccountIncomingDealsStats:
     """
     Подкласс, описывающий статистику входящих сделок аккаунта.
@@ -86,6 +89,7 @@ class AccountIncomingDealsStats:
         """ Всего исходящих сделок. """
         self.finished: int = finished
         """ Кол-во завершённых исходящих сделок. """
+
 
 class AccountOutgoingDealsStats:
     """
@@ -103,21 +107,23 @@ class AccountOutgoingDealsStats:
         self.finished = finished
         """ Кол-во завершённых исходящих сделок. """
 
+
 class AccountDealsStats:
     """
     Подкласс, описывающий статистику сделок аккаунта.
 
     :param incoming: Входящие сделки.
-    :type incoming: `types.AccountIncomingDealsStats`
+    :type incoming: `playerokapi.types.AccountIncomingDealsStats`
 
     :param outgoing: Исходящие сделки.
-    :type outgoing: `types.AccountOutgoingDealsStats`
+    :type outgoing: `playerokapi.types.AccountOutgoingDealsStats`
     """
     def __init__(self, incoming: AccountIncomingDealsStats, outgoing: AccountOutgoingDealsStats):
         self.incoming: AccountIncomingDealsStats = incoming
         """ Входящие сделки. """
         self.outgoing: AccountOutgoingDealsStats = outgoing
         """ Исходящие сделки. """
+
 
 class AccountItemsStats:
     """
@@ -135,21 +141,23 @@ class AccountItemsStats:
         self.finished: int = finished
         """ Кол-во завершённых предметов. """
 
+
 class AccountStats:
     """
     Подкласс, описывающий статистику аккаунта.
 
     :param items: Статистика предметов.
-    :type items: `types.AccountItemsStats`
+    :type items: `playerokapi.types.AccountItemsStats`
 
     :param deals: Статистика сделок.
-    :type deals: `types.AccountDealsStats`
+    :type deals: `playerokapi.types.AccountDealsStats`
     """
     def __init__(self, items: AccountItemsStats, deals: AccountDealsStats):
         self.items: AccountItemsStats = items
         """ Статистика предметов. """
         self.deals: AccountDealsStats = deals
         """ Статистика сделок. """
+
 
 class AccountProfile:
     """
@@ -165,13 +173,13 @@ class AccountProfile:
     :type email: `str`
 
     :param balance: Объект баланса аккаунта.
-    :type balance: `types.AccountBalance`
+    :type balance: `playerokapi.types.AccountBalance`
 
     :param stats: Статистика аккаунта.
     :type stats: `str`
 
     :param role: Роль аккаунта.
-    :type role: `enums.UserTypes`
+    :type role: `playerokapi.enums.UserTypes`
 
     :param avatar_url: URL аватара аккаунта.
     :type avatar_url: `str`
@@ -249,6 +257,7 @@ class AccountProfile:
         self.has_enabled_notifications: bool = has_enabled_notifications
         """ Включены ли уведомления на аккаунте. """
 
+
 class UserProfile:
     """
     Класс, описывающий профиль пользователя.
@@ -260,7 +269,7 @@ class UserProfile:
     :type username: `str`
 
     :param role: Роль пользователя.
-    :type role: `enums.UserTypes`
+    :type role: `playerokapi.enums.UserTypes`
 
     :param avatar_url: URL аватара пользователя.
     :type avatar_url: `str`
@@ -324,7 +333,7 @@ class UserProfile:
         :type count: `int`
 
         :param status: Массив типов предметов, которые нужно получить. Некоторые статусы можно получить только, если это профиль вашего аккаунта. Если не указано, получает сразу все возможные.
-        :type status: `list[enums.ItemStatuses]`
+        :type status: `list[playerokapi.enums.ItemStatuses]`
 
         :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
         :type after_cursor: `str` or `None`
@@ -360,7 +369,7 @@ class UserProfile:
         :type count: `int`
 
         :param status: Тип отзывов, которые нужно получить.
-        :type status: `enums.ReviewStatuses`
+        :type status: `playerokapi.enums.ReviewStatuses`
 
         :param comment_required: Обязателен ли комментарий в отзыве, _опционально_.
         :type comment_required: `bool`
@@ -381,7 +390,7 @@ class UserProfile:
         :type max_item_price: `bool` or `None`
 
         :param sort_direction: Тип сортировки.
-        :type sort_direction: `enums.SortDirections`
+        :type sort_direction: `playerokapi.enums.SortDirections`
 
         :param sort_field: Поле, по которому будет идти сортировка (по умолчанию `createdAt` - по дате)
         :type sort_field: `str`
@@ -422,11 +431,13 @@ class UserProfile:
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
         return parser.review_list(r["data"]["testimonials"])
 
+
 class Event:
     #TODO: Сделать класс ивента Event
 
     def __init__(self):
         pass
+
 
 class ItemDeal:
     """
@@ -436,7 +447,7 @@ class ItemDeal:
     :type id: `str`
 
     :param status: Статус сделки.
-    :type status: `enums.ItemDealStatuses`
+    :type status: `playerokapi.enums.ItemDealStatuses`
 
     :param status_expiration_date: Дата истечения статуса.
     :type status_expiration_date: `str` or `None`
@@ -445,7 +456,7 @@ class ItemDeal:
     :type status_description: `str` or `None`
 
     :param direction: Направление сделки (покупка/продажа).
-    :type direction: `enums.ItemDealDirections`
+    :type direction: `playerokapi.enums.ItemDealDirections`
 
     :param obtaining: Получение сделки.
     :type obtaining: `str` or `None`
@@ -457,13 +468,13 @@ class ItemDeal:
     :type report_problem_enabled: `bool` or `None`
 
     :param completed_user: Профиль пользователя, подтвердившего сделку.
-    :type completed_user: `types.UserProfile` or `None`
+    :type completed_user: `playerokapi.types.UserProfile` or `None`
 
     :param props: Реквизиты сделки.
     :type props: `str` or `None`
 
     :param previous_status: Предыдущий статус.
-    :type previous_status: `enums.ItemDealStatuses` or `None`
+    :type previous_status: `playerokapi.enums.ItemDealStatuses` or `None`
 
     :param completed_at: Дата подтверждения сделки.
     :type completed_at: `str` or `None`
@@ -472,25 +483,25 @@ class ItemDeal:
     :type created_at: `str` or `None`
 
     :param logs: Логи сделки.
-    :type logs: `list[types.ItemLog]` or `None`
+    :type logs: `list[playerokapi.types.ItemLog]` or `None`
 
     :param transaction: Транзакция сделки.
-    :type transaction: `types.Transaction` or `None`
+    :type transaction: `playerokapi.types.Transaction` or `None`
 
     :param user: Профиль пользователя, совершившего сделку.
-    :type user: `types.UserProfile`
+    :type user: `playerokapi.types.UserProfile`
 
     :param chat: Чат сделки (передаётся только его ID).
-    :type chat: `types.Chat` or `None`
+    :type chat: `playerokapi.types.Chat` or `None`
 
     :param item: Предмет сделки.
-    :type item: `types.Item`
+    :type item: `playerokapi.types.Item`
 
     :param review: Отзыв по сделке.
-    :type review: `types.Review` or `None`
+    :type review: `playerokapi.types.Review` or `None`
 
     :param obtaining_fields: Получаемые поля.
-    :type obtaining_fields: `list[types.GameCategoryDataField]` or `None`
+    :type obtaining_fields: `list[playerokapi.types.GameCategoryDataField]` or `None`
 
     :param comment_from_buyer: Комментарий от покупателя.
     :type comment_from_buyer: `str` or `None`
@@ -544,6 +555,7 @@ class ItemDeal:
         self.comment_from_buyer: str | None = comment_from_buyer
         """ Комментарий от покупателя. """
 
+
 class ItemDealPageInfo:
     """
     Подкласс, описывающий информацию о странице сделок.
@@ -571,15 +583,16 @@ class ItemDealPageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class ItemDealList:
     """
     Класс, описывающий страницу отзывов.
 
     :param deals: Сделки страницы.
-    :type deals: `list[types.ItemDeal]`
+    :type deals: `list[playerokapi.types.ItemDeal]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.ItemDealPageInfo`
+    :type page_info: `playerokapi.types.ItemDealPageInfo`
 
     :param total_count: Всего сделок.
     :type total_count: `int`
@@ -593,6 +606,7 @@ class ItemDealList:
         self.total_count: int = total_count
         """ Всего сделок. """
 
+
 class GameCategoryAgreement:
     """
     Подкласс, описывающий соглашения покупателя.
@@ -604,7 +618,7 @@ class GameCategoryAgreement:
     :type description: `str`
 
     :param icontype: Тип иконки соглашения.
-    :type icontype: `enums.GameCategoryAgreementIconTypes`
+    :type icontype: `playerokapi.enums.GameCategoryAgreementIconTypes`
 
     :param sequence: Последовательность соглашения.
     :type sequence: `str`
@@ -619,6 +633,7 @@ class GameCategoryAgreement:
         """ Тип иконки соглашения. """
         self.sequence: str = sequence
         """ Последовательность соглашения. """
+
 
 class GameCategoryAgreementPageInfo:
     """
@@ -647,15 +662,16 @@ class GameCategoryAgreementPageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class GameCategoryAgreementList:
     """
     Класс, описывающий страницу соглашений покупателя.
 
     :param agreements: Соглашения страницы.
-    :type agreements: `list[types.GameCategoryAgreement]`
+    :type agreements: `list[playerokapi.types.GameCategoryAgreement]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.GameCategoryAgreementPageInfo`
+    :type page_info: `playerokapi.types.GameCategoryAgreementPageInfo`
 
     :param total_count: Всего соглашений.
     :type total_count: `int`
@@ -668,6 +684,7 @@ class GameCategoryAgreementList:
         """ Информация о странице. """
         self.total_count: int = total_count
         """ Всего соглашений. """
+
 
 class GameCategoryObtainingType:
     """
@@ -701,10 +718,10 @@ class GameCategoryObtainingType:
     :type fee_multiplier: `float`
 
     :param agreements: Соглашения покупателя на покупку/продавца на продажу.
-    :type agreements: `list[types.GameCategoryAgreement]`
+    :type agreements: `list[playerokapi.types.GameCategoryAgreement]`
 
     :param props: Пропорции категории.
-    :type props: `types.GameCategoryProps`
+    :type props: `playerokapi.types.GameCategoryProps`
     """
     def __init__(self, id: str, name: str, description: str, game_category_id: str, no_comment_from_buyer: bool,
                  instruction_for_buyer: str | None, instruction_for_seller: str | None, sequence: int, fee_multiplier: float,
@@ -731,6 +748,7 @@ class GameCategoryObtainingType:
         """ Соглашения покупателя на покупку/продавца на продажу. """
         self.props: GameCategoryProps = props
         """ Пропорции категории. """
+
 
 class GameCategoryObtainingTypePageInfo:
     """
@@ -759,15 +777,16 @@ class GameCategoryObtainingTypePageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class GameCategoryObtainingTypeList:
     """
     Класс, описывающий страницу типов (способов) получения предмета в категории.
 
     :param obtaining_types: Способы страницы.
-    :type obtaining_types: `list[types.GameCategoryObtainingType]`
+    :type obtaining_types: `list[playerokapi.types.GameCategoryObtainingType]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.GameCategoryObtainingTypePageInfo`
+    :type page_info: `playerokapi.types.GameCategoryObtainingTypePageInfo`
 
     :param total_count: Всего способов.
     :type total_count: `int`
@@ -781,6 +800,7 @@ class GameCategoryObtainingTypeList:
         self.total_count: int = total_count
         """ Всего способов. """
 
+
 class GameCategoryDataField:
     """
     Подкласс, описывающий поля с данными предмета в категории (которые отправляются после покупки).
@@ -792,10 +812,10 @@ class GameCategoryDataField:
     :type label: `str`
 
     :param type: Тип поля с данными.
-    :type type: `enums.GameCategoryDataFieldTypes`
+    :type type: `playerokapi.enums.GameCategoryDataFieldTypes`
 
     :param input_type: Тип вводимого значения поля.
-    :type input_type: `enums.GameCategoryDataFieldInputTypes`
+    :type input_type: `playerokapi.enums.GameCategoryDataFieldInputTypes`
 
     :param copyable: Разрешено ли копирование значения с поля.
     :type copyable: `bool`
@@ -829,6 +849,7 @@ class GameCategoryDataField:
         self.value: str | None = value
         """ Значение данных в поле. """
 
+
 class GameCategoryDataFieldPageInfo:
     """
     Подкласс, описывающий информацию о странице полей с данными предмета.
@@ -856,15 +877,16 @@ class GameCategoryDataFieldPageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class GameCategoryDataFieldList:
     """
     Класс, описывающий страницу полей с данными предмета.
 
     :param data_fields: Поля с данными предмета в категории на странице.
-    :type data_fields: `list[types.GameCategoryDataField]`
+    :type data_fields: `list[playerokapi.types.GameCategoryDataField]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.GameCategoryDataFieldPageInfo`
+    :type page_info: `playerokapi.types.GameCategoryDataFieldPageInfo`
 
     :param total_count: Всего полей с данными.
     :type total_count: `int`
@@ -877,6 +899,7 @@ class GameCategoryDataFieldList:
         """ Информация о странице. """
         self.total_count: int = total_count
         """ Всего полей с данными. """
+
 
 class GameCategoryProps:
     """
@@ -894,6 +917,7 @@ class GameCategoryProps:
         self.min_reviews_for_seller: int = min_reviews_for_seller
         """ Минимальное количество отзывов для продавца. """
 
+
 class GameCategoryOption:
     """
     Подкласс, описывающий опцию категории.
@@ -908,7 +932,7 @@ class GameCategoryOption:
     :type label: `str`
 
     :param type: Тип опции.
-    :type type: `enums.GameCategoryOptionTypes`
+    :type type: `playerokapi.enums.GameCategoryOptionTypes`
 
     :param field: Название поля (для payload запроса на сайт).
     :type field: `str`
@@ -936,6 +960,7 @@ class GameCategoryOption:
         self.value_range_limit: int | None = value_range_limit
         """ Лимит разброса по значению. """
 
+
 class GameCategoryInstruction:
     """
     Подкласс, описывающий информацию о странице инструкии по продаже/покупке в категории.
@@ -951,6 +976,7 @@ class GameCategoryInstruction:
         """ ID инструкции. """
         self.text: str = text
         """ Текст инструкции. """
+
 
 class GameCategoryInstructionPageInfo:
     """
@@ -979,15 +1005,16 @@ class GameCategoryInstructionPageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class GameCategoryInstructionList:
     """
     Класс, описывающий страницу инструкций по продаже/покупке в категории.
 
     :param instructions: Инструкции страницы.
-    :type instructions: `list[types.GameCategoryInstruction]`
+    :type instructions: `list[playerokapi.types.GameCategoryInstruction]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.GameCategoryInstructionPageInfo`
+    :type page_info: `playerokapi.types.GameCategoryInstructionPageInfo`
 
     :param total_count: Всего инструкций.
     :type total_count: `int`
@@ -1000,6 +1027,7 @@ class GameCategoryInstructionList:
         """ Информация о странице. """
         self.total_count: int = total_count
         """ Всего инструкций. """
+
 
 class GameCategory:
     """
@@ -1014,7 +1042,7 @@ class GameCategory:
     :param name: Название категории.
     :type name: `str`
 
-    :param category_id: ID другой категории (?).
+    :param category_id: ID родительской категории.
     :type category_id: `str` or `None`
 
     :param game_id: ID игры категории.
@@ -1024,10 +1052,10 @@ class GameCategory:
     :type obtaining: `str` or `None` or `None`
 
     :param options: Опции категории.
-    :type options: `list[types.GameCategoryOption]` or `None`
+    :type options: `list[playerokapi.types.GameCategoryOption]` or `None`
 
     :param props: Пропорции категории.
-    :type props: `types.GameCategoryProps` or `None`
+    :type props: `playerokapi.types.GameCategoryProps` or `None`
 
     :param no_comment_from_buyer: Без комментария от покупателя?
     :type no_comment_from_buyer: `bool` or `None`
@@ -1042,13 +1070,13 @@ class GameCategory:
     :type use_custom_obtaining: `bool`
 
     :param auto_confirm_period: Период авто-подтверждения сделки этой категории.
-    :type auto_confirm_period: `enums.GameCategoryAutoConfirmPeriods` or `None`
+    :type auto_confirm_period: `playerokapi.enums.GameCategoryAutoConfirmPeriods` or `None`
 
     :param auto_moderation_mode: Включена ли автоматическая модерация.
     :type auto_moderation_mode: `bool` or `None`
 
     :param agreements: Соглашения покупателя.
-    :type agreements: `list[types.GameCategoryAgreement]` or `None`
+    :type agreements: `list[playerokapi.types.GameCategoryAgreement]` or `None`
 
     :param fee_multiplier: Множитель комиссии.
     :type fee_multiplier: `float` or `None`
@@ -1065,7 +1093,7 @@ class GameCategory:
         self.name: str = name
         """ Название категории. """
         self.category_id: str | None = category_id
-        """ ID другой категории (?). """
+        """ ID родительской категории. """
         self.game_id: str | None = game_id
         """ ID игры категории. """
         self.obtaining: str | None = obtaining
@@ -1091,6 +1119,7 @@ class GameCategory:
         self.fee_multiplier: float | None = fee_multiplier
         """ Множитель комиссии. """
 
+
 class Game:
     """
     Объект игры/приложения.
@@ -1105,16 +1134,16 @@ class Game:
     :type name: `str`
 
     :param type: Тип: игра или приложение.
-    :type type: `enums.GameTypes`
+    :type type: `playerokapi.enums.GameTypes`
 
     :param logo: Лого игры/приложения.
-    :type logo: `types.FileObject`
+    :type logo: `playerokapi.types.FileObject`
 
     :param banner: Баннер игры/приложения.
     :type banner: `FileObject`
 
     :param categories: Список категорий игры/приложения.
-    :type categories: `list[types.GameCategory]`
+    :type categories: `list[playerokapi.types.GameCategory]`
 
     :param created_at: Дата создания.
     :type created_at: `str`
@@ -1139,6 +1168,7 @@ class Game:
         self.created_at: str = created_at
         """ Дата создания. """
 
+
 class GameProfile:
     """
     Профиль игры/приложения.
@@ -1153,10 +1183,10 @@ class GameProfile:
     :type name: `str`
 
     :param type: Тип: игра или приложение.
-    :type type: `types.GameTypes`
+    :type type: `playerokapi.types.GameTypes`
 
     :param logo: Лого игры/приложения.
-    :type logo: `types.FileObject`
+    :type logo: `playerokapi.types.FileObject`
     """
     def __init__(self, id: str, slug: str, name: str, 
                  type: GameTypes, logo: FileObject):
@@ -1170,6 +1200,7 @@ class GameProfile:
         """ Тип: игра или приложение. """
         self.logo: FileObject = logo
         """ Лого игры/приложения. """
+
 
 class GamePageInfo:
     """
@@ -1198,15 +1229,16 @@ class GamePageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class GameList:
     """
     Класс, описывающий страницу игр.
 
     :param games: Игры/приложения страницы.
-    :type games: `list[types.Game]`
+    :type games: `list[playerokapi.types.Game]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.ChatPageInfo`
+    :type page_info: `playerokapi.types.ChatPageInfo`
 
     :param total_count: Всего игр.
     :type total_count: `int`
@@ -1219,6 +1251,7 @@ class GameList:
         """ Информация о странице. """
         self.total_count: int = total_count
         """ Всего игр. """
+
 
 class ItemPriorityStatusPriceRange:
     """
@@ -1236,6 +1269,7 @@ class ItemPriorityStatusPriceRange:
         self.max: int = max
         """ Максимальная цена предмета (в рублях). """
 
+
 class ItemPriorityStatus:
     """
     Класс, описывающий статус приоритета предмета.
@@ -1250,13 +1284,13 @@ class ItemPriorityStatus:
     :type name: `str`
 
     :param type: Тип статуса.
-    :type type: `enums.PriorityTypes`
+    :type type: `playerokapi.enums.PriorityTypes`
 
     :param period: Длительность статуса (в днях).
     :type period: `str`
 
     :param price_range: Ценовой диапазон предмета статуса.
-    :type price_range: `types.ItemPriorityStatusPriceRange`
+    :type price_range: `playerokapi.types.ItemPriorityStatusPriceRange`
     """
     def __init__(self, id: str, price: int, name: str, type: PriorityTypes,
                  period: int, price_range: ItemPriorityStatusPriceRange):
@@ -1273,6 +1307,7 @@ class ItemPriorityStatus:
         self.price_range: ItemPriorityStatusPriceRange = price_range
         """ Ценовой диапазон предмета статуса. """
 
+
 class ItemLog:
     """
     Подкласс, описывающий лог действия с предметом.
@@ -1281,13 +1316,13 @@ class ItemLog:
     :type id: `str`
     
     :param event: Событие лога.
-    :type event: `enums.ItemLogEvents`
+    :type event: `playerokapi.enums.ItemLogEvents`
     
     :param created_at: Дата создания лога.
     :type created_at: `str`
     
     :param user: Профиль пользователя, совершившего лог.
-    :type user: `types.UserProfile`
+    :type user: `playerokapi.types.UserProfile`
     """
     def __init__(self, id: str, event: ItemLogEvents, created_at: str,
                  user: UserProfile):
@@ -1299,6 +1334,7 @@ class ItemLog:
         """ Дата создания лога. """
         self.user: UserProfile = user
         """ Профиль пользователя, совершившего лог. """
+
 
 class Item:
     """
@@ -1314,10 +1350,10 @@ class Item:
     :type description: `str`
 
     :param status: Статус предмета.
-    :type status: `enums.ItemStatuses`
+    :type status: `playerokapi.enums.ItemStatuses`
 
     :param obtaining_type: Способ получения.
-    :type obtaining_type: `types.GameCategoryObtainingType` or `None`
+    :type obtaining_type: `playerokapi.types.GameCategoryObtainingType` or `None`
 
     :param price: Цена предмета.
     :type price: `int`
@@ -1329,34 +1365,34 @@ class Item:
     :type priority_position: `int`
 
     :param attachments: Файлы-приложения.
-    :type attachments: `list[types.FileObject]`
+    :type attachments: `list[playerokapi.types.FileObject]`
 
     :param attributes: Аттрибуты предмета.
     :type attributes: `dict`
 
     :param category: Категория игры предмета.
-    :type category: `types.GameCategory`
+    :type category: `playerokapi.types.GameCategory`
 
     :param comment: Комментарий предмета.
     :type comment: `str` or `None`
 
     :param data_fields: Поля данных предмета.
-    :type data_fields: `list[types.GameCategoryDataField]` or `None`
+    :type data_fields: `list[playerokapi.types.GameCategoryDataField]` or `None`
 
     :param fee_multiplier: Множитель комиссии.
     :type fee_multiplier: `float`
 
     :param game: Профиль игры предмета.
-    :type game: `types.GameProfile`
+    :type game: `playerokapi.types.GameProfile`
 
     :param seller_type: Тип продавца.
-    :type seller_type: `enums.UserTypes`
+    :type seller_type: `playerokapi.enums.UserTypes`
 
     :param slug: Имя страницы предмета.
     :type slug: `str`
 
     :param user: Профиль продавца.
-    :type user: `types.UserProfile`
+    :type user: `playerokapi.types.UserProfile`
     """
     def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int, priority_position: int,
                  attachments: list[FileObject], attributes: dict, category: GameCategory, comment: str | None, data_fields: list[GameCategoryDataField] | None, 
@@ -1400,6 +1436,7 @@ class Item:
         self.user: UserProfile = user
         """ Профиль продавца. """
 
+
 class MyItem:
     """
     Объект своего предмета.
@@ -1417,10 +1454,10 @@ class MyItem:
     :type description: `str`
 
     :param status: Статус предмета.
-    :type status: `enums.ItemStatuses`
+    :type status: `playerokapi.enums.ItemStatuses`
 
     :param obtaining_type: Способ получения.
-    :type obtaining_type: `types.GameCategoryObtainingType` or `None`
+    :type obtaining_type: `playerokapi.types.GameCategoryObtainingType` or `None`
 
     :param price: Цена предмета.
     :type price: `int`
@@ -1435,19 +1472,19 @@ class MyItem:
     :type priority_position: `int`
 
     :param attachments: Файлы-приложения.
-    :type attachments: `list[types.FileObject]`
+    :type attachments: `list[playerokapi.types.FileObject]`
 
     :param attributes: Аттрибуты предмета.
     :type attributes: `dict`
 
     :param category: Категория игры предмета.
-    :type category: `types.GameCategory`
+    :type category: `playerokapi.types.GameCategory`
 
     :param comment: Комментарий предмета.
     :type comment: `str` or `None`
 
     :param data_fields: Поля данных предмета.
-    :type data_fields: `list[types.GameCategoryDataField]` or `None`
+    :type data_fields: `list[playerokapi.types.GameCategoryDataField]` or `None`
 
     :param fee_multiplier: Множитель комиссии.
     :type fee_multiplier: `float`
@@ -1459,19 +1496,19 @@ class MyItem:
     :type seller_notified_about_fee_change: `bool`
 
     :param game: Профиль игры предмета.
-    :type game: `types.GameProfile`
+    :type game: `playerokapi.types.GameProfile`
 
     :param seller_type: Тип продавца.
-    :type seller_type: `enums.UserTypes`
+    :type seller_type: `playerokapi.enums.UserTypes`
 
     :param user: Профиль продавца.
-    :type user: `types.UserProfile`
+    :type user: `playerokapi.types.UserProfile`
 
     :param buyer: Профиль продавца.
-    :type user: `types.UserProfile`
+    :type user: `playerokapi.types.UserProfile`
 
     :param priority: Статус приоритета предмета.
-    :type priority: `types.PriorityTypes`
+    :type priority: `playerokapi.types.PriorityTypes`
 
     :param priority_price: Цены статуса приоритета.
     :type priority_price: `int`
@@ -1483,7 +1520,7 @@ class MyItem:
     :type status_description: `str` or `None`
 
     :param status_payment: Платёж статуса (транзакция).
-    :type status_payment: `types.Transaction` or `None`
+    :type status_payment: `playerokapi.types.Transaction` or `None`
 
     :param views_counter: Количество просмотров предмета.
     :type views_counter: `int`
@@ -1577,6 +1614,7 @@ class MyItem:
         self.created_at: str | None = created_at
         """ Дата создания товара. """
 
+
 class ItemProfile:
     """
     Профиль предмета.
@@ -1588,10 +1626,10 @@ class ItemProfile:
     :type slug: `str`
 
     :param priority: Приоритет предмета.
-    :type priority: `enums.PriorityTypes`
+    :type priority: `playerokapi.enums.PriorityTypes`
 
     :param status: Статус предмета.
-    :type status: `enums.ItemStatuses`
+    :type status: `playerokapi.enums.ItemStatuses`
 
     :param name: Название предмета.
     :type name: `str`
@@ -1603,13 +1641,13 @@ class ItemProfile:
     :type raw_price: `int`
 
     :param seller_type: Тип продавца.
-    :type seller_type: `enums.UserTypes`
+    :type seller_type: `playerokapi.enums.UserTypes`
 
     :param attachment: Файл-приложение.
-    :type attachment: `types.FileObject`
+    :type attachment: `playerokapi.types.FileObject`
 
     :param user: Профиль продавца.
-    :type user: `types.UserProfile`
+    :type user: `playerokapi.types.UserProfile`
 
     :param approval_date: Дата одобрения.
     :type approval_date: `str`
@@ -1661,6 +1699,7 @@ class ItemProfile:
         self.created_at: str = created_at
         """ Дата создания. """
 
+
 class ItemProfilePageInfo:
     """
     Подкласс, описывающий информацию о странице предметов.
@@ -1688,15 +1727,16 @@ class ItemProfilePageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class ItemProfileList:
     """
     Профиль страницы предметов.
 
     :param items: Предметы страницы.
-    :type items: `list[types.Item]`
+    :type items: `list[playerokapi.types.Item]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.ItemProfilePageInfo`
+    :type page_info: `playerokapi.types.ItemProfilePageInfo`
 
     :param total_count: Всего предметов.
     :type total_count: `int`
@@ -1710,6 +1750,201 @@ class ItemProfileList:
         self.total_count: int = total_count
         """ Всего предметов. """
 
+
+class SBPBankMember:
+    """
+    Объект членов СБП банка.
+
+    :param id: ID.
+    :type id: `str`
+
+    :param name: Название.
+    :type name: `str`
+
+    :param icon: URL иконки.
+    :type icon: `str`
+    """
+    def __init__(self, id: str, name: str, icon: str):
+        self.id: str = id
+        """ ID. """
+        self.name: str = name
+        """ Название. """
+        self.icon: str = icon
+        """ URL иконки. """
+
+
+class TransactionPaymentMethod:
+    """
+    Платёжный метод транзакции.
+
+    :param id: ID метода.
+    :type id: `playerokapi.types.TransactionPaymentMethodIds`
+
+    :param name: Название метода.
+    :type name: `str`
+
+    :param fee: Комиссия метода.
+    :type fee: `int`
+
+    :param provider_id: ID провайдера транзакции.
+    :type provider_id: `playerokapi.types.TransactionProviderIds`
+
+    :param account: Аккаунт метода (?).
+    :type account: `AccountProfile` or `None`
+
+    :param props: Параметры провайдера транзакции.
+    :type props: `playerokapi.types.TransactionProviderProps`
+
+    :param limits: Лимиты провайдера транзакции.
+    :type limits: `playerokapi.types.TransactionProviderLimits`
+    """
+    def __init__(self, id: TransactionPaymentMethodIds, name: str, fee: int, provider_id: TransactionProviderIds,
+                 account: AccountProfile | None, props: TransactionProviderProps, limits: TransactionProviderLimits):
+        self.id: TransactionPaymentMethodIds = id
+        """ ID метода. """
+        self.name: str = name
+        """ Названиие метода. """
+        self.fee: int = fee
+        """ Комиссия метода. """
+        self.provider_id: TransactionProviderIds = provider_id
+        """ ID провайдера транзакции. """
+        self.account: AccountProfile | None = account
+        """ Аккаунт метода (?). """
+        self.props: TransactionProviderProps = props
+        """ Параметры провайдера транзакции. """
+        self.limits: TransactionProviderLimits = limits
+        """ Лимиты провайдера транзакции. """
+
+
+class TransactionProviderLimitRange:
+    """
+    Диапозон лимитов провайдера транзакции.
+
+    :param min: Минимальная сумма (в рублях).
+    :type min: `int`
+
+    :param max: Максимальная сумма (в рублях).
+    :type max: `int`
+    """
+    def __init__(self, min: int, max: int):
+        self.min: int = min
+        """ Минимальная сумма (в рублях). """
+        self.max: int = max
+        """ Максимальная сумма (в рублях). """
+
+
+class TransactionProviderLimits:
+    """
+    Лимиты провайдера транзакции.
+
+    :param incoming: На пополнение.
+    :type incoming: `playerokapi.types.TransactionProviderLimitRange`
+
+    :param outgoing: На вывод.
+    :type outgoing: `playerokapi.types.TransactionProviderLimitRange`
+    """
+    def __init__(self, incoming: TransactionProviderLimitRange, outgoing: TransactionProviderLimitRange):
+        self.incoming: TransactionProviderLimitRange = incoming
+        """ На пополнение. """
+        self.outgoing: TransactionProviderLimitRange = outgoing
+        """ На вывод. """
+
+
+class TransactionProviderRequiredUserData:
+    """
+    Обязательные пользовательские данные провайдера транзакции.
+
+    :param email: Обязательно ли указывать EMail?
+    :type email: `bool`
+
+    :param phone_number: Обязательно ли указывать номер телефона?
+    :type phone_number: `bool`
+
+    :param erip_account_number: Обязательно ли указывать номер аккаунта ЕРИП?
+    :type erip_account_number: `bool` or `None`
+    """
+    def __init__(self, email: bool, phone_number: bool, 
+                 erip_account_number: bool | None):
+        self.email: bool = email
+        """ Обязательно ли указывать EMail? """
+        self.phone_number: bool = phone_number
+        """ Обязательно ли указывать номер телефона? """
+        self.erip_account_number: bool | None = erip_account_number
+        """ Обязательно ли указывать номер аккаунта ЕРИП? """
+
+
+class TransactionProviderProps:
+    """
+    Параметры провайдера транзакции.
+
+    :param required_user_data: Обязательные пользовательские данные.
+    :type required_user_data: `playerokapi.types.TransactionProviderRequiredUserData`
+
+    :param tooltip: Подсказка.
+    :type tooltip: `str` or `None`
+    """
+    def __init__(self, required_user_data: TransactionProviderRequiredUserData,
+                 tooltip: str | None):
+        self.required_user_data: TransactionProviderRequiredUserData = required_user_data
+        """ Обязательные пользовательские данные. """
+        self.tooltip: str | None = tooltip
+        """ Подсказка. """
+
+
+class TransactionProvider:
+    """
+    Объект провайдера транзакции.
+
+    :param id: ID провайдера.
+    :type id: `playerokapi.enums.TransactionProviderIds`
+
+    :param name: Название провайдера.
+    :type name: `str`
+
+    :param fee: Комиссия провайдера.
+    :type fee: `int`
+
+    :param min_fee_amount: Минимальная комиссия.
+    :type min_fee_amount: `int` or `None`
+
+    :param description: Описание провайдера.
+    :type description: `str` or `None`
+
+    :param account: Аккаунт провайдера (?).
+    :type account: `playerokapi.types.AccountProfile` or `None`
+
+    :param props: Параметры провайдера.
+    :type props: `playerokapi.types.TransactionProviderProps`
+
+    :param limits: Лимиты провайдера.
+    :type limits: `playerokapi.types.TransactionProviderLimits`
+
+    :param payment_methods: Платёжные методы.
+    :type payment_methods: `list` of `playerokapi.types.TransactionPaymentMethod`
+    """
+    def __init__(self, id: TransactionProviderIds, name: str, fee: int, min_fee_amount: int | None, 
+                 description: str | None, account: AccountProfile | None, props: TransactionProviderProps, 
+                 limits: TransactionProviderLimits, payment_methods: list[TransactionPaymentMethod]):
+        self.id: TransactionProviderIds = id
+        """ ID провайдера. """
+        self.name: str = name
+        """ Название провайдера. """
+        self.fee: int = fee
+        """ Комиссия провайдера. """
+        self.min_fee_amount: int | None = min_fee_amount
+        """ Минимальная комиссия. """
+        self.description: str | None = description
+        """ Описание провайдера. """
+        self.account: AccountProfile | None = account
+        """ Аккаунт провайдера (?). """
+        self.props: TransactionProviderProps = props
+        """ Параметры провайдера. """
+        self.limits: TransactionProviderLimits = limits
+        """ Лимиты провайдера. """
+        self.payment_methods: list[TransactionPaymentMethod] = payment_methods
+        """ Платёжные методы. """
+
+
 class Transaction:
     """
     Объект транзакции.
@@ -1718,32 +1953,66 @@ class Transaction:
     :type id: `str`
 
     :param operation: Тип выполненной операции.
-    :type operation: `enums.TransactionOperations`
+    :type operation: `playerokapi.enums.TransactionOperations`
 
     :param direction: Направление транзакции.
-    :type direction: `enums.TransactionDirections`
+    :type direction: `playerokapi.enums.TransactionDirections`
 
     :param provider_id: ID платёжного провайдера.
-    :type provider_id: `enums.TransactionProviderIds`
+    :type provider_id: `playerokapi.enums.TransactionProviderIds`
+
+    :param provider: Объект провайдера транзакции.
+    :type provider: `playerokapi.types.TransactionProvider`
+
+    :param user: Объект пользователя-совершателя транзакции.
+    :type user: `playerokapi.types.UserProfile`
+
+    :param creator: Объект пользователя-создателя транзакции.
+    :type creator: `playerokapi.types.UserProfile` or `None`
 
     :param status: Статус обработки транзакции.
-    :type status: `enums.TransactionStatuses`
+    :type status: `playerokapi.enums.TransactionStatuses`
+
+    :param status_description: Описание статуса.
+    :type status_description: `str` or `None`
+
+    :param status_expiration_date: Дата истечения статуса.
+    :type status_expiration_date: `str` or `None`
 
     :param value: Сумма транзакции.
     :type value: `int`
 
+    :param fee: Комиссия транзакции.
+    :type fee: `int`
+
     :param created_at: Дата создания транзакции.
     :type created_at: `str`
+
+    :param verified_at: Дата подтверждения транзакции.
+    :type verified_at: `str` or `None`
+
+    :param verified_by: Объект пользователя, подтвердившего транзакцию.
+    :type verified_by: `playerokapi.types.UserProfile` or `None`
+
+    :param completed_at: Дата выполнения транзакции.
+    :type completed_at: `str` or `None`
+
+    :param completed_by: Объект пользователя, выполнившего транзакцию.
+    :type completed_by: `playerokapi.types.UserProfile` or `None`
 
     :param payment_method_id: ID способа оплаты.
     :type payment_method_id: `str` or `None`
 
-    :param status_expiration_date: Дата истечения статуса транзакции.
-    :type status_expiration_date: `str` or `None`
+    :param is_suspicious: Подозрительная ли транзакция.
+    :type is_suspicious: `bool` or `None`
+
+    :param spb_bank_name: Название банка СБП (если транзакция была совершена с помощью СБП).
+    :type spb_bank_name: `str` or `None`
     """
-    def __init__(self, id: str, operation: TransactionOperations, direction: TransactionDirections,
-                 provider_id: TransactionProviderIds, status: TransactionStatuses, value: int, created_at: str,
-                 payment_method_id: str | None, status_expiration_date: str | None):
+    def __init__(self, id: str, operation: TransactionOperations, direction: TransactionDirections, provider_id: TransactionProviderIds, 
+                 provider: TransactionProvider, user: UserProfile, creator: UserProfile, status: TransactionStatuses, status_description: str | None, 
+                 status_expiration_date: str | None, value: int, fee: int, created_at: str, verified_at: str | None, verified_by: UserProfile | None, 
+                 completed_at: str | None, completed_by: UserProfile | None, payment_method_id: str | None, is_suspicious: bool | None, spb_bank_name: str | None):
         self.id: str = id
         """ ID транзакции. """
         self.operation: TransactionOperations = operation
@@ -1752,16 +2021,90 @@ class Transaction:
         """ Направление транзакции. """
         self.provider_id: TransactionProviderIds = provider_id
         """ ID платёжного провайдера. """
+        self.provider: TransactionProvider = provider
+        """ Объект провайдера транзакции. """
+        self.user: UserProfile = user
+        """ Объект пользователя-совершателя транзакции. """
+        self.creator: UserProfile | None = creator
+        """ Объект пользователя-создателя транзакции. """
         self.status: TransactionStatuses = status
         """ Статус обработки транзакции. """
+        self.status_description: str | None = status_description
+        """ Описание статуса. """
+        self.status_expiration_date: str | None = status_expiration_date
+        """ Дата истечения статуса. """
         self.value: int = value
         """ Сумма транзакции. """
+        self.fee: int = fee
+        """ Комиссия транзакции. """
         self.created_at: str = created_at
         """ Дата создания транзакции. """
+        self.verified_at: str | None = verified_at
+        """ Дата подтверждения транзакции. """
+        self.verified_by: UserProfile | None = verified_by
+        """ Объект пользователя, подтвердившего транзакцию. """
+        self.completed_at: str | None = completed_at
+        """ Дата выполнения транзакции. """
+        self.completed_by: UserProfile | None = completed_by
+        """ Объект пользователя, выполнившего транзакцию. """
         self.payment_method_id: str | None = payment_method_id
         """ ID способа оплаты. """
-        self.status_expiration_date: str | None = status_expiration_date
-        """ Дата истечения статуса транзакции. """
+        self.is_suspicious: bool | None = is_suspicious
+        """ Подозрительная ли транзакция. """
+        self.spb_bank_name: str | None = spb_bank_name
+        """ Название банка СБП (если транзакция была совершена с помощью СБП). """
+
+
+class TransactionPageInfo:
+    """
+    Подкласс, описывающий информацию о странице транзакций.
+
+    :param start_cursor: Курсор начала страницы.
+    :type start_cursor: `str`
+
+    :param end_cursor: Курсок конца страницы.
+    :type end_cursor: `str`
+
+    :param has_previous_page: Имеет ли предыдущую страницу.
+    :type has_previous_page: `bool`
+
+    :param has_next_page: Имеет ли следующую страницу.
+    :type has_next_page: `bool`
+    """
+    def __init__(self, start_cursor: str, end_cursor: str,
+                 has_previous_page: bool, has_next_page: bool):
+        self.start_cursor: str = start_cursor
+        """ Курсор начала страницы. """
+        self.end_cursor: str = end_cursor
+        """ Курсор конца страницы. """
+        self.has_previous_page: bool = has_previous_page
+        """ Имеет ли предыдущую страницу. """
+        self.has_next_page: bool = has_next_page
+        """ Имеет ли следующую страницу. """
+
+
+class TransactionList:
+    """
+    Класс, описывающий страницу сообщений чата.
+
+    :param transactions: Транзакции страницы.
+    :type transactions: `list[playerokapi.types.Transaction]`
+
+    :param page_info: Информация о странице.
+    :type page_info: `playerokapi.types.TransactionPageInfo`
+
+    :param total_count: Всего транзакций на странице.
+    :type total_count: `int`
+    """
+    def __init__(self, transactions: list[Transaction], page_info: TransactionPageInfo,
+                 total_count: int):
+        self.transactions: list[Transaction] = transactions
+        """ Транзакции страницы. """
+        self.page_info: TransactionPageInfo = page_info
+        """ Информация о странице. """
+        self.total_count: int = total_count
+        """ Всего транзакций на странице. """
+
 
 class Moderator:
     # TODO: Сделать класс модератора Moderator
@@ -1769,12 +2112,13 @@ class Moderator:
     def __init__(self):
         pass
 
+
 class ChatMessageButton:
     """
     Объект кнопки сообщения.
 
     :param type: Тип кнопки.
-    :type type: `types.ChatMessageButtonTypes`
+    :type type: `playerokapi.types.ChatMessageButtonTypes`
 
     :param url: URL кнопки.
     :type url: `str` or None
@@ -1790,6 +2134,7 @@ class ChatMessageButton:
         """ URL кнопки. """
         self.text: str = text
         """ Текст кнопки. """
+
 
 class ChatMessage:
     """
@@ -1820,37 +2165,37 @@ class ChatMessage:
     :type game: `str` or `None`
 
     :param file: Файл, прикреплённый к сообщению.
-    :type file: `types.FileObject` or `None`
+    :type file: `playerokapi.types.FileObject` or `None`
 
     :param user: Пользователь, который отправил сообщение.
-    :type user: `types.UserProfile`
+    :type user: `playerokapi.types.UserProfile`
 
     :param deal: Сделка, к которой относится сообщение.
-    :type deal: `types.Deal` or `None`
+    :type deal: `playerokapi.types.Deal` or `None`
 
     :param item: Предмет, к которому относится сообщение (обычно передаётся только сама сделка в переменную deal).
-    :type item: `types.Item` or `None`
+    :type item: `playerokapi.types.Item` or `None`
 
     :param transaction: Транзакция сообщения.
-    :type transaction: `types.Transaction` or `None`
+    :type transaction: `playerokapi.types.Transaction` or `None`
 
     :param moderator: Модератор сообщения.
-    :type moderator: `types.Moderator`
+    :type moderator: `playerokapi.types.Moderator`
 
     :param event_by_user: Ивент от пользователя.
-    :type event_by_user: `types.UserProfile` or `None`
+    :type event_by_user: `playerokapi.types.UserProfile` or `None`
 
     :param event_to_user: Ивент для пользователя.
-    :type event_to_user: `types.UserProfile` or `None`
+    :type event_to_user: `playerokapi.types.UserProfile` or `None`
 
     :param is_auto_response: Авто-ответ ли это.
     :type is_auto_response: `bool`
 
     :param event: Ивент сообщения.
-    :type event: `types.Event` or `None`
+    :type event: `playerokapi.types.Event` or `None`
 
     :param buttons: Кнопки сообщения.
-    :type buttons: `list[types.MessageButton]`
+    :type buttons: `list[playerokapi.types.MessageButton]`
     """
     def __init__(self, id: str, text: str, created_at: str, deleted_at: str | None, is_read: bool, 
                  is_suspicious: bool, is_bulk_messaging: bool, game: Game | None, file: FileObject | None,
@@ -1896,6 +2241,7 @@ class ChatMessage:
         self.buttons: list[ChatMessageButton] = buttons
         """ Кнопки сообщения. """
 
+
 class ChatMessagePageInfo:
     """
     Подкласс, описывающий информацию о странице сообщений.
@@ -1923,15 +2269,16 @@ class ChatMessagePageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class ChatMessageList:
     """
     Класс, описывающий страницу сообщений чата.
 
     :param messages: Сообщения страницы.
-    :type messages: `list[types.ChatMessage]`
+    :type messages: `list[playerokapi.types.ChatMessage]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.ChatMessagePageInfo`
+    :type page_info: `playerokapi.types.ChatMessagePageInfo`
 
     :param total_count: Всего сообщений в чате.
     :type total_count: `int`
@@ -1945,6 +2292,7 @@ class ChatMessageList:
         self.total_count: int = total_count
         """ Всего сообщений в чате. """
 
+
 class Chat:
     """
     Объект чата.
@@ -1953,10 +2301,10 @@ class Chat:
     :type id: `str`
 
     :param type: Тип чата.
-    :type type: `enums.ChatTypes`
+    :type type: `playerokapi.enums.ChatTypes`
 
     :param status: Статус чата.
-    :type status: `enums.ChatStatuses` or `None`
+    :type status: `playerokapi.enums.ChatStatuses` or `None`
 
     :param unread_messages_counter: Количество непрочитанных сообщений.
     :type unread_messages_counter: `int`
@@ -1971,10 +2319,10 @@ class Chat:
     :type owner: `bool` or `None`
 
     :param deals: Сделки в чате.
-    :type deals: `list[types.ItemDeal]` or `None`
+    :type deals: `list[playerokapi.types.ItemDeal]` or `None`
 
     :param last_message: Объект последнего сообщения в чате
-    :type last_message: `types.ChatMessage` or `None`
+    :type last_message: `playerokapi.types.ChatMessage` or `None`
 
     :param users: Участники чата.
     :type users: `list[UserProfile]`
@@ -2013,6 +2361,7 @@ class Chat:
         self.finished_at: str | None = finished_at
         """ Дата завершения диалога. """
 
+
 class ChatPageInfo:
     """
     Подкласс, описывающий информацию о странице чатов.
@@ -2040,15 +2389,16 @@ class ChatPageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class ChatList:
     """
     Класс, описывающий страницу чатов.
 
     :param chats: Чаты страницы.
-    :type chats: `list[types.Chat]`
+    :type chats: `list[playerokapi.types.Chat]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.ChatPageInfo`
+    :type page_info: `playerokapi.types.ChatPageInfo`
 
     :param total_count: Всего чатов.
     :type total_count: `int`
@@ -2062,6 +2412,7 @@ class ChatList:
         self.total_count: int = total_count
         """ Всего чатов. """
 
+
 class Review:
     """
     Объект отзыва.
@@ -2070,7 +2421,7 @@ class Review:
     :type id: `str`
 
     :param status: Статус отзыва.
-    :type status: `enums.ReviewStatuses`
+    :type status: `playerokapi.enums.ReviewStatuses`
 
     :param text: Текст отзыва.
     :type text: `str` or `None`
@@ -2120,6 +2471,7 @@ class Review:
         self.user: UserProfile = user
         """ Профиль продавца, к которому относится отзыв. """
 
+
 class ReviewPageInfo:
     """
     Подкласс, описывающий информацию о странице отзывов.
@@ -2147,15 +2499,16 @@ class ReviewPageInfo:
         self.has_next_page: bool = has_next_page
         """ Имеет ли следующую страницу. """
 
+
 class ReviewList:
     """
     Класс, описывающий страницу отзывов.
 
     :param reviews: Отзывы страницы.
-    :type reviews: `list[types.Review]`
+    :type reviews: `list[playerokapi.types.Review]`
 
     :param page_info: Информация о странице.
-    :type page_info: `types.ReviewPageInfo`
+    :type page_info: `playerokapi.types.ReviewPageInfo`
 
     :param total_count: Всего отзывов.
     :type total_count: `int`

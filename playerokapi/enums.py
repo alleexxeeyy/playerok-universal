@@ -12,21 +12,23 @@ class EventTypes(Enum):
     """ Новое сообщение в чате. """
     NEW_DEAL = 2
     """ Создана новая сделка (когда покупатель оплатил товар). """
-    DEAL_CONFIRMED = 3
+    NEW_REVIEW = 3
+    """ Новый отзыв от покупателя. """
+    DEAL_CONFIRMED = 4
     """ Сделка подтверждена (покупатель подтвердил получение предмета). """
-    DEAL_CONFIRMED_AUTOMATICALLY = 4
+    DEAL_CONFIRMED_AUTOMATICALLY = 5
     """ Сделка подтверждена автоматически (если покупатель долго не выходит на связь). """
-    DEAL_ROLLED_BACK = 5
+    DEAL_ROLLED_BACK = 6
     """ Продавец оформил возврат сделки. """
-    DEAL_HAS_PROBLEM = 6
+    DEAL_HAS_PROBLEM = 7
     """ Пользователь сообщил о проблеме в сделке. """
-    DEAL_PROBLEM_RESOLVED = 7
+    DEAL_PROBLEM_RESOLVED = 8
     """ Проблема в сделке решена. """
-    DEAL_STATUS_CHANGED = 8
+    DEAL_STATUS_CHANGED = 9
     """ Статус сделки изменён. """
-    ITEM_PAID = 9
+    ITEM_PAID = 10
     """ Пользователь оплатил предмет. """
-    ITEM_SENT = 10
+    ITEM_SENT = 11
     """ Предмет отправлен (продавец подтвердил выполнение сделки). """
 
 
@@ -54,14 +56,26 @@ class TransactionOperations(Enum):
     Операции транзакций.
     """
 
-    BUY = 0
-    """ Оплата. """
-    SELL = 1
-    """ Продажа. """
-    ITEM_DEFAULT_PRIORITY = 2
+    DEPOSIT = 0
+    """ Пополнение. """
+    BUY = 1
+    """ Оплата товара. """
+    SELL = 2
+    """ Продажа товара. """
+    ITEM_DEFAULT_PRIORITY = 3
     """ Оплата бесплатного приоритета. """
-    ITEM_PREMIUM_PRIORITY = 3
+    ITEM_PREMIUM_PRIORITY = 4
     """ Оплата премиум приоритета. """
+    WITHDRAW = 5
+    """ Выплата. """
+    MANUAL_BALANCE_INCREASE = 6
+    """ Начисление на баланс аккаунта. """
+    MANUAL_BALANCE_DECREASE = 7
+    """ Списание с баланса аккаунта. """
+    REFERRAL_BONUS = 8
+    """ Приглашение друга (реферал). """
+    STEAM_DEPOSIT = 9
+    """ Оплата пополнения Steam. """
 
 
 class TransactionDirections(Enum):
@@ -70,9 +84,9 @@ class TransactionDirections(Enum):
     """
 
     IN = 0
-    """ Входящая. """
+    """ Начисление. """
     OUT = 1
-    """ Исходящая. """
+    """ Списание. """
 
 
 class TransactionStatuses(Enum):
@@ -80,11 +94,40 @@ class TransactionStatuses(Enum):
     Статусы транзакций.
     """
 
-    # TODO: Доделать все статусы транзакций
     PENDING = 0
     """ В ожидании (транзакция оплачена, но деньги за неё ещё не поступили на баланс). """
-    CONFIRMED = 1
-    """ Транзакция подтверждена. """
+    PROCESSING = 1
+    """ В заморозке. """
+    CONFIRMED = 2
+    """ Сделка транзакции подтверждена. """
+    ROLLED_BACK = 3
+    """ Возврат по сделке транзакции. """
+    FAILED = 4
+    """ Ошибка транзакции. """
+
+
+class TransactionPaymentMethodIds(Enum):
+    """
+    Айди методов транзакции.
+    """
+
+    MIR = 0
+    """ С помощью банквоских карт МИР. """
+    VISA_MASTERCARD = 1
+    """ С помощью банквоских карт VISA/Mastercard. """
+    ERIP = 2
+    """ С помощью ЕРИП. """
+
+
+class TransactionProviderDirections(Enum):
+    """
+    Направления провайдеров транзакции.
+    """
+
+    IN = 0
+    """ Пополнение. """
+    OUT = 1
+    """ Вывод. """
 
 
 class TransactionProviderIds(Enum):
@@ -92,9 +135,22 @@ class TransactionProviderIds(Enum):
     Айди провайдеров транзакции.
     """
 
-    # TODO: Доделать все id провайдеров транзакций
     LOCAL = 0
-    """ Локальная транзакция. """
+    """ С помощью баланса аккаунта. """
+    SBP = 1
+    """ С помощью СБП. """
+    BANK_CARD_RU = 2
+    """ С помощью банковской карты России. """
+    BANK_CARD_BY = 3
+    """ С помощью банковской карты Беларуси. """
+    BANK_CARD = 4
+    """ С помощью иностранной банковской карты. """
+    YMONEY = 5
+    """ С помощью ЮMoney. """
+    USDT = 6
+    """ Криптовалюта USDT (TRC20). """
+    PENDING_INCOME = 7
+    """ Пополнение из замороженных средств. """
 
 
 class ItemDealStatuses(Enum):

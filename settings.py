@@ -31,6 +31,7 @@ DATA = {
                         "new_user_message": True,
                         "new_system_message": True,
                         "new_deal": True,
+                        "new_review": True,
                         "new_problem": True,
                         "deal_status_changed": True,
                     }

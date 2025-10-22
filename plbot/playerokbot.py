@@ -108,7 +108,7 @@ class PlayerokBot:
             if not _items.page_info.has_next_page:
                 break
             next_cursor = _items.page_info.end_cursor
-            time.sleep(0.1)
+            time.sleep(0.3)
         return my_items
     
 
@@ -266,6 +266,15 @@ class PlayerokBot:
         self.logger.info(f" · Товар: {Fore.LIGHTWHITE_EX}{deal.item.name}")
         self.logger.info(f" · Сумма: {Fore.LIGHTWHITE_EX}{deal.item.price}₽")
         self.logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
+
+    def log_new_review(self, deal: types.ItemDeal):
+        self.logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
+        self.logger.info(f"{Fore.YELLOW}Новый отзыв по сделке {deal.id}:")
+        self.logger.info(f" · Оценка: {Fore.LIGHTYELLOW_EX}{'★' * deal.review.rating or 5} ({deal.review.rating or 5})")
+        self.logger.info(f" · Текст: {Fore.LIGHTWHITE_EX}{deal.review.text}")
+        self.logger.info(f" · Оставил: {Fore.LIGHTWHITE_EX}{deal.review.creator.username}")
+        self.logger.info(f" · Дата: {Fore.LIGHTWHITE_EX}{datetime.fromisoformat(deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}")
+        self.logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
     
     def log_deal_status_changed(self, deal: types.ItemDeal):
         status = "Неизвестный"
@@ -297,7 +306,10 @@ class PlayerokBot:
         self.logger.info(f"{Fore.LIGHTBLUE_EX}Информация об аккаунте:")
         self.logger.info(f" · ID: {Fore.LIGHTWHITE_EX}{self.playerok_account.id}")
         self.logger.info(f" · Никнейм: {Fore.LIGHTWHITE_EX}{self.playerok_account.username}")
-        self.logger.info(f" · Баланс: {Fore.LIGHTWHITE_EX}{self.playerok_account.profile.balance.withdrawable}₽" + (f" + {self.playerok_account.profile.balance.pending_income} в ожидании" if self.playerok_account.profile.balance.pending_income else ""))
+        self.logger.info(f" · Баланс: {Fore.LIGHTWHITE_EX}{self.playerok_account.profile.balance.value}₽")
+        self.logger.info(f"   · Доступно: {Fore.LIGHTWHITE_EX}{self.playerok_account.profile.balance.available}₽")
+        self.logger.info(f"   · В ожидании: {Fore.LIGHTWHITE_EX}{self.playerok_account.profile.balance.pending_income}₽")
+        self.logger.info(f"   · Заморожено: {Fore.LIGHTWHITE_EX}{self.playerok_account.profile.balance.frozen}₽")
         self.logger.info(f" · Активные продажи: {Fore.LIGHTWHITE_EX}{self.playerok_account.profile.stats.deals.outgoing.total - self.playerok_account.profile.stats.deals.outgoing.finished}")
         self.logger.info(f" · Активные покупки: {Fore.LIGHTWHITE_EX}{self.playerok_account.profile.stats.deals.incoming.total - self.playerok_account.profile.stats.deals.incoming.finished}")
         self.logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
@@ -393,6 +405,16 @@ class PlayerokBot:
                 self.logger.error(f"{Fore.LIGHTRED_EX}При обработке ивента новой сделки произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()
 
+        async def on_new_review(plbot: PlayerokBot, event: NewReviewEvent):
+            try:
+                self.log_new_review(event.deal)
+                if self.config["playerok"]["bot"]["tg_logging_enabled"] and self.config["playerok"]["bot"]["tg_logging_events"]["new_review"]:
+                    self.log_to_tg(text=log_text(f'💬✨ Новый отзыв по <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', f"<b>Оценка:</b> {'⭐' * event.deal.review.rating}\n<b>Оставил:</b> {event.deal.review.creator.username}\n<b>Текст:</b> {event.deal.review.text}\n<b>Дата:</b> {datetime.fromisoformat(event.deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}"),
+                                   kb=log_new_mess_kb(event.deal.user.username))
+            except Exception:
+                self.logger.error(f"{Fore.LIGHTRED_EX}При обработке ивента новых отзывов произошла ошибка: {Fore.WHITE}")
+                traceback.print_exc()
+
         async def on_item_paid(plbot: PlayerokBot, event: ItemPaidEvent):
             try:
                 if self.config["playerok"]["bot"]["auto_restore_items_enabled"]:
@@ -405,7 +427,8 @@ class PlayerokBot:
             try:
                 self.log_new_problem(event.deal)
                 if self.config["playerok"]["bot"]["tg_logging_enabled"] and self.config["playerok"]["bot"]["tg_logging_events"]["new_problem"]:
-                    self.log_to_tg(log_text(f'🤬 Новая жалоба в <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n"))
+                    self.log_to_tg(text=log_text(f'🤬 Новая жалоба в <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}"),
+                                   kb=log_new_mess_kb(event.deal.user.username))
             except Exception:
                 self.logger.error(f"{Fore.LIGHTRED_EX}При обработке ивента новых сообщений произошла ошибка: {Fore.WHITE}")
                 traceback.print_exc()
@@ -441,6 +464,7 @@ class PlayerokBot:
         playerok_event_handlers = get_playerok_event_handlers()
         playerok_event_handlers[EventTypes.NEW_MESSAGE].insert(0, on_new_message)
         playerok_event_handlers[EventTypes.NEW_DEAL].insert(0, on_new_deal)
+        playerok_event_handlers[EventTypes.NEW_REVIEW].insert(0, on_new_review)
         playerok_event_handlers[EventTypes.DEAL_STATUS_CHANGED].insert(0, on_deal_status_changed)
         playerok_event_handlers[EventTypes.DEAL_HAS_PROBLEM].insert(0, on_new_problem)
         playerok_event_handlers[EventTypes.ITEM_PAID].insert(0, on_item_paid)

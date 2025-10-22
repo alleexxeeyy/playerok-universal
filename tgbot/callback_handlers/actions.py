@@ -562,6 +562,13 @@ async def callback_switch_tg_logging_event_new_deal(callback: CallbackQuery, sta
     sett.set("config", config)
     return await callback_settings_navigation(callback, calls.SettingsNavigation(to="logger"), state)
 
+@router.callback_query(F.data == "switch_tg_logging_event_new_review")
+async def callback_switch_tg_logging_event_new_review(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["bot"]["tg_logging_events"]["new_review"] = not config["playerok"]["bot"]["tg_logging_events"]["new_review"]
+    sett.set("config", config)
+    return await callback_settings_navigation(callback, calls.SettingsNavigation(to="logger"), state)
+
 @router.callback_query(F.data == "switch_tg_logging_event_new_problem")
 async def callback_switch_tg_logging_event_new_problem(callback: CallbackQuery, state: FSMContext):
     config = sett.get("config")

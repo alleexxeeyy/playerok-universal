@@ -66,6 +66,16 @@ def log_new_deal_kb(username: str, deal_id: str):
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
 
+def log_new_review_kb(username: str, deal_id: str):
+    rows = [
+        [
+        InlineKeyboardButton(text="💬🌟 Ответить на отзыв", callback_data=calls.RememberDealId(de_id=deal_id, do="answer_rev").pack()),
+        InlineKeyboardButton(text="💬 Написать", callback_data=calls.RememberUsername(name=username, do="send_mess").pack())
+        ]
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    return kb
+
 
 def sign_text(placeholder: str):
     txt = textwrap.dedent(f"""
@@ -139,8 +149,8 @@ def stats_kb():
 
 def profile_text():
     from plbot.playerokbot import get_playerok_bot
-    plbot = get_playerok_bot()
-    profile = plbot.playerok_account.profile
+    acc = get_playerok_bot().playerok_account.get()
+    profile = acc.profile
     txt = textwrap.dedent(f"""
         👤 <b>Мой профиль</b>
 
@@ -680,6 +690,7 @@ def settings_logger_text():
     event_new_user_message = "🟢" if tg_logging_events.get("new_user_message") else "🔴"
     event_new_system_message = "🟢" if tg_logging_events.get("new_system_message") else "🔴"
     event_new_deal = "🟢" if tg_logging_events.get("new_deal") else "🔴"
+    event_new_review = "🟢" if tg_logging_events.get("new_review") else "🔴"
     event_new_problem = "🟢" if tg_logging_events.get("new_problem") else "🔴"
     event_deal_status_changed = "🟢" if tg_logging_events.get("deal_status_changed") else "🔴"
     txt = textwrap.dedent(f"""
@@ -691,6 +702,7 @@ def settings_logger_text():
         ┣ {event_new_user_message} <b>💬👤 Новое сообщение от пользователя</b>
         ┣ {event_new_system_message} <b>💬⚙️ Новое системное сообщение</b>
         ┣ {event_new_deal} <b>📋 Новая сделка</b>
+        ┣ {event_new_review} <b>💬✨ Новый отзыв</b>
         ┣ {event_new_problem} <b>🤬 Новая жалоба в сделке</b>
         ┗ {event_deal_status_changed} <b>🔄️📋 Статус сделки изменился</b>
         
@@ -706,6 +718,7 @@ def settings_logger_kb():
     event_new_user_message = "🟢" if tg_logging_events.get("new_user_message") else "🔴"
     event_new_system_message = "🟢" if tg_logging_events.get("new_system_message") else "🔴"
     event_new_deal = "🟢" if tg_logging_events.get("new_deal") else "🔴"
+    event_new_review = "🟢" if tg_logging_events.get("new_review") else "🔴"
     event_new_problem = "🟢" if tg_logging_events.get("new_problem") else "🔴"
     event_deal_status_changed = "🟢" if tg_logging_events.get("deal_status_changed") else "🔴"
     rows = [
@@ -714,9 +727,10 @@ def settings_logger_kb():
         [
         InlineKeyboardButton(text=f"{event_new_user_message} 💬👤 Новое сообщение от пользователя", callback_data="switch_tg_logging_event_new_user_message"),
         InlineKeyboardButton(text=f"{event_new_system_message} 💬⚙️ Новое системное сообщение", callback_data="switch_tg_logging_event_new_system_message"),
+        InlineKeyboardButton(text=f"{event_new_deal} 📋 Новая сделка", callback_data="switch_tg_logging_event_new_deal")
         ],
         [
-        InlineKeyboardButton(text=f"{event_new_deal} 📋 Новая сделка", callback_data="switch_tg_logging_event_new_deal"),
+        InlineKeyboardButton(text=f"{event_new_review} 💬✨ Новый отзыв", callback_data="switch_tg_logging_event_new_review"),
         InlineKeyboardButton(text=f"{event_new_problem} 🤬 Новая жалоба в сделке", callback_data="switch_tg_logging_event_new_problem"),
         InlineKeyboardButton(text=f"{event_deal_status_changed} 🔄️📋 Статус сделки изменился", callback_data="switch_tg_logging_event_deal_status_changed")
         ],

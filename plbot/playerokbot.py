@@ -272,7 +272,7 @@ class PlayerokBot:
         self.logger.info(f"{Fore.YELLOW}Новый отзыв по сделке {deal.id}:")
         self.logger.info(f" · Оценка: {Fore.LIGHTYELLOW_EX}{'★' * deal.review.rating or 5} ({deal.review.rating or 5})")
         self.logger.info(f" · Текст: {Fore.LIGHTWHITE_EX}{deal.review.text}")
-        self.logger.info(f" · Оставил: {Fore.LIGHTWHITE_EX}{deal.review.creator.username}")
+        self.logger.info(f" · Оставил: {Fore.LIGHTWHITE_EX}{deal.review.user.username}")
         self.logger.info(f" · Дата: {Fore.LIGHTWHITE_EX}{datetime.fromisoformat(deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}")
         self.logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
     

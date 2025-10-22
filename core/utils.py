@@ -127,15 +127,13 @@ def patch_requests():
     def _request(self, method, url, **kwargs):  # type: ignore
         for attempt in range(6):
             resp = _orig_request(self, method, url, **kwargs)
-            try: head_text = (resp.text or "")[:1200]
-            except Exception: head_text = ""
             statuses = {
                 "429": "TOO_MANY_REQUESTS",
                 "502": "BAD_GATEWAY",
                 "503": "SERVICE_UNAVAIBLE"
             }
             if str(resp.status_code) not in statuses:
-                if any([status_text for status_text in statuses.values() if status_text in head_text]):
+                if any([status_text for status_text in statuses.values() if status_text in resp.text]):
                     break
                 else: 
                     return resp

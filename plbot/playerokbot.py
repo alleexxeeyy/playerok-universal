@@ -247,7 +247,7 @@ class PlayerokBot:
         longest_line_len = 0
         text = ""
         if message.text is not None: text = message.text
-        elif message.image_link is not None: text = f"{Fore.LIGHTMAGENTA_EX}Изображение {Fore.WHITE}({message.image_link})"
+        elif message.file is not None: text = f"{Fore.LIGHTMAGENTA_EX}Изображение {Fore.WHITE}({message.file.url})"
         for raw_line in text.split("\n"):
             if not raw_line.strip():
                 self.logger.info(f"{Fore.LIGHTBLUE_EX}│")

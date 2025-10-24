@@ -1,128 +1,148 @@
 import os
 import json
 import copy
+from dataclasses import dataclass
 
 
-DATA = {
-    "config": {
-        "path": "bot_settings/config.json",
-        "default": {
-            "playerok": {
-                "api": {
-                    "token": "",
-                    "user_agent": "",
-                    "proxy": "",
-                    "requests_timeout": 30,
-                    "listener_requests_delay": 4
-                },
-                "bot": {
-                    "messages_watermark_enabled": True,
-                    "messages_watermark": "©️ 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
-                    "read_chat_before_sending_message_enabled": True,
-                    "first_message_enabled": True,
-                    "custom_commands_enabled": True,
-                    "auto_deliveries_enabled": True,
-                    "auto_restore_items_enabled": True,
-                    "auto_restore_items_priority_status": "DEFAULT",
-                    "auto_complete_deals_enabled": True,
-                    "tg_logging_enabled": True,
-                    "tg_logging_chat_id": "",
-                    "tg_logging_events": {
-                        "new_user_message": True,
-                        "new_system_message": True,
-                        "new_deal": True,
-                        "new_review": True,
-                        "new_problem": True,
-                        "deal_status_changed": True,
-                    }
-                }
+@dataclass
+class SettingsFile:
+    name: str
+    path: str
+    need_restore: bool
+    default: list | dict
+
+
+CONFIG = SettingsFile(
+    name="config",
+    path="bot_settings/config.json",
+    need_restore=True,
+    default={
+        "playerok": {
+            "api": {
+                "token": "",
+                "user_agent": "",
+                "proxy": "",
+                "requests_timeout": 30,
+                "listener_requests_delay": 4
             },
-            "telegram": {
-                "api": {
-                    "token": ""
-                },
-                "bot": {
-                    "password": "",
-                    "signed_users": []
+            "bot": {
+                "messages_watermark_enabled": True,
+                "messages_watermark": "©️ 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
+                "read_chat_before_sending_message_enabled": True,
+                "first_message_enabled": True,
+                "custom_commands_enabled": True,
+                "auto_deliveries_enabled": True,
+                "auto_restore_items_enabled": True,
+                "auto_restore_items_priority_status": "DEFAULT",
+                "auto_complete_deals_enabled": True,
+                "tg_logging_enabled": True,
+                "tg_logging_chat_id": "",
+                "tg_logging_events": {
+                    "new_user_message": True,
+                    "new_system_message": True,
+                    "new_deal": True,
+                    "new_review": True,
+                    "new_problem": True,
+                    "deal_status_changed": True,
                 }
             }
-        }
-    },
-    "messages": {
-        "path": "bot_settings/messages.json",
-        "default": {
-            "first_message": {
-                "enabled": True,
-                "text": [
-                    "👋 Привет, {username}, я бот-помощник 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
-                    "",
-                    "💡 Если вы хотите поговорить с продавцом, напишите команду !продавец, чтобы я пригласил его в этот диалог",
-                    "",
-                    "Чтобы узнать все мои команды, напишите !команды"
-                ]
+        },
+        "telegram": {
+            "api": {
+                "token": ""
             },
-            "cmd_error": {
-                "enabled": True,
-                "text": [
-                    "❌ При вводе команды произошла ошибка: {error}"
-                ]
-            },
-            "cmd_commands": {
-                "enabled": True,
-                "text": [
-                    "🕹️ Основные команды:",
-                    "・ !продавец — уведомить и позвать продавца в этот чат"
-                ]
-            },
-            "cmd_seller": {
-                "enabled": True,
-                "text": [
-                    "💬 Продавец был вызван в этот чат. Ожидайте, пока он подключиться к диалогу..."
-                ]
-            },
-            "new_deal": {
-                "enabled": False,
-                "text": [
-                    "📋 Спасибо за покупку «{deal_item_name}» в количестве {deal_amount} шт.",
-                    ""
-                    "Продавца сейчас может не быть на месте, чтобы позвать его, используйте команду !продавец."
-                ]
-            },
-            "deal_pending": {
-                "enabled": False,
-                "text": [
-                    "⌛ Отправьте нужные данные, чтобы я смог выполнить ваш заказ"
-                ]
-            },
-            "deal_sent": {
-                "enabled": False,
-                "text": [
-                    "✅ Я подтвердил выполнение вашего заказа! Если вы не получили купленный товар - напишите это в чате"
-                ]
-            },
-            "deal_confirmed": {
-                "enabled": False,
-                "text": [
-                    "🌟 Спасибо за успешную сделку. Буду рад, если оставите отзыв. Жду вас в своём магазине в следующий раз, удачи!"
-                ]
-            },
-            "deal_refunded": {
-                "enabled": False,
-                "text": [
-                    "📦 Заказ был возвращён. Надеюсь эта сделка не принесла вам неудобств. Жду вас в своём магазине в следующий раз, удачи!"
-                ]
+            "bot": {
+                "password": "",
+                "signed_users": []
             }
         }
-    },
-    "custom_commands": {
-        "path": "bot_settings/custom_commands.json",
-        "default": {}
-    },
-    "auto_deliveries": {
-        "path": "bot_settings/auto_deliveries.json",
-        "default": []
     }
-}
+)
+
+MESSAGES = SettingsFile(
+    name="messages",
+    path="bot_settings/messages.json",
+    need_restore=True,
+    default={
+        "first_message": {
+            "enabled": True,
+            "text": [
+                "👋 Привет, {username}, я бот-помощник 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
+                "",
+                "💡 Если вы хотите поговорить с продавцом, напишите команду !продавец, чтобы я пригласил его в этот диалог",
+                "",
+                "Чтобы узнать все мои команды, напишите !команды"
+            ]
+        },
+        "cmd_error": {
+            "enabled": True,
+            "text": [
+                "❌ При вводе команды произошла ошибка: {error}"
+            ]
+        },
+        "cmd_commands": {
+            "enabled": True,
+            "text": [
+                "🕹️ Основные команды:",
+                "・ !продавец — уведомить и позвать продавца в этот чат"
+            ]
+        },
+        "cmd_seller": {
+            "enabled": True,
+            "text": [
+                "💬 Продавец был вызван в этот чат. Ожидайте, пока он подключиться к диалогу..."
+            ]
+        },
+        "new_deal": {
+            "enabled": False,
+            "text": [
+                "📋 Спасибо за покупку «{deal_item_name}» в количестве {deal_amount} шт.",
+                ""
+                "Продавца сейчас может не быть на месте, чтобы позвать его, используйте команду !продавец."
+            ]
+        },
+        "deal_pending": {
+            "enabled": False,
+            "text": [
+                "⌛ Отправьте нужные данные, чтобы я смог выполнить ваш заказ"
+            ]
+        },
+        "deal_sent": {
+            "enabled": False,
+            "text": [
+                "✅ Я подтвердил выполнение вашего заказа! Если вы не получили купленный товар - напишите это в чате"
+            ]
+        },
+        "deal_confirmed": {
+            "enabled": False,
+            "text": [
+                "🌟 Спасибо за успешную сделку. Буду рад, если оставите отзыв. Жду вас в своём магазине в следующий раз, удачи!"
+            ]
+        },
+        "deal_refunded": {
+            "enabled": False,
+            "text": [
+                "📦 Заказ был возвращён. Надеюсь эта сделка не принесла вам неудобств. Жду вас в своём магазине в следующий раз, удачи!"
+            ]
+        }
+    }
+)
+
+CUSTOM_COMMANDS = SettingsFile(
+    name="custom_commands",
+    path="bot_settings/custom_commands.json",
+    need_restore=False,
+    default={}
+)
+
+AUTO_DELIVERIES = SettingsFile(
+    name="auto_deliveries",
+    path="bot_settings/auto_deliveries.json",
+    need_restore=False,
+    default=[]
+)
+
+DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES]
 
 
 def validate_config(config, default):
@@ -231,15 +251,15 @@ def set_json(path: str, new: dict):
 class Settings:
     
     @staticmethod
-    def get(name, data: dict | None = None) -> dict:
-        data = data if data is not None else DATA
-        if name not in data:
-            return None
-        return get_json(data[name]["path"], data[name]["default"])
+    def get(name: str, data: list[SettingsFile] = DATA) -> dict | None:
+        try: 
+            file = [file for file in data if file.name == name][0]
+            return get_json(file.path, file.default, file.need_restore)
+        except: return None
 
     @staticmethod
-    def set(name, new, data: dict | None = None) -> dict:
-        data = data if data is not None else DATA
-        if name not in data:
-            return None
-        set_json(data[name]["path"], new)
+    def set(name: str, new: list | dict, data: list[SettingsFile] = DATA):
+        try: 
+            file = [file for file in data if file.name == name][0]
+            set_json(file.path, new)
+        except: pass

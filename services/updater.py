@@ -5,12 +5,13 @@ import io
 import shutil
 from colorama import Fore
 from logging import getLogger
-logger = getLogger(f"universal.updater")
 
 from __init__ import VERSION, SKIP_UPDATES
 from core.utils import restart
 
+
 REPO = "alleexxeeyy/playerok-universal"
+logger = getLogger(f"universal.updater")
 
 
 def check_for_updates():

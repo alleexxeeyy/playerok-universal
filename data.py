@@ -1,14 +1,22 @@
 import json
 import os
-from datetime import datetime
+from dataclasses import dataclass
 
 
-DATA = {
-    "initialized_users": {
-        "path": "bot_data/initialized_users.json",
-        "default": []
-    }
-}
+@dataclass
+class DataFile:
+    name: str
+    path: str
+    default: list | dict
+
+
+INITIALIZED_USERS = DataFile(
+    name="initialized_users",
+    path="bot_data/initialized_users.json",
+    default=[]
+)
+
+DATA = [INITIALIZED_USERS]
 
 
 def get_json(path: str, default: dict | list) -> dict:
@@ -53,15 +61,15 @@ def set_json(path: str, new: dict):
 class Data:
     
     @staticmethod
-    def get(name, data: dict | None = None) -> dict:
-        data = data if data is not None else DATA
-        if name not in data:
-            return None
-        return get_json(data[name]["path"], data[name]["default"])
+    def get(name: str, data: list[DataFile] = DATA) -> dict | None:
+        try: 
+            file = [file for file in data if file.name == name][0]
+            return get_json(file.path, file.default)
+        except: return None
 
     @staticmethod
-    def set(name, new, data: dict | None = None) -> dict:
-        data = data if data is not None else DATA
-        if name not in data:
-            return None
-        set_json(data[name]["path"], new)
+    def set(name: str, new: list | dict, data: list[DataFile] = DATA):
+        try: 
+            file = [file for file in data if file.name == name][0]
+            set_json(file.path, new)
+        except: pass

@@ -1,26 +1,31 @@
-from datetime import datetime
 import os
-from data import *
+from data import (
+    Data as data,
+    DataFile
+)
 
 
-DATA = {
-    "new_forms": {
-        "path": os.path.join(os.path.dirname(__file__), 'module_data', 'new_forms.json'),
-        "default": {}
-    },
-    "forms": {
-        "path": os.path.join(os.path.dirname(__file__), 'module_data', 'forms.json'),
-        "default": {}
-    }
-}
+NEW_FORMS = DataFile(
+    name="new_forms",
+    path=os.path.join(os.path.dirname(__file__), "module_data", "new_forms.json"),
+    default={}
+)
+
+FORMS = DataFile(
+    name="forms",
+    path=os.path.join(os.path.dirname(__file__), "module_data", "forms.json"),
+    default={}
+)
+
+DATA = [NEW_FORMS, FORMS]
 
 
 class Data:
 
     @staticmethod
-    def get(name) -> dict:
-        return get_json(DATA[name]["path"], DATA[name]["default"])
+    def get(name: str) -> dict:
+        return data.get(name, DATA)
 
     @staticmethod
-    def set(name, new) -> dict:
-        set_json(DATA[name]["path"], new)
+    def set(name: str, new: list | dict) -> dict:
+        return data.set(name, new, DATA)

@@ -6,7 +6,7 @@ from colorlog import ColoredFormatter
 from colorama import Fore
 import pkg_resources
 import subprocess
-import requests
+import tls_requests
 import random
 import time
 from logging import getLogger
@@ -123,7 +123,7 @@ def install_requirements(requirements_path: str):
 
 def patch_requests():
     """Патчит стандартные requests на кастомные с обработкой ошибок."""
-    _orig_request = requests.Session.request
+    _orig_request = tls_requests.Client.request
     def _request(self, method, url, **kwargs):  # type: ignore
         for attempt in range(6):
             resp = _orig_request(self, method, url, **kwargs)
@@ -145,4 +145,4 @@ def patch_requests():
             delay += random.uniform(0.2, 0.8)  # небольшой джиттер
             time.sleep(delay)
         return resp
-    requests.Session.request = _request  # type: ignore
+    tls_requests.Client.request = _request  # type: ignore

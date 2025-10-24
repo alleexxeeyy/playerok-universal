@@ -19,7 +19,7 @@ from playerokapi.listener.listener import EventListener
 from playerokapi.types import Chat, Item
 from core.utils import set_title
 from core.handlers import get_bot_event_handlers, set_bot_event_handlers, get_playerok_event_handlers, set_playerok_event_handlers
-from settings import Settings as sett
+from settings import DATA, Settings as sett
 from logging import getLogger
 from data import Data as data
 from tgbot.telegrambot import get_telegram_bot, get_telegram_bot_loop
@@ -113,7 +113,7 @@ class PlayerokBot:
     
 
     def msg(self, message_name: str, exclude_watermark: bool = False,
-            messages_config_name: str = "messages", messages_data: dict | None = None,
+            messages_config_name: str = "messages", messages_data: dict = DATA,
             **kwargs) -> str | None:
         """ 
         Получает отформатированное сообщение из словаря сообщений.
@@ -152,7 +152,7 @@ class PlayerokBot:
                 return msg
             except:
                 pass
-        return "Не удалось получить сообщение"
+        return f"Не удалось получить сообщение {message_name}"
     
     def send_message(self, chat_id: str, text: str | None = None, photo_file_path: str | None = None,
                      mark_chat_as_read: bool = None, max_attempts: int = 3) -> types.ChatMessage:

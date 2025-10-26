@@ -299,7 +299,7 @@ class PlayerokBot:
         self.logger.info(f" · Сумма: {Fore.LIGHTWHITE_EX}{deal.item.price}₽")
         self.logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
 
-    async def run_bot(self):
+    async def run_bot(self, loop):
         self.logger.info(f"{Fore.GREEN}Playerok бот запущен и активен")
         self.logger.info("")
         self.logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
@@ -486,11 +486,21 @@ class PlayerokBot:
 
         self.logger.info(f"Слушатель событий запущен")
         listener = EventListener(self.playerok_account)
+
+        async_tasks = set()
+
         for event in listener.listen(requests_delay=self.config["playerok"]["api"]["listener_requests_delay"]):
             playerok_event_handlers = get_playerok_event_handlers() # чтобы каждый раз брать свежие хендлеры, ибо модули могут отключаться/включаться
             if event.type in playerok_event_handlers:
                 for handler in playerok_event_handlers[event.type]:
-                    try:
-                        await handler(self, event)
-                    except Exception as e:
-                        self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера {handler} в ивенте {event.type.name}: {Fore.WHITE}{e}")
+                    task = asyncio.run_coroutine_threadsafe(self.handle(handler, event), loop)
+                    async_tasks.add(task)
+                    task.add_done_callback(async_tasks.discard)
+
+
+    async def handle(self, handler, event, *args, **kwargs):
+        try:
+            await handler(self, event)
+        except Exception as e:
+            self.logger.error(
+                f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера {handler} в ивенте {event.type.name}: {Fore.WHITE}{e}")

@@ -19,6 +19,8 @@ from core.modules import load_modules, set_modules, connect_modules
 from core.handlers import get_bot_event_handlers
 from services.updater import check_for_updates
 
+loop = asyncio.get_event_loop()
+asyncio.set_event_loop(loop)
 
 async def start_telegram_bot():
     from tgbot.telegrambot import TelegramBot
@@ -30,7 +32,7 @@ async def start_telegram_bot():
 async def start_playerok_bot():
     from plbot.playerokbot import PlayerokBot
     def run():
-        asyncio.new_event_loop().run_until_complete(PlayerokBot().run_bot())
+        asyncio.new_event_loop().run_until_complete(PlayerokBot().run_bot(loop))
     Thread(target=run, daemon=True).start()
 
 
@@ -240,8 +242,8 @@ if __name__ == "__main__":
                     logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера ивента ON_INIT: {Fore.WHITE}{e}")
         handle_on_init()
         
-        asyncio.run(start_playerok_bot())
-        asyncio.run(start_telegram_bot())
+        loop.run_until_complete(start_playerok_bot())
+        loop.run_until_complete(start_telegram_bot())
     except Exception as e:
         traceback.print_exc()
     print(f"\n   {Fore.LIGHTRED_EX}Ваш бот словил непредвиденную ошибку и был выключен."

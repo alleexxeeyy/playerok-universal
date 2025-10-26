@@ -1002,7 +1002,7 @@ class Account:
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return [item_priority_status(status) for status in r["data"]["itemPriorityStatuses"]]
 
-    def increase_item_priority_status(self, item_id: str, priority_status_id: str, payment_method_id: str | None = None, 
+    def increase_item_priority_status(self, item_id: str, priority_status_id: str, payment_method_id: TransactionPaymentMethodIds | None = None, 
                                       transaction_provider_id: TransactionProviderIds = TransactionProviderIds.LOCAL) -> types.Item:
         """
         Повышает статус приоритета предмета.
@@ -1014,7 +1014,7 @@ class Account:
         :type priority_status_id: `int` or `str`
 
         :param payment_method_id: Метод оплаты, _опционально_.
-        :type payment_method_id: `str`
+        :type payment_method_id: `playerokapi.enums.TransactionPaymentMethodIds` or `None`
 
         :param transaction_provider_id: ID провайдера транзакции (LOCAL - с баланса кошелька на сайте).
         :type transaction_provider_id: `playerokapi.enums.TransactionProviderIds`
@@ -1031,7 +1031,7 @@ class Account:
                     "itemId": item_id,
                     "priorityStatuses": [priority_status_id],
                     "transactionProviderData": {
-                        "paymentMethodId": payment_method_id
+                        "paymentMethodId": payment_method_id.name
                     },
                     "transactionProviderId": transaction_provider_id.name
                 }
@@ -1121,3 +1121,116 @@ class Account:
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return [sbp_bank_member(member) for member in r["data"]["sbpBankMembers"]]
+    
+    def get_verified_cards(self, count: int = 24, after_cursor: str | None = None,
+                           direction: SortDirections = SortDirections.ASC) -> types.UserBankCardList:
+        """
+        Получает верифицированные карты аккаунта.
+
+        :param count: Кол-во банковских карт, которые нужно получить (не более 24 за один запрос).
+        :type count: `int`
+
+        :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
+        :type after_cursor: `str` or `None`
+
+        :param direction: Тип сортировки банковских карт.
+        :type direction: `playerokapi.enums.SortDirections`
+        
+        :return: Страница банковских карт пользователя.
+        :rtype: `playerokapi.types.UserBankCardList`
+        """
+        headers = {"accept": "*/*"}
+        payload = {
+            "operationName": "verifiedCards",
+            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "sort": {"direction": direction.name}, "field": "createdAt"}, ensure_ascii=False),
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "eb338d8432981307a2b3d322b3310b2447cab3a6acf21aba4b8773b97e72d1aa"}}, ensure_ascii=False)
+        }
+        r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
+        return user_bank_card_list(r["data"]["verifiedCards"])
+    
+    def delete_card(self, card_id: str) -> bool:
+        """
+        Удаляет карту из сохранённых в аккаунте.
+
+        :param card_id: ID банковской карты.
+        :type card_id: `str`
+        
+        :return: True, если карта удалилась, иначе False
+        :rtype: `bool`
+        """
+        headers = {"accept": "*/*"}
+        payload = {
+            "operationName": "deleteCard",
+            "query": "mutation deleteCard($input: DeleteCardInput!) {\n  deleteCard(input: $input)\n}",
+            "variables": {
+                "input": {
+                    "cardId": card_id
+                }
+            }
+        }
+        r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
+        return r["data"]["deleteCard"]
+    
+    def request_withdrawal(self, provider: TransactionProviderIds, account: str, value: int,
+                           payment_method_id: TransactionPaymentMethodIds | None = None,
+                           sbp_bank_member_id: str | None = None) -> types.Transaction:
+        """
+        Отправляет запрос на вывод средств с баланса аккаунта.
+
+        :param provider: Провайдер транзакции.
+        :type provider: `playerokapi.enums.TransactionProviderIds`
+
+        :param account: ID добавленной карты или номер телефона, если провайдер СБП, на которые нужно совершить вывод.
+        :type account: `str`
+
+        :param value: Сумма вывода.
+        :type value: `int`
+
+        :param payment_method_id: ID платёжного метода, _опционально_.
+        :type payment_method_id: `playerokapi.enums.TransactionPaymentMethodIds` or `None`
+
+        :param sbp_bank_member_id: ID члена банка СБП (только если указан провайдер СБП), _опционально_.
+        :type sbp_bank_member_id: `str` or `None`
+        
+        :return: Объект транзакции вывода.
+        :rtype: `playerokapi.types.Transaction`
+        """
+        headers = {"accept": "*/*"}
+        payload = {
+            "operationName": "requestWithdrawal",
+            "query": "mutation requestWithdrawal($input: CreateWithdrawalTransactionInput!) {\n  requestWithdrawal(input: $input) {\n    ...RegularTransaction\n    __typename\n  }\n}\n\nfragment RegularTransaction on Transaction {\n  id\n  operation\n  direction\n  providerId\n  provider {\n    ...RegularTransactionProvider\n    __typename\n  }\n  user {\n    ...RegularUserFragment\n    __typename\n  }\n  creator {\n    ...RegularUserFragment\n    __typename\n  }\n  status\n  statusDescription\n  statusExpirationDate\n  value\n  fee\n  createdAt\n  props {\n    ...RegularTransactionProps\n    __typename\n  }\n  verifiedAt\n  verifiedBy {\n    ...UserEdgeNode\n    __typename\n  }\n  completedBy {\n    ...UserEdgeNode\n    __typename\n  }\n  paymentMethodId\n  completedAt\n  isSuspicious\n  spbBankName\n  __typename\n}\n\nfragment RegularTransactionProvider on TransactionProvider {\n  id\n  name\n  fee\n  minFeeAmount\n  description\n  account {\n    ...RegularTransactionProviderAccount\n    __typename\n  }\n  props {\n    ...TransactionProviderPropsFragment\n    __typename\n  }\n  limits {\n    ...ProviderLimits\n    __typename\n  }\n  paymentMethods {\n    ...TransactionPaymentMethod\n    __typename\n  }\n  __typename\n}\n\nfragment RegularTransactionProviderAccount on TransactionProviderAccount {\n  id\n  value\n  userId\n  providerId\n  paymentMethodId\n  __typename\n}\n\nfragment TransactionProviderPropsFragment on TransactionProviderPropsFragment {\n  requiredUserData {\n    ...TransactionProviderRequiredUserData\n    __typename\n  }\n  tooltip\n  __typename\n}\n\nfragment TransactionProviderRequiredUserData on TransactionProviderRequiredUserData {\n  email\n  phoneNumber\n  eripAccountNumber\n  __typename\n}\n\nfragment ProviderLimits on ProviderLimits {\n  incoming {\n    ...ProviderLimitRange\n    __typename\n  }\n  outgoing {\n    ...ProviderLimitRange\n    __typename\n  }\n  __typename\n}\n\nfragment ProviderLimitRange on ProviderLimitRange {\n  min\n  max\n  __typename\n}\n\nfragment TransactionPaymentMethod on TransactionPaymentMethod {\n  id\n  name\n  fee\n  providerId\n  account {\n    ...RegularTransactionProviderAccount\n    __typename\n  }\n  props {\n    ...TransactionProviderPropsFragment\n    __typename\n  }\n  limits {\n    ...ProviderLimits\n    __typename\n  }\n  __typename\n}\n\nfragment RegularUserFragment on UserFragment {\n  id\n  username\n  role\n  avatarURL\n  isOnline\n  isBlocked\n  rating\n  testimonialCounter\n  createdAt\n  supportChatId\n  systemChatId\n  __typename\n}\n\nfragment RegularTransactionProps on TransactionPropsFragment {\n  creatorId\n  dealId\n  paidFromPendingIncome\n  paymentURL\n  successURL\n  fee\n  paymentAccount {\n    id\n    value\n    __typename\n  }\n  paymentGateway\n  alreadySpent\n  exchangeRate\n  amountAfterConversionRub\n  amountAfterConversionUsdt\n  userData {\n    account\n    email\n    ipAddress\n    phoneNumber\n    __typename\n  }\n  __typename\n}\n\nfragment UserEdgeNode on UserFragment {\n  ...RegularUserFragment\n  __typename\n}",
+            "variables": {
+                "input": {
+                    "provider": provider.name,
+                    "account": account,
+                    "value": value,
+                    "providerData": {
+                        "paymentMethodId": payment_method_id.name if payment_method_id else None,
+                        "sbpBankMemberId": sbp_bank_member_id if sbp_bank_member_id else None
+                    }
+                }
+            }
+        }
+        r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
+        return transaction(r["data"]["requestWithdrawal"])
+    
+    def remove_transaction(self, transaction_id: str) -> types.Transaction:
+        """
+        Удаляет транзакцию (например, можно отменить вывод).
+
+        :param transaction_id: ID транзакции.
+        :type transaction_id: `str`
+        
+        :return: Объект отменённой транзакции.
+        :rtype: `playerokapi.types.Transaction`
+        """
+        headers = {"accept": "*/*"}
+        payload = {
+            "operationName": "removeTransaction",
+            "query": "mutation removeTransaction($id: UUID!) {\n  removeTransaction(id: $id) {\n    ...RegularTransaction\n    __typename\n  }\n}\n\nfragment RegularTransaction on Transaction {\n  id\n  operation\n  direction\n  providerId\n  provider {\n    ...RegularTransactionProvider\n    __typename\n  }\n  user {\n    ...RegularUserFragment\n    __typename\n  }\n  creator {\n    ...RegularUserFragment\n    __typename\n  }\n  status\n  statusDescription\n  statusExpirationDate\n  value\n  fee\n  createdAt\n  props {\n    ...RegularTransactionProps\n    __typename\n  }\n  verifiedAt\n  verifiedBy {\n    ...UserEdgeNode\n    __typename\n  }\n  completedBy {\n    ...UserEdgeNode\n    __typename\n  }\n  paymentMethodId\n  completedAt\n  isSuspicious\n  spbBankName\n  __typename\n}\n\nfragment RegularTransactionProvider on TransactionProvider {\n  id\n  name\n  fee\n  minFeeAmount\n  description\n  account {\n    ...RegularTransactionProviderAccount\n    __typename\n  }\n  props {\n    ...TransactionProviderPropsFragment\n    __typename\n  }\n  limits {\n    ...ProviderLimits\n    __typename\n  }\n  paymentMethods {\n    ...TransactionPaymentMethod\n    __typename\n  }\n  __typename\n}\n\nfragment RegularTransactionProviderAccount on TransactionProviderAccount {\n  id\n  value\n  userId\n  providerId\n  paymentMethodId\n  __typename\n}\n\nfragment TransactionProviderPropsFragment on TransactionProviderPropsFragment {\n  requiredUserData {\n    ...TransactionProviderRequiredUserData\n    __typename\n  }\n  tooltip\n  __typename\n}\n\nfragment TransactionProviderRequiredUserData on TransactionProviderRequiredUserData {\n  email\n  phoneNumber\n  eripAccountNumber\n  __typename\n}\n\nfragment ProviderLimits on ProviderLimits {\n  incoming {\n    ...ProviderLimitRange\n    __typename\n  }\n  outgoing {\n    ...ProviderLimitRange\n    __typename\n  }\n  __typename\n}\n\nfragment ProviderLimitRange on ProviderLimitRange {\n  min\n  max\n  __typename\n}\n\nfragment TransactionPaymentMethod on TransactionPaymentMethod {\n  id\n  name\n  fee\n  providerId\n  account {\n    ...RegularTransactionProviderAccount\n    __typename\n  }\n  props {\n    ...TransactionProviderPropsFragment\n    __typename\n  }\n  limits {\n    ...ProviderLimits\n    __typename\n  }\n  __typename\n}\n\nfragment RegularUserFragment on UserFragment {\n  id\n  username\n  role\n  avatarURL\n  isOnline\n  isBlocked\n  rating\n  testimonialCounter\n  createdAt\n  supportChatId\n  systemChatId\n  __typename\n}\n\nfragment RegularTransactionProps on TransactionPropsFragment {\n  creatorId\n  dealId\n  paidFromPendingIncome\n  paymentURL\n  successURL\n  fee\n  paymentAccount {\n    id\n    value\n    __typename\n  }\n  paymentGateway\n  alreadySpent\n  exchangeRate\n  amountAfterConversionRub\n  amountAfterConversionUsdt\n  userData {\n    account\n    email\n    ipAddress\n    phoneNumber\n    __typename\n  }\n  __typename\n}\n\nfragment UserEdgeNode on UserFragment {\n  ...RegularUserFragment\n  __typename\n}",
+            "variables": {
+                "id": transaction_id
+            }
+        }
+        r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
+        return transaction(r["data"]["removeTransaction"])

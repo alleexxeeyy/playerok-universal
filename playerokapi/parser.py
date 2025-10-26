@@ -147,7 +147,7 @@ def transaction(data: dict) -> "Transaction":
         completed_by=data.get("completed_by"),
         payment_method_id=data.get("paymentMethodId"), 
         is_suspicious=data.get("is_suspicious"), 
-        spb_bank_name=data.get("spb_bank_name")
+        sbp_bank_name=data.get("spb_bank_name")
     )
 
 
@@ -172,6 +172,45 @@ def transaction_list(data: dict) -> "TransactionList":
     return TransactionList(
         transactions=[transaction(edge.get("node")) for edge in data.get("edges")],
         page_info=transaction_page_info(data.get("pageInfo")),
+        total_count=data.get("totalCount")
+    )
+
+
+def user_bank_card(data: dict) -> "UserBankCard":
+    from .types import UserBankCard
+
+    if not data:
+        return None
+    return UserBankCard(
+        id=data.get("id"),
+        card_first_six=data.get("cardFirstSix"),
+        card_last_four=data.get("cardLastFour"),
+        card_type=BankCardTypes.__members__.get(data.get("cardType")),
+        is_chosen=data.get("isChosen")
+    )
+
+
+def user_bank_card_page_info(data: dict) -> "UserBankCardPageInfo":
+    from .types import UserBankCardPageInfo
+
+    if not data:
+        return None
+    return UserBankCardPageInfo(
+        start_cursor=data.get("startCursor"),
+        end_cursor=data.get("endCursor"),
+        has_previous_page=data.get("hasPreviousPage"),
+        has_next_page=data.get("hasNextPage")
+    )
+
+
+def user_bank_card_list(data: dict) -> "UserBankCardList":
+    from .types import UserBankCardList
+
+    if not data:
+        return None
+    return UserBankCardList(
+        bank_cards=[user_bank_card(edge.get("node")) for edge in data.get("edges")],
+        page_info=user_bank_card_page_info(data.get("pageInfo")),
         total_count=data.get("totalCount")
     )
 
@@ -585,7 +624,7 @@ def account_profile(data: dict) -> "AccountProfile":
 
     if not data:
         return None
-    profile: dict = data.get("profile")
+    profile: dict = data.get("profile", {})
     return AccountProfile(
         id=data.get("id"),
         username=profile.get("username"),

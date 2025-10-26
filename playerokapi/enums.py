@@ -112,9 +112,9 @@ class TransactionPaymentMethodIds(Enum):
     """
 
     MIR = 0
-    """ С помощью банквоских карт МИР. """
+    """ С помощью банковских карт МИР. """
     VISA_MASTERCARD = 1
-    """ С помощью банквоских карт VISA/Mastercard. """
+    """ С помощью банковских карт VISA/Mastercard. """
     ERIP = 2
     """ С помощью ЕРИП. """
 
@@ -151,6 +151,19 @@ class TransactionProviderIds(Enum):
     """ Криптовалюта USDT (TRC20). """
     PENDING_INCOME = 7
     """ Пополнение из замороженных средств. """
+
+
+class BankCardTypes(Enum):
+    """
+    Типы банковских карт.
+    """
+
+    MIR = 0
+    """ Банковская карта МИР. """
+    VISA = 1
+    """ Банковская карта VISA. """
+    MASTERCARD = 2
+    """ Банковская карта Mastercard. """
 
 
 class ItemDealStatuses(Enum):

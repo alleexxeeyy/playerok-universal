@@ -2006,13 +2006,13 @@ class Transaction:
     :param is_suspicious: Подозрительная ли транзакция.
     :type is_suspicious: `bool` or `None`
 
-    :param spb_bank_name: Название банка СБП (если транзакция была совершена с помощью СБП).
-    :type spb_bank_name: `str` or `None`
+    :param sbp_bank_name: Название банка СБП (если транзакция была совершена с помощью СБП).
+    :type sbp_bank_name: `str` or `None`
     """
     def __init__(self, id: str, operation: TransactionOperations, direction: TransactionDirections, provider_id: TransactionProviderIds, 
                  provider: TransactionProvider, user: UserProfile, creator: UserProfile, status: TransactionStatuses, status_description: str | None, 
                  status_expiration_date: str | None, value: int, fee: int, created_at: str, verified_at: str | None, verified_by: UserProfile | None, 
-                 completed_at: str | None, completed_by: UserProfile | None, payment_method_id: str | None, is_suspicious: bool | None, spb_bank_name: str | None):
+                 completed_at: str | None, completed_by: UserProfile | None, payment_method_id: str | None, is_suspicious: bool | None, sbp_bank_name: str | None):
         self.id: str = id
         """ ID транзакции. """
         self.operation: TransactionOperations = operation
@@ -2051,7 +2051,7 @@ class Transaction:
         """ ID способа оплаты. """
         self.is_suspicious: bool | None = is_suspicious
         """ Подозрительная ли транзакция. """
-        self.spb_bank_name: str | None = spb_bank_name
+        self.sbp_bank_name: str | None = sbp_bank_name
         """ Название банка СБП (если транзакция была совершена с помощью СБП). """
 
 
@@ -2104,6 +2104,90 @@ class TransactionList:
         """ Информация о странице. """
         self.total_count: int = total_count
         """ Всего транзакций на странице. """
+
+
+class UserBankCard:
+    """
+    Объект банковской карты пользователя.
+
+    :param id: ID карты.
+    :type id: `str`
+
+    :param card_first_six: Первые шесть цифр карты.
+    :type card_first_six: `str`
+
+    :param card_last_four: Последние четыре цифры карты.
+    :type card_last_four: `str`
+
+    :param card_type: Тип банковской карты.
+    :type card_type: `playerokapi.enums.BankCardTypes`
+
+    :param is_chosen: Выбрана ли эта карта как по умолчанию?
+    :type is_chosen: `bool`
+    """
+    def __init__(self, id: str, card_first_six: str, card_last_four: str,
+                 card_type: BankCardTypes, is_chosen: bool):
+        self.id: str = id
+        """ ID карты. """
+        self.card_first_six: str = card_first_six
+        """ Первые шесть цифр карты. """
+        self.card_last_four: str = card_last_four
+        """ Последние четыре цифры карты. """
+        self.card_type: BankCardTypes = card_type
+        """ Тип банковской карты. """
+        self.is_chosen: bool = is_chosen
+        """ Выбрана ли эта карта как по умолчанию? """
+
+
+class UserBankCardPageInfo:
+    """
+    Подкласс, описывающий информацию о странице банковских карт пользователя.
+
+    :param start_cursor: Курсор начала страницы.
+    :type start_cursor: `str`
+
+    :param end_cursor: Курсок конца страницы.
+    :type end_cursor: `str`
+
+    :param has_previous_page: Имеет ли предыдущую страницу.
+    :type has_previous_page: `bool`
+
+    :param has_next_page: Имеет ли следующую страницу.
+    :type has_next_page: `bool`
+    """
+    def __init__(self, start_cursor: str, end_cursor: str,
+                 has_previous_page: bool, has_next_page: bool):
+        self.start_cursor: str = start_cursor
+        """ Курсор начала страницы. """
+        self.end_cursor: str = end_cursor
+        """ Курсор конца страницы. """
+        self.has_previous_page: bool = has_previous_page
+        """ Имеет ли предыдущую страницу. """
+        self.has_next_page: bool = has_next_page
+        """ Имеет ли следующую страницу. """
+
+
+class UserBankCardList:
+    """
+    Класс, описывающий страницу банковских карт пользователя.
+
+    :param bank_cards: Банковские карты страницы.
+    :type bank_cards: `list[playerokapi.types.UserBankCard]`
+
+    :param page_info: Информация о странице.
+    :type page_info: `playerokapi.types.UserBankCardPageInfo`
+
+    :param total_count: Всего банковских карт на странице.
+    :type total_count: `int`
+    """
+    def __init__(self, bank_cards: list[UserBankCard], 
+                 page_info: UserBankCardPageInfo, total_count: int):
+        self.bank_cards: list[UserBankCard] = bank_cards
+        """ Банковские карты страницы. """
+        self.page_info: UserBankCardPageInfo = page_info
+        """ Информация о странице. """
+        self.total_count: int = total_count
+        """ Всего банковских карт на странице. """
 
 
 class Moderator:

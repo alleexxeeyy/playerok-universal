@@ -176,7 +176,7 @@ class PlayerokBot:
         :return: Объект отправленного сообщения.
         :rtype: `PlayerokAPI.types.ChatMessage`
         """
-        if text is None:
+        if text is None and photo_file_path is None:
             return None
         for _ in range(max_attempts):
             try:

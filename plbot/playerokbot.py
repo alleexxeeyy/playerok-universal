@@ -238,8 +238,14 @@ class PlayerokBot:
 
     def log_new_message(self, message: types.ChatMessage, chat: types.Chat):
         plbot = get_playerok_bot()
-        try: chat_user = [user.username for user in chat.users if user.id != plbot.playerok_account.id][0]
-        except: chat_user = message.user.username
+        try:
+            chat_user = [user.username for user in chat.users if user.id != plbot.playerok_account.id][0]
+        except:
+            if message.user:
+                chat_user = message.user.username
+            else:
+                chat_user = 'Поддержка'
+
         ch_header = f"Новое сообщение в чате с {chat_user}:"
         self.logger.info(f"{Fore.LIGHTBLUE_EX}{ch_header.replace(chat_user, f'{Fore.LIGHTCYAN_EX}{chat_user}')}")
         self.logger.info(f"{Fore.LIGHTBLUE_EX}│ {Fore.LIGHTWHITE_EX}{message.user.username}:")
@@ -290,7 +296,7 @@ class PlayerokBot:
         self.logger.info(f" · Товар: {Fore.LIGHTWHITE_EX}{deal.item.name}")
         self.logger.info(f" · Сумма: {Fore.LIGHTWHITE_EX}{deal.item.price}₽")
         self.logger.info(f"{Fore.WHITE}───────────────────────────────────────")
-    
+
     def log_new_problem(self, deal: types.ItemDeal):
         self.logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
         self.logger.info(f"{Fore.YELLOW}Новая жалоба в сделке {deal.id}:")

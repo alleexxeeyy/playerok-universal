@@ -1,9 +1,10 @@
 from ..enums import EventTypes
 from .. import types
+from ..auto_repr import AutoRepr
 import time
 
 
-class BaseEvent:
+class BaseEvent(AutoRepr):
     """
     Базовый класс события.
 

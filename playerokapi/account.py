@@ -1,7 +1,5 @@
 from __future__ import annotations
 import tls_requests
-from typing import *
-import json
 import random
 import time
 from logging import getLogger
@@ -10,13 +8,14 @@ from . import types
 from .exceptions import *
 from .parser import *
 from .enums import *
+from .auto_repr import AutoRepr
 
 
 def get_account() -> None | Account:
     if hasattr(Account, "instance"):
         return getattr(Account, "instance")
 
-class Account:
+class Account(AutoRepr):
     """
     Класс, описывающий данные и методы Playerok аккаунта.
 

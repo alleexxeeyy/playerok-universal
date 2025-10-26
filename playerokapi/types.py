@@ -1,14 +1,13 @@
 from __future__ import annotations
-from typing import *
 import json
 
 from .account import Account, get_account
 from . import parser
 from .enums import *
+from .auto_repr import AutoRepr
 
 
-
-class FileObject:
+class FileObject(AutoRepr):
     """
     Объект файла.
 
@@ -24,7 +23,7 @@ class FileObject:
     :param mime: Mime файла.
     :type mime: `str` or `None`
     """
-    def __init__(self, id: str, url: str, 
+    def __init__(self, id: str, url: str,
                  filename: str | None, mime: str | None):
         self.id: str = id
         """ ID файла. """
@@ -36,7 +35,7 @@ class FileObject:
         """ Mime файла. """
 
 
-class AccountBalance:
+class AccountBalance(AutoRepr):
     """
     Подкласс, описывающий баланс аккаунта.
 
@@ -58,7 +57,7 @@ class AccountBalance:
     :param pending_income: Ожидаемый доход.
     :type pending_income: `int`
     """
-    def __init__(self, id: str, value: int, frozen: int, available: int, 
+    def __init__(self, id: str, value: int, frozen: int, available: int,
                  withdrawable: int, pending_income: int):
         self.id: str = id
         """ ID баланса. """
@@ -74,7 +73,7 @@ class AccountBalance:
         """ Ожидаемый доход. """
 
 
-class AccountIncomingDealsStats:
+class AccountIncomingDealsStats(AutoRepr):
     """
     Подкласс, описывающий статистику входящих сделок аккаунта.
 
@@ -91,7 +90,7 @@ class AccountIncomingDealsStats:
         """ Кол-во завершённых исходящих сделок. """
 
 
-class AccountOutgoingDealsStats:
+class AccountOutgoingDealsStats(AutoRepr):
     """
     Подкласс, описывающий статистику исходящих сделок аккаунта.
 
@@ -108,7 +107,7 @@ class AccountOutgoingDealsStats:
         """ Кол-во завершённых исходящих сделок. """
 
 
-class AccountDealsStats:
+class AccountDealsStats(AutoRepr):
     """
     Подкласс, описывающий статистику сделок аккаунта.
 
@@ -125,7 +124,7 @@ class AccountDealsStats:
         """ Исходящие сделки. """
 
 
-class AccountItemsStats:
+class AccountItemsStats(AutoRepr):
     """
     Подкласс, описывающий статистику предметов аккаунта.
 
@@ -142,7 +141,7 @@ class AccountItemsStats:
         """ Кол-во завершённых предметов. """
 
 
-class AccountStats:
+class AccountStats(AutoRepr):
     """
     Подкласс, описывающий статистику аккаунта.
 
@@ -159,7 +158,7 @@ class AccountStats:
         """ Статистика сделок. """
 
 
-class AccountProfile:
+class AccountProfile(AutoRepr):
     """
     Класс, описывающий профиль аккаунта.
 
@@ -258,7 +257,7 @@ class AccountProfile:
         """ Включены ли уведомления на аккаунте. """
 
 
-class UserProfile:
+class UserProfile(AutoRepr):
     """
     Класс, описывающий профиль пользователя.
 
@@ -295,7 +294,7 @@ class UserProfile:
     :param created_at: Дата создания аккаунта пользователя.
     :type created_at: `str`
     """
-    def __init__(self, id: str, username: str, role: UserTypes, avatar_url: str, is_online: bool, is_blocked: bool, 
+    def __init__(self, id: str, username: str, role: UserTypes, avatar_url: str, is_online: bool, is_blocked: bool,
                  rating: int, reviews_count: int, support_chat_id: str, system_chat_id: str | None, created_at: str | None):
         self.id: str = id
         """ ID пользователя. """
@@ -358,9 +357,9 @@ class UserProfile:
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
         return parser.item_profile_list(r["data"]["items"])
 
-    def get_reviews(self, count: int = 24, status: ReviewStatuses = ReviewStatuses.APPROVED, 
-                    comment_required: bool = False, rating: int | None = None, game_id: str | None = None, 
-                    category_id: str | None = None, min_item_price: int | None = None, max_item_price: int | None = None, 
+    def get_reviews(self, count: int = 24, status: ReviewStatuses = ReviewStatuses.APPROVED,
+                    comment_required: bool = False, rating: int | None = None, game_id: str | None = None,
+                    category_id: str | None = None, min_item_price: int | None = None, max_item_price: int | None = None,
                     sort_direction: SortDirections = SortDirections.DESC, sort_field: str = "createdAt", after_cursor: str | None = None) -> ReviewList:
         """
         Получает отзывы пользователя.
@@ -439,7 +438,7 @@ class Event:
         pass
 
 
-class ItemDeal:
+class ItemDeal(AutoRepr):
     """
     Объект сделки с предметом.
 
@@ -506,9 +505,9 @@ class ItemDeal:
     :param comment_from_buyer: Комментарий от покупателя.
     :type comment_from_buyer: `str` or `None`
     """
-    def __init__(self, id: str, status: ItemDealStatuses, status_expiration_date: str | None, status_description: str | None, 
-                 direction: ItemDealDirections, obtaining: str | None, has_problem: bool, report_problem_enabled: bool | None, 
-                 completed_user: UserProfile | None, props: str | None, previous_status: ItemDealStatuses | None, 
+    def __init__(self, id: str, status: ItemDealStatuses, status_expiration_date: str | None, status_description: str | None,
+                 direction: ItemDealDirections, obtaining: str | None, has_problem: bool, report_problem_enabled: bool | None,
+                 completed_user: UserProfile | None, props: str | None, previous_status: ItemDealStatuses | None,
                  completed_at: str, created_at: str, logs: list[ItemLog] | None, transaction: Transaction | None,
                  user: UserProfile, chat: Chat | None, item: Item, review: Review | None, obtaining_fields: list[GameCategoryDataField] | None,
                  comment_from_buyer: str | None):
@@ -556,7 +555,7 @@ class ItemDeal:
         """ Комментарий от покупателя. """
 
 
-class ItemDealPageInfo:
+class ItemDealPageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице сделок.
 
@@ -584,7 +583,7 @@ class ItemDealPageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class ItemDealList:
+class ItemDealList(AutoRepr):
     """
     Класс, описывающий страницу отзывов.
 
@@ -607,7 +606,7 @@ class ItemDealList:
         """ Всего сделок. """
 
 
-class GameCategoryAgreement:
+class GameCategoryAgreement(AutoRepr):
     """
     Подкласс, описывающий соглашения покупателя.
 
@@ -623,7 +622,7 @@ class GameCategoryAgreement:
     :param sequence: Последовательность соглашения.
     :type sequence: `str`
     """
-    def __init__(self, id: str, description: str, 
+    def __init__(self, id: str, description: str,
                  icontype: GameCategoryAgreementIconTypes, sequence: int):
         self.id: str = id
         """ ID соглашения. """
@@ -635,7 +634,7 @@ class GameCategoryAgreement:
         """ Последовательность соглашения. """
 
 
-class GameCategoryAgreementPageInfo:
+class GameCategoryAgreementPageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице соглашений покупателя.
 
@@ -663,7 +662,7 @@ class GameCategoryAgreementPageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class GameCategoryAgreementList:
+class GameCategoryAgreementList(AutoRepr):
     """
     Класс, описывающий страницу соглашений покупателя.
 
@@ -686,7 +685,7 @@ class GameCategoryAgreementList:
         """ Всего соглашений. """
 
 
-class GameCategoryObtainingType:
+class GameCategoryObtainingType(AutoRepr):
     """
     Подкласс, описывающий тип (способ) получения предмета в категории.
 
@@ -750,7 +749,7 @@ class GameCategoryObtainingType:
         """ Пропорции категории. """
 
 
-class GameCategoryObtainingTypePageInfo:
+class GameCategoryObtainingTypePageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице типов (способов) получения предмета в категории.
 
@@ -778,7 +777,7 @@ class GameCategoryObtainingTypePageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class GameCategoryObtainingTypeList:
+class GameCategoryObtainingTypeList(AutoRepr):
     """
     Класс, описывающий страницу типов (способов) получения предмета в категории.
 
@@ -801,7 +800,7 @@ class GameCategoryObtainingTypeList:
         """ Всего способов. """
 
 
-class GameCategoryDataField:
+class GameCategoryDataField(AutoRepr):
     """
     Подкласс, описывающий поля с данными предмета в категории (которые отправляются после покупки).
 
@@ -830,7 +829,7 @@ class GameCategoryDataField:
     :type value: `str` or `None`
     """
     def __init__(self, id: str, label: str, type: GameCategoryDataFieldTypes,
-                 input_type: GameCategoryDataFieldInputTypes, copyable: bool, 
+                 input_type: GameCategoryDataFieldInputTypes, copyable: bool,
                  hidden: bool, required: bool, value: str | None):
         self.id: str = id
         """ ID поля с данными. """
@@ -850,7 +849,7 @@ class GameCategoryDataField:
         """ Значение данных в поле. """
 
 
-class GameCategoryDataFieldPageInfo:
+class GameCategoryDataFieldPageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице полей с данными предмета.
 
@@ -878,7 +877,7 @@ class GameCategoryDataFieldPageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class GameCategoryDataFieldList:
+class GameCategoryDataFieldList(AutoRepr):
     """
     Класс, описывающий страницу полей с данными предмета.
 
@@ -891,7 +890,7 @@ class GameCategoryDataFieldList:
     :param total_count: Всего полей с данными.
     :type total_count: `int`
     """
-    def __init__(self, data_fields: list[GameCategoryDataField], 
+    def __init__(self, data_fields: list[GameCategoryDataField],
                  page_info: GameCategoryDataFieldPageInfo, total_count: int):
         self.data_fields: list[GameCategoryDataField] = data_fields
         """ Поля с данными предмета в категории на странице. """
@@ -901,7 +900,7 @@ class GameCategoryDataFieldList:
         """ Всего полей с данными. """
 
 
-class GameCategoryProps:
+class GameCategoryProps(AutoRepr):
     """
     Подкласс, описывающий пропорции категории.
 
@@ -918,7 +917,7 @@ class GameCategoryProps:
         """ Минимальное количество отзывов для продавца. """
 
 
-class GameCategoryOption:
+class GameCategoryOption(AutoRepr):
     """
     Подкласс, описывающий опцию категории.
 
@@ -961,7 +960,7 @@ class GameCategoryOption:
         """ Лимит разброса по значению. """
 
 
-class GameCategoryInstruction:
+class GameCategoryInstruction(AutoRepr):
     """
     Подкласс, описывающий информацию о странице инструкии по продаже/покупке в категории.
 
@@ -978,7 +977,7 @@ class GameCategoryInstruction:
         """ Текст инструкции. """
 
 
-class GameCategoryInstructionPageInfo:
+class GameCategoryInstructionPageInfo(AutoRepr):
     """
     Подкласс, описывающий инструкцию по продаже/покупке в категории.
 
@@ -1006,7 +1005,7 @@ class GameCategoryInstructionPageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class GameCategoryInstructionList:
+class GameCategoryInstructionList(AutoRepr):
     """
     Класс, описывающий страницу инструкций по продаже/покупке в категории.
 
@@ -1029,7 +1028,7 @@ class GameCategoryInstructionList:
         """ Всего инструкций. """
 
 
-class GameCategory:
+class GameCategory(AutoRepr):
     """
     Объект категории игры/приложения.
 
@@ -1082,9 +1081,9 @@ class GameCategory:
     :type fee_multiplier: `float` or `None`
     """
     def __init__(self, id: str, slug: str, name: str, category_id: str | None, game_id: str | None,
-                 obtaining: str | None, options: list[GameCategoryOption] | None, props: GameCategoryProps | None, 
-                 no_comment_from_buyer: bool | None, instruction_for_buyer: str | None, instruction_for_seller: str | None, 
-                 use_custom_obtaining: bool, auto_confirm_period: GameCategoryAutoConfirmPeriods | None, 
+                 obtaining: str | None, options: list[GameCategoryOption] | None, props: GameCategoryProps | None,
+                 no_comment_from_buyer: bool | None, instruction_for_buyer: str | None, instruction_for_seller: str | None,
+                 use_custom_obtaining: bool, auto_confirm_period: GameCategoryAutoConfirmPeriods | None,
                  auto_moderation_mode: bool | None, agreements: list[GameCategoryAgreement] | None, fee_multiplier: float | None):
         self.id: str = id
         """ ID категории. """
@@ -1120,7 +1119,7 @@ class GameCategory:
         """ Множитель комиссии. """
 
 
-class Game:
+class Game(AutoRepr):
     """
     Объект игры/приложения.
 
@@ -1148,8 +1147,8 @@ class Game:
     :param created_at: Дата создания.
     :type created_at: `str`
     """
-    def __init__(self, id: str, slug: str, name: str, type: GameTypes, 
-                 logo: FileObject, banner: FileObject, categories: list[GameCategory], 
+    def __init__(self, id: str, slug: str, name: str, type: GameTypes,
+                 logo: FileObject, banner: FileObject, categories: list[GameCategory],
                  created_at: str):
         self.id: str = id
         """ ID игры/приложения. """
@@ -1169,7 +1168,7 @@ class Game:
         """ Дата создания. """
 
 
-class GameProfile:
+class GameProfile(AutoRepr):
     """
     Профиль игры/приложения.
 
@@ -1188,7 +1187,7 @@ class GameProfile:
     :param logo: Лого игры/приложения.
     :type logo: `playerokapi.types.FileObject`
     """
-    def __init__(self, id: str, slug: str, name: str, 
+    def __init__(self, id: str, slug: str, name: str,
                  type: GameTypes, logo: FileObject):
         self.id: str = id
         """ ID игры/приложения. """
@@ -1202,7 +1201,7 @@ class GameProfile:
         """ Лого игры/приложения. """
 
 
-class GamePageInfo:
+class GamePageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице игр.
 
@@ -1230,7 +1229,7 @@ class GamePageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class GameList:
+class GameList(AutoRepr):
     """
     Класс, описывающий страницу игр.
 
@@ -1253,7 +1252,7 @@ class GameList:
         """ Всего игр. """
 
 
-class ItemPriorityStatusPriceRange:
+class ItemPriorityStatusPriceRange(AutoRepr):
     """
     Подкласс, описывающий ценовой диапазон предмета, подходящего для опред. статуса приоритета.
 
@@ -1270,7 +1269,7 @@ class ItemPriorityStatusPriceRange:
         """ Максимальная цена предмета (в рублях). """
 
 
-class ItemPriorityStatus:
+class ItemPriorityStatus(AutoRepr):
     """
     Класс, описывающий статус приоритета предмета.
 
@@ -1308,7 +1307,7 @@ class ItemPriorityStatus:
         """ Ценовой диапазон предмета статуса. """
 
 
-class ItemLog:
+class ItemLog(AutoRepr):
     """
     Подкласс, описывающий лог действия с предметом.
     
@@ -1336,7 +1335,7 @@ class ItemLog:
         """ Профиль пользователя, совершившего лог. """
 
 
-class Item:
+class Item(AutoRepr):
     """
     Объект предмета.
 
@@ -1395,7 +1394,7 @@ class Item:
     :type user: `playerokapi.types.UserProfile`
     """
     def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int, priority_position: int,
-                 attachments: list[FileObject], attributes: dict, category: GameCategory, comment: str | None, data_fields: list[GameCategoryDataField] | None, 
+                 attachments: list[FileObject], attributes: dict, category: GameCategory, comment: str | None, data_fields: list[GameCategoryDataField] | None,
                  fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses, user: UserProfile):
         self.id: str = id
         """ ID предмета. """
@@ -1437,7 +1436,7 @@ class Item:
         """ Профиль продавца. """
 
 
-class MyItem:
+class MyItem(AutoRepr):
     """
     Объект своего предмета.
 
@@ -1543,9 +1542,9 @@ class MyItem:
     def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int, priority_position: int,
                  attachments: list[FileObject], attributes: dict, buyer: UserProfile, category: GameCategory, comment: str | None,
                  data_fields: list[GameCategoryDataField] | None, fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses,
-                 user: UserProfile, prev_price: int, prev_fee_multiplier: float, seller_notified_about_fee_change: bool, 
+                 user: UserProfile, prev_price: int, prev_fee_multiplier: float, seller_notified_about_fee_change: bool,
                  priority: PriorityTypes, priority_price: int, status_expiration_date: str | None, status_description: str | None,
-                 status_payment: Transaction | None, views_counter: int, is_editable: bool, approval_date: str | None, deleted_at: str | None, 
+                 status_payment: Transaction | None, views_counter: int, is_editable: bool, approval_date: str | None, deleted_at: str | None,
                  updated_at: str | None, created_at: str | None):
         self.id: str = id
         """ ID предмета. """
@@ -1615,7 +1614,7 @@ class MyItem:
         """ Дата создания товара. """
 
 
-class ItemProfile:
+class ItemProfile(AutoRepr):
     """
     Профиль предмета.
 
@@ -1666,7 +1665,7 @@ class ItemProfile:
     """
     def __init__(self, id: str, slug: str, priority: PriorityTypes, status: ItemStatuses,
                  name: str, price: int, raw_price: int, seller_type: UserTypes, attachment: FileObject,
-                 user: UserProfile, approval_date: str, priority_position: int, views_counter: int | None, 
+                 user: UserProfile, approval_date: str, priority_position: int, views_counter: int | None,
                  fee_multiplier: float, created_at: str):
         self.id: str = id
         """ ID предмета. """
@@ -1700,7 +1699,7 @@ class ItemProfile:
         """ Дата создания. """
 
 
-class ItemProfilePageInfo:
+class ItemProfilePageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице предметов.
 
@@ -1728,7 +1727,7 @@ class ItemProfilePageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class ItemProfileList:
+class ItemProfileList(AutoRepr):
     """
     Профиль страницы предметов.
 
@@ -1751,7 +1750,7 @@ class ItemProfileList:
         """ Всего предметов. """
 
 
-class SBPBankMember:
+class SBPBankMember(AutoRepr):
     """
     Объект членов СБП банка.
 
@@ -1773,7 +1772,7 @@ class SBPBankMember:
         """ URL иконки. """
 
 
-class TransactionPaymentMethod:
+class TransactionPaymentMethod(AutoRepr):
     """
     Платёжный метод транзакции.
 
@@ -1816,7 +1815,7 @@ class TransactionPaymentMethod:
         """ Лимиты провайдера транзакции. """
 
 
-class TransactionProviderLimitRange:
+class TransactionProviderLimitRange(AutoRepr):
     """
     Диапозон лимитов провайдера транзакции.
 
@@ -1833,7 +1832,7 @@ class TransactionProviderLimitRange:
         """ Максимальная сумма (в рублях). """
 
 
-class TransactionProviderLimits:
+class TransactionProviderLimits(AutoRepr):
     """
     Лимиты провайдера транзакции.
 
@@ -1850,7 +1849,7 @@ class TransactionProviderLimits:
         """ На вывод. """
 
 
-class TransactionProviderRequiredUserData:
+class TransactionProviderRequiredUserData(AutoRepr):
     """
     Обязательные пользовательские данные провайдера транзакции.
 
@@ -1863,7 +1862,7 @@ class TransactionProviderRequiredUserData:
     :param erip_account_number: Обязательно ли указывать номер аккаунта ЕРИП?
     :type erip_account_number: `bool` or `None`
     """
-    def __init__(self, email: bool, phone_number: bool, 
+    def __init__(self, email: bool, phone_number: bool,
                  erip_account_number: bool | None):
         self.email: bool = email
         """ Обязательно ли указывать EMail? """
@@ -1873,7 +1872,7 @@ class TransactionProviderRequiredUserData:
         """ Обязательно ли указывать номер аккаунта ЕРИП? """
 
 
-class TransactionProviderProps:
+class TransactionProviderProps(AutoRepr):
     """
     Параметры провайдера транзакции.
 
@@ -1891,7 +1890,7 @@ class TransactionProviderProps:
         """ Подсказка. """
 
 
-class TransactionProvider:
+class TransactionProvider(AutoRepr):
     """
     Объект провайдера транзакции.
 
@@ -1922,8 +1921,8 @@ class TransactionProvider:
     :param payment_methods: Платёжные методы.
     :type payment_methods: `list` of `playerokapi.types.TransactionPaymentMethod`
     """
-    def __init__(self, id: TransactionProviderIds, name: str, fee: int, min_fee_amount: int | None, 
-                 description: str | None, account: AccountProfile | None, props: TransactionProviderProps, 
+    def __init__(self, id: TransactionProviderIds, name: str, fee: int, min_fee_amount: int | None,
+                 description: str | None, account: AccountProfile | None, props: TransactionProviderProps,
                  limits: TransactionProviderLimits, payment_methods: list[TransactionPaymentMethod]):
         self.id: TransactionProviderIds = id
         """ ID провайдера. """
@@ -1945,7 +1944,7 @@ class TransactionProvider:
         """ Платёжные методы. """
 
 
-class Transaction:
+class Transaction(AutoRepr):
     """
     Объект транзакции.
 
@@ -2009,9 +2008,9 @@ class Transaction:
     :param sbp_bank_name: Название банка СБП (если транзакция была совершена с помощью СБП).
     :type sbp_bank_name: `str` or `None`
     """
-    def __init__(self, id: str, operation: TransactionOperations, direction: TransactionDirections, provider_id: TransactionProviderIds, 
-                 provider: TransactionProvider, user: UserProfile, creator: UserProfile, status: TransactionStatuses, status_description: str | None, 
-                 status_expiration_date: str | None, value: int, fee: int, created_at: str, verified_at: str | None, verified_by: UserProfile | None, 
+    def __init__(self, id: str, operation: TransactionOperations, direction: TransactionDirections, provider_id: TransactionProviderIds,
+                 provider: TransactionProvider, user: UserProfile, creator: UserProfile, status: TransactionStatuses, status_description: str | None,
+                 status_expiration_date: str | None, value: int, fee: int, created_at: str, verified_at: str | None, verified_by: UserProfile | None,
                  completed_at: str | None, completed_by: UserProfile | None, payment_method_id: str | None, is_suspicious: bool | None, sbp_bank_name: str | None):
         self.id: str = id
         """ ID транзакции. """
@@ -2055,7 +2054,7 @@ class Transaction:
         """ Название банка СБП (если транзакция была совершена с помощью СБП). """
 
 
-class TransactionPageInfo:
+class TransactionPageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице транзакций.
 
@@ -2083,7 +2082,7 @@ class TransactionPageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class TransactionList:
+class TransactionList(AutoRepr):
     """
     Класс, описывающий страницу сообщений чата.
 
@@ -2106,7 +2105,7 @@ class TransactionList:
         """ Всего транзакций на странице. """
 
 
-class UserBankCard:
+class UserBankCard(AutoRepr):
     """
     Объект банковской карты пользователя.
 
@@ -2139,7 +2138,7 @@ class UserBankCard:
         """ Выбрана ли эта карта как по умолчанию? """
 
 
-class UserBankCardPageInfo:
+class UserBankCardPageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице банковских карт пользователя.
 
@@ -2167,7 +2166,7 @@ class UserBankCardPageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class UserBankCardList:
+class UserBankCardList(AutoRepr):
     """
     Класс, описывающий страницу банковских карт пользователя.
 
@@ -2180,7 +2179,7 @@ class UserBankCardList:
     :param total_count: Всего банковских карт на странице.
     :type total_count: `int`
     """
-    def __init__(self, bank_cards: list[UserBankCard], 
+    def __init__(self, bank_cards: list[UserBankCard],
                  page_info: UserBankCardPageInfo, total_count: int):
         self.bank_cards: list[UserBankCard] = bank_cards
         """ Банковские карты страницы. """
@@ -2197,7 +2196,7 @@ class Moderator:
         pass
 
 
-class ChatMessageButton:
+class ChatMessageButton(AutoRepr):
     """
     Объект кнопки сообщения.
 
@@ -2210,7 +2209,7 @@ class ChatMessageButton:
     :param text: Текст кнопки.
     :type text: `str`
     """
-    def __init__(self, type: ChatMessageButtonTypes, 
+    def __init__(self, type: ChatMessageButtonTypes,
                  url: str | None, text: str,):
         self.type: ChatMessageButtonTypes = type
         """ Тип кнопки. """
@@ -2220,7 +2219,7 @@ class ChatMessageButton:
         """ Текст кнопки. """
 
 
-class ChatMessage:
+class ChatMessage(AutoRepr):
     """
     Класс, описывающий сообщение в чате.
 
@@ -2281,10 +2280,10 @@ class ChatMessage:
     :param buttons: Кнопки сообщения.
     :type buttons: `list[playerokapi.types.MessageButton]`
     """
-    def __init__(self, id: str, text: str, created_at: str, deleted_at: str | None, is_read: bool, 
+    def __init__(self, id: str, text: str, created_at: str, deleted_at: str | None, is_read: bool,
                  is_suspicious: bool, is_bulk_messaging: bool, game: Game | None, file: FileObject | None,
                  user: UserProfile, deal: ItemDeal | None, item: ItemProfile | None, transaction: Transaction | None,
-                 moderator: Moderator | None, event_by_user: UserProfile | None, event_to_user: UserProfile | None, 
+                 moderator: Moderator | None, event_by_user: UserProfile | None, event_to_user: UserProfile | None,
                  is_auto_response: bool, event: Event | None, buttons: list[ChatMessageButton]):
         self.id: str = id
         """ ID сообщения. """
@@ -2326,7 +2325,7 @@ class ChatMessage:
         """ Кнопки сообщения. """
 
 
-class ChatMessagePageInfo:
+class ChatMessagePageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице сообщений.
 
@@ -2354,7 +2353,7 @@ class ChatMessagePageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class ChatMessageList:
+class ChatMessageList(AutoRepr):
     """
     Класс, описывающий страницу сообщений чата.
 
@@ -2377,7 +2376,7 @@ class ChatMessageList:
         """ Всего сообщений в чате. """
 
 
-class Chat:
+class Chat(AutoRepr):
     """
     Объект чата.
 
@@ -2417,7 +2416,7 @@ class Chat:
     :param finished_at: Дата завершения диалога.
     :type finished_at: `str` or `None`
     """
-    def __init__(self, id: str, type: ChatTypes, status: ChatStatuses | None, unread_messages_counter: int, 
+    def __init__(self, id: str, type: ChatTypes, status: ChatStatuses | None, unread_messages_counter: int,
                  bookmarked: bool | None, is_texting_allowed: bool | None, owner: UserProfile | None, deals: list[ItemDeal] | None,
                  started_at: str | None, finished_at: str | None, last_message: ChatMessage | None, users: list[UserProfile]):
         self.id: str = id
@@ -2446,7 +2445,7 @@ class Chat:
         """ Дата завершения диалога. """
 
 
-class ChatPageInfo:
+class ChatPageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице чатов.
 
@@ -2474,7 +2473,7 @@ class ChatPageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class ChatList:
+class ChatList(AutoRepr):
     """
     Класс, описывающий страницу чатов.
 
@@ -2497,7 +2496,7 @@ class ChatList:
         """ Всего чатов. """
 
 
-class Review:
+class Review(AutoRepr):
     """
     Объект отзыва.
 
@@ -2532,7 +2531,7 @@ class Review:
     :type user: `UserProfile`
     """
     def __init__(self, id: str, status: ReviewStatuses, text: str | None, rating: int,
-                 created_at: str, updated_at: str, deal: ItemDeal, creator: UserProfile, 
+                 created_at: str, updated_at: str, deal: ItemDeal, creator: UserProfile,
                  moderator: Moderator | None, user: UserProfile):
         self.id: str = id
         """ ID отзыва. """
@@ -2556,7 +2555,7 @@ class Review:
         """ Профиль продавца, к которому относится отзыв. """
 
 
-class ReviewPageInfo:
+class ReviewPageInfo(AutoRepr):
     """
     Подкласс, описывающий информацию о странице отзывов.
 
@@ -2584,7 +2583,7 @@ class ReviewPageInfo:
         """ Имеет ли следующую страницу. """
 
 
-class ReviewList:
+class ReviewList(AutoRepr):
     """
     Класс, описывающий страницу отзывов.
 

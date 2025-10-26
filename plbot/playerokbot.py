@@ -454,7 +454,8 @@ class PlayerokBot:
                     if event.deal.status is ItemDealStatuses.CONFIRMED:
                         self.send_message(this_chat.id, self.msg("deal_confirmed", deal_id=event.deal.id, deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
                         self.stats.deals_completed += 1
-                        self.stats.earned_money += round(event.deal.transaction.value or 0, 2)
+                        if event.deal.transaction:
+                            self.stats.earned_money += round(event.deal.transaction.value or 0, 2)
                     elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
                         self.send_message(this_chat.id, self.msg("deal_confirmed", deal_id=event.deal.id, deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
                         self.stats.deals_refunded += 1

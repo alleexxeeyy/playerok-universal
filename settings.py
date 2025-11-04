@@ -25,19 +25,33 @@ CONFIG = SettingsFile(
                 "requests_timeout": 30,
                 "listener_requests_delay": 4
             },
-            "bot": {
-                "messages_watermark_enabled": True,
-                "messages_watermark": "©️ 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
-                "read_chat_before_sending_message_enabled": True,
-                "first_message_enabled": True,
-                "custom_commands_enabled": True,
-                "auto_deliveries_enabled": True,
-                "auto_restore_items_enabled": True,
-                "auto_restore_items_priority_status": "DEFAULT",
-                "auto_complete_deals_enabled": True,
-                "tg_logging_enabled": True,
-                "tg_logging_chat_id": "",
-                "tg_logging_events": {
+            "watermark": {
+                "enabled": True,
+                "value": "©️ 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹"
+            },
+            "read_chat": {
+                "enabled": True
+            },
+            "first_message": {
+                "enabled": True
+            },
+            "custom_commands": {
+                "enabled": True
+            },
+            "auto_deliveries": {
+                "enabled": True
+            },
+            "auto_restore_items": {
+                "enabled": True,
+                "all": True
+            },
+            "auto_complete_deals": {
+                "enabled": True
+            },
+            "tg_logging": {
+                "enabled": True,
+                "chat_id": "",
+                "events": {
                     "new_user_message": True,
                     "new_system_message": True,
                     "new_deal": True,
@@ -45,7 +59,7 @@ CONFIG = SettingsFile(
                     "new_problem": True,
                     "deal_status_changed": True,
                 }
-            }
+            },
         },
         "telegram": {
             "api": {
@@ -58,7 +72,6 @@ CONFIG = SettingsFile(
         }
     }
 )
-
 MESSAGES = SettingsFile(
     name="messages",
     path="bot_settings/messages.json",
@@ -127,22 +140,28 @@ MESSAGES = SettingsFile(
         }
     }
 )
-
 CUSTOM_COMMANDS = SettingsFile(
     name="custom_commands",
     path="bot_settings/custom_commands.json",
     need_restore=False,
     default={}
 )
-
 AUTO_DELIVERIES = SettingsFile(
     name="auto_deliveries",
     path="bot_settings/auto_deliveries.json",
     need_restore=False,
     default=[]
 )
-
-DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES]
+AUTO_RESTORE_ITEMS = SettingsFile(
+    name="auto_restore_items",
+    path="bot_settings/auto_restore_items.json",
+    need_restore=False,
+    default={
+        "included": [],
+        "excluded": []
+    }
+)
+DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS]
 
 
 def validate_config(config, default):

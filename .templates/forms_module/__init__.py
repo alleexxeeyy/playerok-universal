@@ -3,7 +3,11 @@ from logging import getLogger
 
 from playerokapi.enums import EventTypes
 
-from .plbot.handlers import on_playerok_bot_init, on_new_message
+from .plbot.handlers import (
+    on_new_message,
+    run_cycles,
+    stop_cycles
+)
 from .tgbot._handlers import on_telegram_bot_init
 from .tgbot import router
 from .meta import *
@@ -17,19 +21,19 @@ def set_module(new: Module):
     global _module
     _module = new
 
+
 def get_module():
     return _module
 
-def on_module_connected(module: Module):
+
+async def on_module_enabled(module: Module):
     set_module(module)
     logger.info(f"{PREFIX} Модуль подключен и активен")
 
 
 BOT_EVENT_HANDLERS = {
-    "ON_MODULE_CONNECTED": [on_module_connected],
-    "ON_MODULE_ENABLED": [on_module_connected],
-    "ON_MODULE_RELOADED": [on_module_connected],
-    "ON_PLAYEROK_BOT_INIT": [on_playerok_bot_init],
+    "ON_MODULE_ENABLED": [on_module_enabled, run_cycles],
+    "ON_MODULE_DISABLED": [stop_cycles],
     "ON_TELEGRAM_BOT_INIT": [on_telegram_bot_init]
 }
 PLAYEROK_EVENT_HANDLERS = {

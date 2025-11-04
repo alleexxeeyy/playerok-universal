@@ -1,18 +1,13 @@
 from datetime import datetime
+from dataclasses import dataclass
 
 
+@dataclass
 class Stats:
-    def __init__(
-            self, 
-            bot_launch_time, 
-            deals_completed, 
-            deals_refunded,
-            earned_money
-        ):
-        self.bot_launch_time: datetime = bot_launch_time 
-        self.deals_completed: int = deals_completed
-        self.deals_refunded: int = deals_refunded
-        self.earned_money: int = earned_money
+    bot_launch_time: datetime
+    deals_completed: int
+    deals_refunded: int
+    earned_money: int
 
         
 _stats = Stats(
@@ -22,9 +17,10 @@ _stats = Stats(
     earned_money=0
 )
 
+
 def get_stats() -> Stats:
-    global _stats
     return _stats
+
 
 def set_stats(new):
     global _stats

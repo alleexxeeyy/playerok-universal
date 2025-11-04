@@ -2,36 +2,49 @@ import asyncio
 import re
 import string
 import requests
-from threading import Thread
 import traceback
 import base64
-from colorama import init, Fore
-init()
+from colorama import Fore, init as init_colorama
 from logging import getLogger
-logger = getLogger(f"universal")
 
 from playerokapi.account import Account
 
 from __init__ import ACCENT_COLOR, VERSION
 from settings import Settings as sett
-from core.utils import set_title, setup_logger, install_requirements, patch_requests
-from core.modules import load_modules, set_modules, connect_modules
-from core.handlers import get_bot_event_handlers
-from services.updater import check_for_updates
+from core.utils import (
+    set_title, 
+    setup_logger, 
+    install_requirements, 
+    patch_requests, 
+    init_main_loop, 
+    run_async_in_thread
+)
+from core.modules import (
+    load_modules, 
+    set_modules, 
+    connect_modules
+)
+from core.handlers import call_bot_event
+from updater import check_for_updates
+
+
+logger = getLogger(f"universal")
+
+main_loop = asyncio.get_event_loop()
+asyncio.set_event_loop(main_loop)
+
+init_colorama()
+init_main_loop(main_loop)
 
 
 async def start_telegram_bot():
     from tgbot.telegrambot import TelegramBot
-    config = sett.get("config")
-    tgbot = TelegramBot(config["telegram"]["api"]["token"])
-    await tgbot.run_bot()
+    run_async_in_thread(TelegramBot().run_bot)
 
 
 async def start_playerok_bot():
     from plbot.playerokbot import PlayerokBot
-    def run():
-        asyncio.new_event_loop().run_until_complete(PlayerokBot().run_bot())
-    Thread(target=run, daemon=True).start()
+    await PlayerokBot().run_bot()
 
 
 def check_and_configure_config():
@@ -51,11 +64,25 @@ def check_and_configure_config():
     
     def is_pl_account_working() -> bool:
         try:
-            Account(token=config["playerok"]["api"]["token"],
-                    user_agent=config["playerok"]["api"]["user_agent"],
-                    requests_timeout=config["playerok"]["api"]["requests_timeout"],
-                    proxy=config["playerok"]["api"]["proxy"] or None).get()
+            Account(
+                token=config["playerok"]["api"]["token"],
+                user_agent=config["playerok"]["api"]["user_agent"],
+                requests_timeout=config["playerok"]["api"]["requests_timeout"],
+                proxy=config["playerok"]["api"]["proxy"] or None
+            ).get()
             return True
+        except:
+            return False
+    
+    def is_pl_account_banned() -> bool:
+        try:
+            acc = Account(
+                token=config["playerok"]["api"]["token"],
+                user_agent=config["playerok"]["api"]["user_agent"],
+                requests_timeout=config["playerok"]["api"]["requests_timeout"],
+                proxy=config["playerok"]["api"]["proxy"] or None
+            ).get()
+            return acc.profile.is_blocked
         except:
             return False
 
@@ -121,41 +148,44 @@ def check_and_configure_config():
         return True
     
     while not config["playerok"]["api"]["token"]:
-        print(f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}токен {Fore.WHITE}вашего Playerok аккаунта. Его можно узнать из Cookie-данных, воспользуйтесь расширением Cookie-Editor."
-              f"\n  {Fore.WHITE}· Пример: eyJhbGciOiJIUzI1NiIsInR5cCI1IkpXVCJ9.eyJzdWIiOiIxZWUxMzg0Ni...")
-        token = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
-        if is_token_valid(token):
-            config["playerok"]["api"]["token"] = token
-            sett.set("config", config)
-            print(f"\n{Fore.GREEN}Токен успешно сохранён в конфиг.")
-        else:
-            print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. Убедитесь, что он соответствует формату и попробуйте ещё раз.")
+        while not config["playerok"]["api"]["token"]:
+            print(f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}токен {Fore.WHITE}вашего Playerok аккаунта. Его можно узнать из Cookie-данных, воспользуйтесь расширением Cookie-Editor."
+                f"\n  {Fore.WHITE}· Пример: eyJhbGciOiJIUzI1NiIsInR5cCI1IkpXVCJ9.eyJzdWIiOiIxZWUxMzg0Ni...")
+            token = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            if is_token_valid(token):
+                config["playerok"]["api"]["token"] = token
+                sett.set("config", config)
+                print(f"\n{Fore.GREEN}Токен успешно сохранён в конфиг.")
+            else:
+                print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. Убедитесь, что он соответствует формату и попробуйте ещё раз.")
 
-        print(f"\n{Fore.WHITE}Введите {Fore.LIGHTMAGENTA_EX}User Agent {Fore.WHITE}вашего браузера. Его можно скопировать на сайте {Fore.LIGHTWHITE_EX}https://whatmyuseragent.com. Или вы можете пропустить этот параметр, нажав Enter."
-              f"\n  {Fore.WHITE}· Пример: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
-        user_agent = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
-        if not user_agent:
-            print(f"\n{Fore.YELLOW}Вы пропустили ввод User Agent. Учтите, что в таком случае бот может работать нестабильно.")
-            break
-        if is_user_agent_valid(user_agent):
-            config["playerok"]["api"]["user_agent"] = user_agent
-            sett.set("config", config)
-            print(f"\n{Fore.GREEN}User Agent успешно сохранён в конфиг.")
-        else:
-            print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный User Agent. Убедитесь, что в нём нет русских символов и попробуйте ещё раз.")
+        while not config["playerok"]["api"]["user_agent"]:
+            print(f"\n{Fore.WHITE}Введите {Fore.LIGHTMAGENTA_EX}User Agent {Fore.WHITE}вашего браузера. Его можно скопировать на сайте {Fore.LIGHTWHITE_EX}https://whatmyuseragent.com. Или вы можете пропустить этот параметр, нажав Enter."
+                f"\n  {Fore.WHITE}· Пример: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
+            user_agent = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            if not user_agent:
+                print(f"\n{Fore.YELLOW}Вы пропустили ввод User Agent. Учтите, что в таком случае бот может работать нестабильно.")
+                break
+            if is_user_agent_valid(user_agent):
+                config["playerok"]["api"]["user_agent"] = user_agent
+                sett.set("config", config)
+                print(f"\n{Fore.GREEN}User Agent успешно сохранён в конфиг.")
+            else:
+                print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный User Agent. Убедитесь, что в нём нет русских символов и попробуйте ещё раз.")
         
-        print(f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 Прокси {Fore.WHITE}в формате user:password@ip:port или ip:port, если он без авторизации. Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
-              f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000")
-        proxy = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
-        if not proxy:
-            print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
-            break
-        if is_proxy_valid(proxy):
-            config["playerok"]["api"]["proxy"] = proxy
-            sett.set("config", config)
-            print(f"\n{Fore.GREEN}Прокси успешно сохранён в конфиг.")
-        else:
-            print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный Прокси. Убедитесь, что он соответствует формату и попробуйте ещё раз.")
+        while not config["playerok"]["api"]["proxy"]:
+            print(f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 Прокси {Fore.WHITE}в формате user:password@ip:port или ip:port, если он без авторизации. Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
+                f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000")
+            proxy = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            if not proxy:
+                print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
+                break
+            if is_proxy_valid(proxy):
+                config["playerok"]["api"]["proxy"] = proxy
+                sett.set("config", config)
+                print(f"\n{Fore.GREEN}Прокси успешно сохранён в конфиг.")
+            else:
+                print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный Прокси. Убедитесь, что он соответствует формату и попробуйте ещё раз.")
 
     while not config["telegram"]["api"]["token"]:
         print(f"\n{Fore.WHITE}Введите {Fore.CYAN}токен вашего Telegram бота{Fore.WHITE}. Бота нужно создать у @BotFather."
@@ -199,6 +229,14 @@ def check_and_configure_config():
     else:
         logger.info(f"{Fore.WHITE}Playerok аккаунт успешно авторизован.")
 
+    if is_pl_account_banned():
+        print(f"{Fore.LIGHTRED_EX}\nВаш Playerok аккаунт забанен! Увы, я не могу запустить бота на заблокированном аккаунте...")
+        config["playerok"]["api"]["token"] = ""
+        config["playerok"]["api"]["user_agent"] = ""
+        config["playerok"]["api"]["proxy"] = ""
+        sett.set("config", config)
+        return check_and_configure_config()
+
     if not is_tg_bot_exists():
         print(f"\n{Fore.LIGHTRED_EX}Не удалось подключиться к вашему Telegram боту. Пожалуйста, убедитесь, что у вас указан верный токен и введите его снова.")
         config["telegram"]["api"]["token"] = ""
@@ -213,37 +251,32 @@ if __name__ == "__main__":
         install_requirements("requirements.txt") # установка недостающих зависимостей, если таковые есть
         patch_requests()
         setup_logger()
+        
         set_title(f"Playerok Universal v{VERSION} by @alleexxeeyy")
-        print(f"\n\n   {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
-              f"\n   ↳ {Fore.LIGHTWHITE_EX}https://t.me/alleexxeeyy"
-              f"\n   ↳ {Fore.LIGHTWHITE_EX}https://t.me/alexeyproduction\n\n")
+        print(
+            f"\n\n   {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
+            f"\n    · {Fore.LIGHTWHITE_EX}https://t.me/alleexxeeyy"
+            f"\n    · {Fore.LIGHTWHITE_EX}https://t.me/alexeyproduction\n\n"
+        )
         
         check_for_updates()
         check_and_configure_config()
-        
+
         modules = load_modules()
         set_modules(modules)
-        
-        if len(modules) > 0:
-            connect_modules(modules)
+        asyncio.run(connect_modules(modules))
 
-        bot_event_handlers = get_bot_event_handlers()
-        def handle_on_init():
-            """ 
-            Запускается при инициализации софта.
-            Запускает за собой все хендлеры ON_INIT.
-            """
-            for handler in bot_event_handlers.get("ON_INIT", []):
-                try:
-                    handler()
-                except Exception as e:
-                    logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера ивента ON_INIT: {Fore.WHITE}{e}")
-        handle_on_init()
+        main_loop.run_until_complete(start_telegram_bot())
+        main_loop.run_until_complete(start_playerok_bot())
+
+        asyncio.run(call_bot_event("ON_INIT"))
         
-        asyncio.run(start_playerok_bot())
-        asyncio.run(start_telegram_bot())
+        main_loop.run_forever()
     except Exception as e:
         traceback.print_exc()
-    print(f"\n   {Fore.LIGHTRED_EX}Ваш бот словил непредвиденную ошибку и был выключен."
-          f"\n   {Fore.WHITE}Пожалуйста, напишите в Telegram разработчика {Fore.LIGHTWHITE_EX}@alleexxeeyy{Fore.WHITE}, для уточнения причин")
+        print(
+            f"\n{Fore.LIGHTRED_EX}Ваш бот словил непредвиденную ошибку и был выключен."
+            f"\n\n{Fore.WHITE}Пожалуйста, попробуйте найти свою проблему в нашей статье, в которой собраны все самые частые ошибки.",
+            f"\nСтатья: {Fore.LIGHTWHITE_EX}https://telegra.ph/FunPay-Universal--chastye-oshibki-i-ih-resheniya-08-26 {Fore.WHITE}(CTRL + Клик ЛКМ)\n"
+        )
     raise SystemExit(1)

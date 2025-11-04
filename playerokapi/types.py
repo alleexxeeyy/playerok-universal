@@ -238,7 +238,7 @@ class AccountProfile:
         """ В онлайне ли сейчас аккаунт. """
         self.is_blocked: bool = is_blocked
         """ Заблокирован ли аккаунт. """
-        self.is_blocked_for: bool = is_blocked_for
+        self.is_blocked_for: str = is_blocked_for
         """ Причина блокировки аккаунта. """
         self.is_verified: bool = is_verified
         """ Верифицирован ли аккаунт. """

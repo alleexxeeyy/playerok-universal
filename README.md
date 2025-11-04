@@ -44,10 +44,8 @@
 
   | Ивент | Когда вызывается | Передающиеся аргументы |
   |-------|------------------|------------------------|
-  | `ON_MODULE_CONNECTED` | При подключении модуля | `Module` |
   | `ON_MODULE_ENABLED` | При включении модуля | `Module` |
   | `ON_MODULE_DISABLED` | При выключении модуля | `Module` |
-  | `ON_MODULE_RELOADED` | При перезагрузке модуля | `Module` |
   | `ON_INIT` | При инициализации бота | `-` |
   | `ON_PLAYEROK_BOT_INIT` | При инициализации (запуске) Playerok бота | `PlayerokBot` |
   | `ON_TELEGRAM_BOT_INIT` | При инициализации (запуске) Telegram бота | `TelegramBot` |
@@ -133,16 +131,16 @@
   def get_module():
       return _module
   
-  def on_module_connected(module: Module):
+  async def on_module_enabled(module: Module):
       try:
           set_module(module)
           print(f"{PREFIX} Модуль подключен и активен")
       except:
-          disable_module(_module.uuid)
+          await disable_module(_module.uuid)
   
 
   BOT_EVENT_HANDLERS = {
-      "ON_MODULE_CONNECTED": [on_module_connected],
+      "ON_MODULE_ENABLED": [on_module_enabled],
       "ON_PLAYEROK_BOT_INIT": [on_playerok_bot_init],
       "ON_TELEGRAM_BOT_INIT": [on_telegram_bot_init]
   }
@@ -273,7 +271,7 @@
   _module: Module = None
 
 
-  def set_module(module: Module):
+  async def set_module(module: Module):
       global _module
       _module = module
 
@@ -282,7 +280,7 @@
   
 
   BOT_EVENT_HANDLERS = {
-      "ON_MODULE_CONNECTED": [set_module],
+      "ON_MODULE_ENABLED": [set_module],
       # ...
   }
   # ...
@@ -295,9 +293,9 @@
   from . import get_module
 
 
-  disable_module(get_module().uuid) #  выключает модуль
-  enable_module(get_module().uuid) #  включает модуль
-  reload_module(get_module().uuid) #  перезагружает модуль
+  await disable_module(get_module().uuid) #  выключает модуль
+  await enable_module(get_module().uuid) #  включает модуль
+  await reload_module(get_module().uuid) #  перезагружает модуль
   ```
 
 </details>

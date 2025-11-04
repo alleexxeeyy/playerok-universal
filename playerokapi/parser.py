@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
+from .enums import *
+
 if TYPE_CHECKING:
     from .types import *
-
-from .enums import *
 
 
 def file(data: dict) -> "FileObject":
@@ -28,16 +28,6 @@ def sbp_bank_member(data: dict) -> "SBPBankMember":
         id=data.get("id"),
         name=data.get("name"),
         icon=data.get("icon")
-    )
-
-
-def transaction_payment_method(data: dict) -> "TransactionPaymentMethod":
-    from .types import TransactionPaymentMethod
-
-    if not data:
-        return None
-    return TransactionPaymentMethod(
-        
     )
 
 
@@ -541,7 +531,7 @@ def user_profile(data: dict) -> "UserProfile":
         return None
     u = UserProfile(
         id=data.get("id"),
-        username=data.get("username"),
+        username=data.get("username", "Поддержка"),
         role=UserTypes.__members__.get(data.get("role")),
         avatar_url=data.get("avatarURL"),
         is_online=data.get("isOnline"),

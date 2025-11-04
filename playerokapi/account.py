@@ -1,10 +1,13 @@
 from __future__ import annotations
-import tls_requests
 from typing import *
+from logging import getLogger
+from typing import Literal
 import json
 import random
 import time
-from logging import getLogger
+
+import tls_client
+import tls_requests
 
 from . import types
 from .exceptions import *
@@ -12,9 +15,10 @@ from .parser import *
 from .enums import *
 
 
-def get_account() -> None | Account:
+def get_account() -> Account | None:
     if hasattr(Account, "instance"):
         return getattr(Account, "instance")
+
 
 class Account:
     """
@@ -23,11 +27,11 @@ class Account:
     :param token: Токен аккаунта.
     :type token: `str`
 
-    :param user_agent: Юзер-агент браузера, _опционально_.
+    :param user_agent: Юзер-агент браузера.
     :type user_agent: `str`
 
     :param proxy: IPV4 прокси в формате: `user:pass@ip:port` или `ip:port`, _опционально_.
-    :type proxy: `str`
+    :type proxy: `str` or `None`
 
     :param requests_timeout: Таймаут ожидания ответов на запросы.
     :type requests_timeout: `int`
@@ -58,6 +62,8 @@ class Account:
         """ Таймаут ожидания ответов на запросы. """
         self.proxy = proxy
         """ Прокси. """
+        self.__proxy_string = f"http://{self.proxy.replace('https://', '').replace('http://', '')}" if self.proxy else None
+        """ Строка прокси. """
         self.request_max_retries = request_max_retries
         """ Максимальное количество повторных попыток отправки запроса. """
 
@@ -95,10 +101,19 @@ class Account:
         self.profile: AccountProfile | None = None
         """ Профиль аккаунта (не путать с профилем пользователя). \n\n_Заполняется при первом использовании get()_ """
 
-        self.__client = tls_requests.Client(proxy=f"http://{self.proxy.replace('https://', '').replace('http://', '')}" if self.proxy else None)
+        self._refresh_clients()
         self.__logger = getLogger("playerokapi")
 
-    def request(self, method: str, url: str, headers: dict[str, str], 
+    def _refresh_clients(self):
+        self.__tls_requests = tls_requests.Client(
+            proxy=self.__proxy_string
+        )
+        self.__tls_client = tls_client.Session(
+            client_identifier="chrome_124",
+            random_tls_extension_order=True
+        )
+
+    def request(self, method: Literal["get", "post"], url: str, headers: dict[str, str], 
                 payload: dict[str, str] | None = None, files: dict | None = None) -> requests.Response:
         """
         Отправляет запрос на сервер playerok.com.
@@ -121,7 +136,6 @@ class Account:
         :return: Ответа запроса requests.
         :rtype: `requests.Response`
         """
-
         agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.132 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
@@ -158,25 +172,38 @@ class Account:
             "x-gql-op": "viewer",
             "x-timezone-offset": "-180"
         }
-        for k, v in _headers.items():
-            if k not in headers.keys():
-                headers[k] = v
+        headers = {k: v for k, v in _headers.items() if k not in headers.keys()}
+        headers["cookie"] = f"token={self.token}"
+        headers["user-agent"] = self.user_agent if self.user_agent else random.choice(agents)
                 
         def make_req():
-            headers["cookie"] = f"token={self.token}"
-            headers["user-agent"] = self.user_agent if self.user_agent else random.choice(agents)
-
             if method == "get":
-                r = self.__client.get(url=url, params=payload, headers=headers, 
-                            timeout=self.requests_timeout)
+                r = self.__tls_client.get(
+                    url=url, 
+                    params=payload, 
+                    headers=headers, 
+                    timeout_seconds=self.requests_timeout,
+                    proxy=self.__proxy_string
+                )
             elif method == "post":
-                r = self.__client.post(url=url, json=payload if not files else None, 
-                                data=payload if files else None, headers=headers, 
-                                files=files, timeout=self.requests_timeout)
-            else: 
-                return
+                if files:
+                    r = self.__tls_requests.post(
+                        url=url, 
+                        json=payload if not files else None, 
+                        data=payload if files else None, 
+                        headers=headers, 
+                        files=files, 
+                        timeout=self.requests_timeout
+                    )
+                else:
+                    r = self.__tls_client.post(
+                        url=url, 
+                        json=payload,
+                        headers=headers, 
+                        timeout_seconds=self.requests_timeout,
+                        proxy=self.__proxy_string
+                    )
             return r
-        resp = make_req()
 
         cloudflare_signatures = [
             "<title>Just a moment...</title>",
@@ -186,17 +213,16 @@ class Account:
             "cf-browser-verification",
             "Cloudflare Ray ID"
         ]
-        if any(sig in resp.text for sig in cloudflare_signatures):
-            for attempt in range(self.request_max_retries):
-                resp = make_req()
-                if not any(sig in resp.text for sig in cloudflare_signatures):
-                    break
-                delay = min(120.0, 5.0 * (2 ** attempt))
-                self.__logger.error(f"Cloudflare Detected, пробую отправить запрос снова через {delay} сек.")
-                time.sleep(delay)
-                self.__client = tls_requests.Client(proxy=f"http://{self.proxy.replace('https://', '').replace('http://', '')}" if self.proxy else None)
-            else:
-                raise CloudflareDetectedException(resp)
+        for attempt in range(self.request_max_retries):
+            resp = make_req()
+            if not any(sig in resp.text for sig in cloudflare_signatures):
+                break
+            delay = min(120.0, 5.0 * (2 ** attempt))
+            self.__logger.error(f"Cloudflare Detected, пробую отправить запрос снова через {delay} сек.")
+            time.sleep(delay)
+            self._refresh_clients()
+        else:
+            raise CloudflareDetectedException(resp)
         try:
             if "errors" in resp.json():
                 raise RequestError(resp)
@@ -210,8 +236,8 @@ class Account:
         """
         Получает/обновляет данные об аккаунте.
 
-        :return: Профиль аккаунта с обновлёнными данными.
-        :rtype: `playerokapi.Account`
+        :return: Объект аккаунта с обновлёнными данными.
+        :rtype: `playerokapi.account.Account`
         """
         headers = {"accept": "*/*"}
         payload = {
@@ -225,6 +251,7 @@ class Account:
         data: dict = rjson["data"]["viewer"]
         if data is None:
             raise UnauthorizedError()
+        
         self.id = data.get("id")
         self.username = data.get("username")
         self.email = data.get("email")
@@ -278,7 +305,7 @@ class Account:
         else: profile = None
         return user_profile(profile)
 
-    def get_deals(self, count: int = 24, status: list[ItemDealStatuses] | None = None, 
+    def get_deals(self, count: int = 24, statuses: list[ItemDealStatuses] | None = None, 
                   direction: ItemDealDirections | None = None, after_cursor: str = None) -> types.ItemDealList:
         """
         Получает сделки аккаунта.
@@ -286,8 +313,8 @@ class Account:
         :param count: Кол-во сделок, которые нужно получить (не более 24 за один запрос).
         :type count: `int`
 
-        :param status: Статусы заявок, которые нужно получать, _опционально_.
-        :type status: `list[playerokapi.enums.ItemDealsStatuses]` or `None`
+        :param statuses: Статусы заявок, которые нужно получать, _опционально_.
+        :type statuses: `list[playerokapi.enums.ItemDealsStatuses]` or `None`
 
         :param direction: Направление сделок, _опционально_.
         :type direction: `playerokapi.enums.ItemDealsDirections` or `None`
@@ -298,10 +325,7 @@ class Account:
         :return: Страница сделок.
         :rtype: `playerokapi.types.ItemDealList`
         """
-        str_statuses = [] if status else None
-        if status:
-            for v in status:
-                str_statuses.append(v.name)
+        str_statuses = [status.name for status in statuses] if statuses else None
         str_direction = direction.name if direction else None
         headers = {"accept": "*/*"}
         payload = {
@@ -617,7 +641,7 @@ class Account:
         while True:
             chats = self.get_chats(count=24, after_cursor=next_cursor)
             for chat in chats.chats:
-                if any([user for user in chat.users if user.username.lower() == username.lower()]):
+                if any(user for user in chat.users if user.username.lower() == username.lower()):
                     return chat
             if not chats.page_info.has_next_page:
                 break
@@ -752,13 +776,8 @@ class Account:
         :return: Объект созданного предмета.
         :rtype: `playerokapi.types.Item`
         """
-        payload_attributes = {}
-        for option in options:
-            payload_attributes[option.field] = option.value
-        payload_data_fields = []
-        for field in data_fields:
-            payload_data_fields.append({"fieldId": field.id, "value": field.value})
-
+        payload_attributes = {option.field: option.value for option in options}
+        payload_data_fields = [{"fieldId": field.id, "value": field.value} for field in data_fields]
         headers = {"accept": "*/*"}
         operations = {
             "operationName": "createItem",
@@ -826,15 +845,8 @@ class Account:
         :return: Объект обновлённого предмета.
         :rtype: `playerokapi.types.Item`
         """
-        payload_attributes = {} if options is not None else None
-        if options:
-            for option in options:
-                payload_attributes[option.field] = option.value
-        payload_data_fields = [] if data_fields is not None else None
-        if data_fields:
-            for field in data_fields:
-                payload_data_fields.append({"fieldId": field.id, "value": field.value})
-
+        payload_attributes = {option.field: option.value for option in options} if options is not None else None
+        payload_data_fields = [{"fieldId": field.id, "value": field.value} for field in data_fields] if data_fields is not None else None
         headers = {"accept": "*/*"}
         operations = {
             "operationName": "updateItem",

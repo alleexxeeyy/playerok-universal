@@ -1,22 +1,44 @@
 import os
+import re
 import sys
 import ctypes
 import logging
-from colorlog import ColoredFormatter
-from colorama import Fore
 import pkg_resources
 import subprocess
-import tls_requests
+import requests
 import random
 import time
+import asyncio
+from colorlog import ColoredFormatter
+from colorama import Fore
+from threading import Thread
 from logging import getLogger
 
 
-logger = getLogger(f"universal.core")
+logger = getLogger("universal.utils")
+_main_loop = None
+
+
+def init_main_loop(loop):
+    """Инициализирует основной loop событий."""
+    global _main_loop 
+    _main_loop = loop
+
+
+def get_main_loop():
+    """Получает основной loop событий."""
+    return _main_loop
+
+
+def shutdown():
+    """Завершает работу программы (завершает все задачи основного loop`а)."""
+    for task in asyncio.all_tasks(_main_loop):
+        task.cancel()
+    _main_loop.call_soon_threadsafe(_main_loop.stop)
 
 
 def restart():
-    """Перезагружает консоль."""
+    """Перезагружает программу."""
     python = sys.executable
     os.execv(python, [python] + sys.argv)
 
@@ -70,11 +92,18 @@ def setup_logger(log_file: str = "logs/latest.log"):
     console_handler.setLevel(logging.INFO)
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter(
+
+    class StripColorFormatter(logging.Formatter):
+        ansi_escape = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
+        def format(self, record):
+            message = super().format(record)
+            return self.ansi_escape.sub('', message)
+        
+    file_handler.setFormatter(StripColorFormatter(
         "[%(asctime)s] %(levelname)-1s · %(name)-20s %(message)s",
         datefmt="%d.%m.%Y %H:%M:%S",
-    )
-    file_handler.setFormatter(file_formatter)
+    ))
+
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     for handler in logger.handlers[:]:
@@ -105,36 +134,43 @@ def install_requirements(requirements_path: str):
     :param requirements_path: Путь к файлу зависимостей.
     :type requirements_path: `str`
     """
-    if not os.path.exists(requirements_path):
-        return
-    with open(requirements_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    missing_packages = []
-    for line in lines:
-        pkg = line.strip()
-        if not pkg or pkg.startswith("#"):
-            continue
-        if not is_package_installed(pkg):
-            missing_packages.append(pkg)
-    if missing_packages:
-        logger.info(f"Установка недостающих зависимостей: {Fore.YELLOW}{f'{Fore.WHITE}, {Fore.YELLOW}'.join(missing_packages)}{Fore.WHITE}")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", *missing_packages])
+    try:
+        if not os.path.exists(requirements_path):
+            return
+        with open(requirements_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        missing_packages = []
+        for line in lines:
+            pkg = line.strip()
+            if not pkg or pkg.startswith("#"):
+                continue
+            if not is_package_installed(pkg):
+                missing_packages.append(pkg)
+        if missing_packages:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", *missing_packages])
+    except:
+        logger.error(f"{Fore.LIGHTRED_EX}Не удалось установить зависимости из файла \"{requirements_path}\"")
 
 
 def patch_requests():
     """Патчит стандартные requests на кастомные с обработкой ошибок."""
-    _orig_request = tls_requests.Client.request
+    _orig_request = requests.Session.request
     def _request(self, method, url, **kwargs):  # type: ignore
         for attempt in range(6):
             resp = _orig_request(self, method, url, **kwargs)
+            try:
+                text_head = (resp.text or "")[:1200]
+            except Exception:
+                text_head = ""
             statuses = {
-                "429": "TOO_MANY_REQUESTS",
-                "502": "BAD_GATEWAY",
-                "503": "SERVICE_UNAVAIBLE"
+                "429": "Too Many Requests",
+                "502": "Bad Gateway",
+                "503": "Service Unavailable"
             }
             if str(resp.status_code) not in statuses:
-                if any([status_text for status_text in statuses.values() if status_text in resp.text]):
-                    break
+                for status in statuses.values():
+                    if status in text_head:
+                        break
                 else: 
                     return resp
             retry_hdr = resp.headers.get("Retry-After")
@@ -145,4 +181,53 @@ def patch_requests():
             delay += random.uniform(0.2, 0.8)  # небольшой джиттер
             time.sleep(delay)
         return resp
-    tls_requests.Client.request = _request  # type: ignore
+    requests.Session.request = _request  # type: ignore
+
+
+def run_async_in_thread(func: callable, args: list = [], kwargs: dict = {}):
+    """ 
+    Запускает функцию асинхронно в новом потоке и в новом лупе.
+
+    :param func: Функция.
+    :type func: `callable`
+
+    :param args: Аргументы функции.
+    :type args: `list`
+
+    :param kwargs: Аргументы функции по ключам.
+    :type kwargs: `dict`
+    """
+    def run():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(func(*args, **kwargs))
+        finally:
+            loop.close()
+
+    Thread(target=run, daemon=True).start()
+
+
+def run_forever_in_thread(func: callable, args: list = [], kwargs: dict = {}):
+    """ 
+    Запускает функцию в бесконечном лупе в новом потоке.
+
+    :param func: Функция.
+    :type func: `callable`
+
+    :param args: Аргументы функции.
+    :type args: `list`
+
+    :param kwargs: Аргументы функции по ключам.
+    :type kwargs: `dict`
+    """
+    def run():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.create_task(func(*args, **kwargs))
+        try:
+            loop.run_forever()
+        finally:
+            loop.close()
+
+    Thread(target=run, daemon=True).start()

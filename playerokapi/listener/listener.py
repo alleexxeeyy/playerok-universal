@@ -1,6 +1,6 @@
 from typing import Generator
 from logging import getLogger
-import time
+import asyncio
 
 from ..account import Account
 from ..types import ChatList, ChatMessage, Chat
@@ -278,8 +278,6 @@ class EventListener:
                         yield event
 
                 chats = next_chats
-                time.sleep(requests_delay)
             except Exception as e:
                 self.__logger.error(f"Ошибка при получении ивентов: {e}")
-                time.sleep(requests_delay)
-                continue
+            time.sleep(requests_delay)

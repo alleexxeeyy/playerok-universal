@@ -468,7 +468,7 @@ class PlayerokBot:
         
         included = False
         excluded = False
-        for included_item in self.auto_restore_items["included_items"]:
+        for included_item in self.auto_restore_items["included"]:
             for keyphrases in included_item:
                 if any(
                     phrase.lower() in event.deal.item.name.lower() 
@@ -478,7 +478,7 @@ class PlayerokBot:
                     included = True
                     break
             if included: break
-        for excluded_item in self.auto_restore_items["excluded_items"]:
+        for excluded_item in self.auto_restore_items["excluded"]:
             for keyphrases in excluded_item:
                 if any(
                     phrase.lower() in event.deal.item.name.lower() 

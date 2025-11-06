@@ -1043,7 +1043,7 @@ class Account:
                     "itemId": item_id,
                     "priorityStatuses": [priority_status_id],
                     "transactionProviderData": {
-                        "paymentMethodId": payment_method_id.name
+                        "paymentMethodId": payment_method_id.name if payment_method_id else None
                     },
                     "transactionProviderId": transaction_provider_id.name
                 }

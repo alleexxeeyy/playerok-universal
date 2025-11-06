@@ -194,6 +194,9 @@ class EventListener:
                 events.extend(self.parse_message_event(new_chat.last_message, new_chat))
                 continue
 
+            if not new_chat.last_message or not old_chat.last_message:
+                continue
+
             if (
                 get_new_review_events 
                 and new_chat.last_message.deal 
@@ -203,8 +206,6 @@ class EventListener:
                 new_review_event = self._check_for_new_review(new_chat)
                 if new_review_event: events.append(new_review_event)
 
-            if not new_chat.last_message or not old_chat.last_message:
-                continue
             if new_chat.last_message.id == old_chat.last_message.id:
                 continue
 

@@ -354,24 +354,23 @@ class PlayerokBot:
             and (self.config["playerok"]["tg_logging"]["events"]["new_user_message"] 
             or self.config["playerok"]["tg_logging"]["events"]["new_system_message"])
         ):
-            if event.message.user.id != self.account.id:
-                do = False
-                if self.config["playerok"]["tg_logging"]["events"]["new_user_message"] and event.message.user.username not in ["Playerok.com", "Поддержка"]: do = True 
-                if self.config["playerok"]["tg_logging"]["events"]["new_system_message"] and event.message.user.username in ["Playerok.com", "Поддержка"]: do = True 
-                if do:
-                    text = f"<b>{event.message.user.username}:</b> "
-                    text += event.message.text or ""
-                    text += f'<b><a href="{event.message.file.url}">{event.message.file.filename}</a></b>' if event.message.file else ""
-                    asyncio.run_coroutine_threadsafe(
-                        get_telegram_bot().log_event(
-                            text=log_text(
-                                title=f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', 
-                                text=text.strip()
-                            ),
-                            kb=log_new_mess_kb(event.message.user.username)
-                        ), 
-                        get_telegram_bot_loop()
-                    )
+            do = False
+            if self.config["playerok"]["tg_logging"]["events"]["new_user_message"] and event.message.user.username not in ["Playerok.com", "Поддержка"]: do = True 
+            if self.config["playerok"]["tg_logging"]["events"]["new_system_message"] and event.message.user.username in ["Playerok.com", "Поддержка"]: do = True 
+            if do:
+                text = f"<b>{event.message.user.username}:</b> "
+                text += event.message.text or ""
+                text += f'<b><a href="{event.message.file.url}">{event.message.file.filename}</a></b>' if event.message.file else ""
+                asyncio.run_coroutine_threadsafe(
+                    get_telegram_bot().log_event(
+                        text=log_text(
+                            title=f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', 
+                            text=text.strip()
+                        ),
+                        kb=log_new_mess_kb(event.message.user.username)
+                    ), 
+                    get_telegram_bot_loop()
+                )
 
         if event.chat.id not in [self.account.system_chat_id, self.account.support_chat_id]:
             if event.message.user.id not in self.initialized_users:

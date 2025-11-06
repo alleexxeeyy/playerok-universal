@@ -109,7 +109,7 @@ class Account:
             proxy=self.__proxy_string
         )
         self.__tls_client = tls_client.Session(
-            client_identifier="chrome_124",
+            client_identifier="chrome_142",
             random_tls_extension_order=True
         )
 

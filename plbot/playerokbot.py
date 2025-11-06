@@ -536,7 +536,7 @@ class PlayerokBot:
                 event.deal = self.account.get_deal(event.deal.id)
             self.stats.earned_money += round(getattr(event.deal.transaction, "value") or 0, 2)
         elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
-            self.send_message(event.chat.id, self.msg("deal_confirmed", deal_id=event.deal.id, deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
+            self.send_message(event.chat.id, self.msg("deal_refunded", deal_id=event.deal.id, deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
             self.stats.deals_refunded += 1
 
 

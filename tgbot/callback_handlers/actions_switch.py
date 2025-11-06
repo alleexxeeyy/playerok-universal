@@ -10,6 +10,7 @@ from .. import callback_datas as calls
 from .. import states as states
 from ..helpful import throw_float_message
 from .navigation import *
+from ..callback_handlers.page import callback_message_page, callback_module_page
 
 
 router = Router()

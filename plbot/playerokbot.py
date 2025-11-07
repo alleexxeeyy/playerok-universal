@@ -209,17 +209,8 @@ class PlayerokBot:
             except: item = _item[0]
 
             priority_statuses = self.account.get_item_priority_statuses(item.id, item.price)
-            priority_status = [status for status in priority_statuses if status.type is PriorityTypes.DEFAULT][0]
-            """for status in priority_statuses:
-                if (
-                    isinstance(item, types.MyItem) 
-                    and item.priority
-                    and status.type.name == item.priority.name
-                ):
-                    priority_status = status
-                if status.type is PriorityTypes.DEFAULT:
-                    priority_status = status
-                if priority_status: break"""
+            try: priority_status = [status for status in priority_statuses if status.type is PriorityTypes.DEFAULT or status.price == 0][0]
+            except IndexError: priority_status = [status for status in priority_statuses][0]
 
             new_item = self.account.publish_item(item.id, priority_status.id)
             if new_item.status is ItemStatuses.PENDING_APPROVAL or new_item.status is ItemStatuses.APPROVED:
@@ -313,6 +304,9 @@ class PlayerokBot:
 
 
     async def _on_playerok_bot_init(self):
+        item = self.account.get_item(slug="4a160fa08f3a-sozdanie-i-nastroyka-telegram-kanala")
+        for status in self.account.get_item_priority_statuses(item.id, item.price):
+            print(status.__dict__)
         self.stats.bot_launch_time = datetime.now()
 
         def endless_loop():

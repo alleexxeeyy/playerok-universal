@@ -304,9 +304,6 @@ class PlayerokBot:
 
 
     async def _on_playerok_bot_init(self):
-        item = self.account.get_item(slug="4a160fa08f3a-sozdanie-i-nastroyka-telegram-kanala")
-        for status in self.account.get_item_priority_statuses(item.id, item.price):
-            print(status.__dict__)
         self.stats.bot_launch_time = datetime.now()
 
         def endless_loop():

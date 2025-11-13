@@ -457,28 +457,22 @@ class PlayerokBot:
         elif not self.config["playerok"]["auto_restore_items"]["enabled"]:
             return
         
-        included = False
-        excluded = False
-        for included_item in self.auto_restore_items["included"]:
-            for keyphrases in included_item:
-                if any(
-                    phrase.lower() in event.deal.item.name.lower() 
-                    or event.deal.item.name.lower() == phrase.lower() 
-                    for phrase in keyphrases
-                ):
-                    included = True
-                    break
-            if included: break
-        for excluded_item in self.auto_restore_items["excluded"]:
-            for keyphrases in excluded_item:
-                if any(
-                    phrase.lower() in event.deal.item.name.lower() 
-                    or event.deal.item.name.lower() == phrase.lower() 
-                    for phrase in keyphrases
-                ):
-                    excluded = True
-                    break
-            if excluded: break
+        included = any(
+            any(
+                phrase.lower() in event.deal.item.name.lower()
+                or event.deal.item.name.lower() == phrase.lower()
+                for phrase in included_item
+            )
+            for included_item in self.auto_restore_items["included"]
+        )
+        excluded = any(
+            any(
+                phrase.lower() in event.deal.item.name.lower()
+                or event.deal.item.name.lower() == phrase.lower()
+                for phrase in excluded_item
+            )
+            for excluded_item in self.auto_restore_items["excluded"]
+        )
 
         if (
             self.config["playerok"]["auto_restore_items"]["all"]

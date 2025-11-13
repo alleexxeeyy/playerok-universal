@@ -169,7 +169,7 @@ def patch_requests():
             }
             if str(resp.status_code) not in statuses:
                 for status in statuses.values():
-                    if status in text_head:
+                    if status.lower() in text_head.lower():
                         break
                 else: 
                     return resp

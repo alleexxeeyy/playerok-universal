@@ -225,7 +225,16 @@ class Account:
             raise CloudflareDetectedException(resp)
         try:
             if "errors" in resp.json():
-                raise RequestError(resp)
+                for attempt in range(3):
+                    exc = RequestError(resp)
+                    if exc.error_code != 500:
+                        break
+                    self.__logger.error(f"500 Error Code, пробую отправить запрос снова через {delay} сек.")
+                    resp = make_req()
+                    delay = min(120.0, 2 ** attempt)
+                    time.sleep(delay)
+                else:
+                    raise exc
         except:
             pass
         if resp.status_code != 200:

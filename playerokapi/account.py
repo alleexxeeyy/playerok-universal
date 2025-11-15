@@ -154,14 +154,15 @@ class Account:
             "apollo-require-preflight": "true",
             "apollographql-client-name": "web",
             "content-type": "application/json",
+            "cookie": f"token={self.token}",
             "origin": "https://playerok.com",
             "priority": "u=1, i",
             "referer": "https://playerok.com/",
-            "sec-ch-ua": "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"140\"",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
             "sec-ch-ua-arch": "\"x86\"",
             "sec-ch-ua-bitness": "\"64\"",
-            "sec-ch-ua-full-version": "\"140.0.7339.186\"",
-            "sec-ch-ua-full-version-list": "\"Chromium\";v=\"140.0.7339.186\", \"Not=A?Brand\";v=\"24.0.0.0\", \"Google Chrome\";v=\"140.0.7339.186\"",
+            "sec-ch-ua-full-version": "\"142.0.7444.162\"",
+            "sec-ch-ua-full-version-list": "\"Chromium\";v=\"142.0.7444.162\", \"Google Chrome\";v=\"142.0.7444.162\", \"Not_A Brand\";v=\"99.0.0.0\"",
             "sec-ch-ua-mobile": "?0",
             "sec-ch-ua-model": "\"\"",
             "sec-ch-ua-platform": "\"Windows\"",
@@ -968,7 +969,7 @@ class Account:
         payload = {
             "operationName": "items",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": filter}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "29ff7e8c607c7b3f2fa3c7a9e02a3a184bf92905e8ea75ba237c8c7f005287a3"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "206ae9d63e58bc41df9023aae39b9136f358282a808c32ee95f5b8b6669a8c8b"}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return item_profile_list(r["data"]["items"])

@@ -5,9 +5,12 @@ from typing import Literal
 import json
 import random
 import time
+import os
+import tempfile
+import shutil
 
-import tls_client
 import tls_requests
+import curl_cffi
 
 from . import types
 from .exceptions import *
@@ -101,6 +104,10 @@ class Account:
         self.profile: AccountProfile | None = None
         """ Профиль аккаунта (не путать с профилем пользователя). \n\n_Заполняется при первом использовании get()_ """
 
+        self.__cert_path = os.path.join(os.path.dirname(__file__), "cacert.pem")
+        self.__tmp_cert_path = os.path.join(tempfile.gettempdir(), "cacert.pem")
+        shutil.copyfile(self.__cert_path, self.__tmp_cert_path)
+
         self._refresh_clients()
         self.__logger = getLogger("playerokapi")
 
@@ -108,9 +115,10 @@ class Account:
         self.__tls_requests = tls_requests.Client(
             proxy=self.__proxy_string
         )
-        self.__tls_client = tls_client.Session(
-            client_identifier="chrome_142",
-            random_tls_extension_order=True
+        self.__curl_session = curl_cffi.Session(
+            impersonate="chrome",
+            timeout=10,
+            verify=self.__tmp_cert_path
         )
 
     def request(self, method: Literal["get", "post"], url: str, headers: dict[str, str], 
@@ -154,7 +162,7 @@ class Account:
             "apollo-require-preflight": "true",
             "apollographql-client-name": "web",
             "content-type": "application/json",
-            "cookie": f"token={self.token}",
+            "cookie": f"fakeauid=9a65f37620fe527895b81e69d3c34a16; need_page_reload=false; _ga=GA1.1.1209537147.1757594544; tmr_lvid=16ac4b44998ee5a276ca1c99ab30067f; tmr_lvidTS=1752581529362; _gcl_au=1.1.692367129.1757594544; _ym_uid=175258153014450750; _ym_d=1757594544; auid=1f08f0cc-47a3-6c10-95ad-03f5ed811aad; need_verification=true; __ddg1_=nbeqEIKRKe8unmQmWbWh; _tt_enable_cookie=1; _ttp=01K7SKNWTMMMZTJFQEXW8QYCDV_.tt.1; token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZWUxMzg0Ni1lZTQ3LTYxZTAtYmYxOC02OWI2NjAzNTIzNDIiLCJpZGVudGl0eSI6IjFlZTEzODQ2LWVlNGUtNjcxMC1kZDNjLTNiMmVhODIxMTU3OSIsInJvbGUiOiJVU0VSIiwidiI6MSwiaWF0IjoxNzYyMTc0ODA2LCJleHAiOjE3OTM3MTA4MDZ9.4X25OcoHonfrxwpoY1dPjTuOAChV9EFG7FTUeSu0FMM; __ddg9_=46.0.129.96; _ym_isad=2; _ym_visorc=w; domain_sid=ItbHbNKWgjB0Qpa-E1sbM%3A1763325067612; ws_url=wss%3A%2F%2Fws.playerok.com%2Fgraphql; cf_clearance=8ppTBhDrWSMECDe33MqlyfFmCpfC9i0R2ex9Yz6h2vQ-1763325091-1.2.1.1-toJ5GGMCZCI4D_p8cpadbWlCxhXJJADKbA8tSo46dAgaQU0kb4C4w4KuG9PFEfYmh0mSR3IBM1lQIHqCnvHn1o8sxAFTfsgV1ZtJskc2y6AdDTEmBEUD4R72xrXN2GClHH3Qrx4ugF5x1oRFtdl_FGj8.kaQTbqUBWSunsPtUioLXXKdEBVkPeUFr1._Ijiu34P8TONe1GiXkYenOSwZhFvOhY6HaM7V8dJ_80Y3bQc; __ddg8_=vWQGhyu6i54a6e2w; __ddg10_=1763325092; tmr_detect=0%7C1763325092689; _ga_JVXCH40TY4=GS2.1.s1763325066$o98$g1$t1763325112$j14$l0$h0; ttcsid_D3OFSBRC77UED4260FFG=1763325067287::n7Dwdcu_7C2_BfGplpAQ.40.1763325113146.0; ttcsid=1763325067287::Vbh7xY8aTuHgvVp_R0as.40.1763325113146.0",
             "origin": "https://playerok.com",
             "priority": "u=1, i",
             "referer": "https://playerok.com/",
@@ -170,20 +178,19 @@ class Account:
             "sec-fetch-dest": "empty",
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "same-origin",
+            "user-agent": self.user_agent if self.user_agent else random.choice(agents),
             "x-gql-op": "viewer",
-            "x-timezone-offset": "-180"
+            "x-timezone-offset": "-240"
         }
         headers = {k: v for k, v in _headers.items() if k not in headers.keys()}
-        headers["cookie"] = f"token={self.token}"
-        headers["user-agent"] = self.user_agent if self.user_agent else random.choice(agents)
                 
         def make_req():
             if method == "get":
-                r = self.__tls_client.get(
+                r = self.__curl_session.get(
                     url=url, 
                     params=payload, 
                     headers=headers, 
-                    timeout_seconds=self.requests_timeout,
+                    timeout=self.requests_timeout,
                     proxy=self.__proxy_string
                 )
             elif method == "post":
@@ -197,11 +204,11 @@ class Account:
                         timeout=self.requests_timeout
                     )
                 else:
-                    r = self.__tls_client.post(
+                    r = self.__curl_session.post(
                         url=url, 
                         json=payload,
                         headers=headers, 
-                        timeout_seconds=self.requests_timeout,
+                        timeout=self.requests_timeout,
                         proxy=self.__proxy_string
                     )
             return r
@@ -214,14 +221,15 @@ class Account:
             "cf-browser-verification",
             "Cloudflare Ray ID"
         ]
-        for attempt in range(self.request_max_retries):
+        for attempt in range(30):
             resp = make_req()
             if not any(sig in resp.text for sig in cloudflare_signatures):
                 break
-            delay = min(120.0, 5.0 * (2 ** attempt))
+            self._refresh_clients()
+            #delay = min(120.0, 5.0 * (2 ** attempt)) 
+            delay = 1
             self.__logger.error(f"Cloudflare Detected, пробую отправить запрос снова через {delay} сек.")
             time.sleep(delay)
-            self._refresh_clients()
         else:
             raise CloudflareDetectedException(resp)
         try:

@@ -118,6 +118,7 @@ class Account:
         self.__curl_session = curl_cffi.Session(
             impersonate="chrome",
             timeout=10,
+            proxy=self.__proxy_string,
             verify=self.__tmp_cert_path
         )
 
@@ -190,8 +191,7 @@ class Account:
                     url=url, 
                     params=payload, 
                     headers=headers, 
-                    timeout=self.requests_timeout,
-                    proxy=self.__proxy_string
+                    timeout=self.requests_timeout
                 )
             elif method == "post":
                 if files:
@@ -208,8 +208,7 @@ class Account:
                         url=url, 
                         json=payload,
                         headers=headers, 
-                        timeout=self.requests_timeout,
-                        proxy=self.__proxy_string
+                        timeout=self.requests_timeout
                     )
             return r
 
@@ -226,21 +225,20 @@ class Account:
             if not any(sig in resp.text for sig in cloudflare_signatures):
                 break
             self._refresh_clients()
-            #delay = min(120.0, 5.0 * (2 ** attempt)) 
-            delay = 1
-            self.__logger.error(f"Cloudflare Detected, пробую отправить запрос снова через {delay} сек.")
+            delay = min(120.0, 5.0 * (2 ** attempt)) 
+            self.__logger.error(f"Cloudflare Detected, пробую отправить запрос снова через {delay} секунд")
             time.sleep(delay)
         else:
             raise CloudflareDetectedException(resp)
         try:
             if "errors" in resp.json():
                 for attempt in range(3):
+                    resp = make_req()
                     exc = RequestError(resp)
                     if exc.error_code != 500:
                         break
-                    self.__logger.error(f"500 Error Code, пробую отправить запрос снова через {delay} сек.")
-                    resp = make_req()
                     delay = min(120.0, 2 ** attempt)
+                    self.__logger.error(f"500 Error Code, пробую отправить запрос снова через {delay} секунд")
                     time.sleep(delay)
                 else:
                     raise exc

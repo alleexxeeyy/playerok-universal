@@ -1,6 +1,5 @@
 from typing import Generator
 from logging import getLogger
-import asyncio
 
 from ..account import Account
 from ..types import ChatList, ChatMessage, Chat
@@ -22,6 +21,7 @@ class EventListener:
         self.__logger = getLogger("playerokapi.listener")
         self.__review_check_deals: dict = {} # {deal_id: last_known_testimonial_id}
         self.__last_check_time: dict = {} # {deal_id: last_check_time}
+        self.__listened_messages: list = [] # [mess_id]
 
     def parse_chat_event(
         self, chat: Chat
@@ -209,7 +209,7 @@ class EventListener:
             if new_chat.last_message.id == old_chat.last_message.id:
                 continue
 
-            msg_list = self.account.get_chat_messages(new_chat.id, 10)
+            msg_list = self.account.get_chat_messages(new_chat.id, 24)
             new_msgs = []
             for msg in msg_list.messages:
                 if msg.id == old_chat.last_message.id:
@@ -220,6 +220,9 @@ class EventListener:
                 self.__review_check_deals[new_chat.last_message.deal.id] = None
 
             for msg in reversed(new_msgs):
+                if msg.id in self.__listened_messages:
+                    continue
+                self.__listened_messages.append(msg.id)
                 events.extend(self.parse_message_event(msg, new_chat))
         return events
 

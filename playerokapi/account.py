@@ -16,6 +16,7 @@ from . import types
 from .exceptions import *
 from .parser import *
 from .enums import *
+from .misc import PERSISTED_QUERIES
 
 
 def get_account() -> Account | None:
@@ -287,7 +288,7 @@ class Account:
         payload = {
             "operationName": "user",
             "variables": json.dumps({"username": self.username, "hasSupportAccess": False}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "2e2e3b656d2ba48e0b2cd5eeedf88ef70e4aabb4ac4d9d9e9b8feff343a37d98"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("user")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         data: dict = r["data"]["user"]
@@ -312,7 +313,7 @@ class Account:
         payload = {
             "operationName": "user",
             "variables": json.dumps({"id": id, "username": username, "hasSupportAccess": False}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "2e2e3b656d2ba48e0b2cd5eeedf88ef70e4aabb4ac4d9d9e9b8feff343a37d98"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("user")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         data: dict = r["data"]["user"]
@@ -347,7 +348,7 @@ class Account:
         payload = {
             "operationName": "deals",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "direction": str_direction, "status": str_statuses}, "showForbiddenImage": True}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "c3b623b5fe0758cf91b2335ebf36ff65f8650a6672a792a3ca7a36d270d396fb"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("deals")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return item_deal_list(r["data"]["deals"])
@@ -366,7 +367,7 @@ class Account:
         payload = {
             "operationName": "deal",
             "variables": json.dumps({"id": deal_id, "hasSupportAccess": False, "showForbiddenImage": True}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "1a9015540fceaa065033750a98d3613ee1c8e73371cedd4d8ef0e7eb5b8ff470"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("deal")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return item_deal(r["data"]["deal"])
@@ -421,7 +422,7 @@ class Account:
         payload = {
             "operationName": "games",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"type": type.name} if type else {}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "b9f6675fd5923bc5c247388e8e3209c3eede460ed328dbe6a9ec8e6428d3649b"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("games")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return game_list(r["data"]["games"])
@@ -444,7 +445,7 @@ class Account:
         payload = {
             "operationName": "GamePage",
             "variables": json.dumps({"id": id, "slug": slug}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "12e701986f07aaaf57327b1133b9a1f3050b851c99b19293adfac40cfed0e41d"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("game")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return game(r["data"]["game"])
@@ -471,7 +472,7 @@ class Account:
         payload = {
             "operationName": "GamePageCategory",
             "variables": json.dumps({"id": id, "gameId": game_id, "slug": slug}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "d81943c23bc558591f70286ad69bb6bf7f6229d04aae39fb0a9701d78a9fd749"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("game_category")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return game_category(r["data"]["gameCategory"])
@@ -500,7 +501,7 @@ class Account:
         payload = {
             "operationName": "gameCategoryAgreements",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"gameCategoryId": game_category_id, "userId": user_id if user_id else self.id}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "3ea4b047196ed9f84aa5eb652299c4bd73f2e99e9fdf4587877658d9ea6330f6 "}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("game_category_agreements")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return game_category_agreement_list(r["data"]["gameCategoryAgreements"])
@@ -526,7 +527,7 @@ class Account:
         payload = {
             "operationName": "gameCategoryObtainingTypes",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"gameCategoryId": game_category_id}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "15b0991414821528251930b4c8161c299eb39882fd635dd5adb1a81fb0570aea"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("game_category_obtaining_types")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return game_category_obtaining_type_list(r["data"]["gameCategoryObtainingTypes"])
@@ -558,7 +559,7 @@ class Account:
         payload = {
             "operationName": "gameCategoryInstructions",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"gameCategoryId": game_category_id, "obtainingTypeId": obtaining_type_id, "type": type.name if type else None}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "5991cead6a8ca46195bc4f7ae3164e7606105dbb82834c910658edeb0a1d1918"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("game_category_instructions")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return game_category_instruction_list(r["data"]["gameCategoryInstructions"])
@@ -590,7 +591,7 @@ class Account:
         payload = {
             "operationName": "gameCategoryDataFields",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"gameCategoryId": game_category_id, "obtainingTypeId": obtaining_type_id, "type": type.name if type else None}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "6fdadfb9b05880ce2d307a1412bc4f2e383683061c281e2b65a93f7266ea4a49"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("game_category_data_fields")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return game_category_data_field_list(r["data"]["gameCategoryDataFields"])
@@ -619,7 +620,7 @@ class Account:
         payload = {
             "operationName": "chats",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "type": type.name if type else None, "status": status.name if status else None}, "hasSupportAccess": False}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "f7e6ee4fbb892abbd196342110e2abb0be309e2bd6671abb2963d0809c511d05"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("chats")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return chat_list(r["data"]["chats"])
@@ -638,7 +639,7 @@ class Account:
         payload = {
             "operationName": "chat",
             "variables": json.dumps({"id": chat_id, "hasSupportAccess": False}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "bb024dc0652fc7c1302a64a117d56d99fb0d726eb4b896ca803dca55f611d933"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("chat")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return chat(r["data"]["chat"])
@@ -684,7 +685,7 @@ class Account:
         payload = {
             "operationName": "chatMessages",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"chatId": chat_id}, "hasSupportAccess": False, "showForbiddenImage": True}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "8640a1c606ed878f15836a3ae5d5a3da9dccb0bd809f073d010680a8e4dcd06a"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("chat_messages")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return chat_message_list(r["data"]["chatMessages"])
@@ -975,7 +976,7 @@ class Account:
         payload = {
             "operationName": "items",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": filter}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "206ae9d63e58bc41df9023aae39b9136f358282a808c32ee95f5b8b6669a8c8b"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("items")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return item_profile_list(r["data"]["items"])
@@ -998,7 +999,7 @@ class Account:
         payload = {
             "operationName": "item",
             "variables": json.dumps({"id": id, "slug": slug, "hasSupportAccess": False, "showForbiddenImage": True}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "e3e341306a7c3400d7e5d47d1f716406d8fe02b74d3faacd733af9b2d64304d0"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("item")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         data: dict = r["data"]["item"]
@@ -1025,7 +1026,7 @@ class Account:
         payload = {
             "operationName": "itemPriorityStatuses",
             "variables": json.dumps({"itemId": item_id, "price": int(item_price)}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "b922220c6f979537e1b99de6af8f5c13727daeff66727f679f07f986ce1c025a"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("item_priority_statuses")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return [item_priority_status(status) for status in r["data"]["itemPriorityStatuses"]]
@@ -1082,7 +1083,7 @@ class Account:
         payload = {
             "operationName": "transactionProviders",
             "variables": json.dumps({"filter": {"direction": direction.name if direction else None}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "31960e5dd929834c1f85bc685db80657ff576373076f016b2578c0a34e6e9f42"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("transaction_providers")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return [transaction_provider(provider) for provider in r["data"]["transactionProviders"]]
@@ -1121,7 +1122,7 @@ class Account:
         payload = {
             "operationName": "transactions",
             "variables": {"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id}, "hasSupportAccess": False},
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "3b9925106c3fe9308ac632254fd70da347b5701f243ab8690477d5a7ca37c2c8"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("transactions")}}, ensure_ascii=False)
         }
         if operation: payload["variables"]["filter"]["operation"] = [operation.name]
         if min_value or max_value:
@@ -1145,7 +1146,7 @@ class Account:
         payload = {
             "operationName": "SbpBankMembers",
             "variables": json.dumps({}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "ef7902598e855fa15fb5e3112156ac226180f0b009a36606fc80a18f00b80c63"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("sbp_bank_members")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return [sbp_bank_member(member) for member in r["data"]["sbpBankMembers"]]
@@ -1171,7 +1172,7 @@ class Account:
         payload = {
             "operationName": "verifiedCards",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "sort": {"direction": direction.name}, "field": "createdAt"}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "eb338d8432981307a2b3d322b3310b2447cab3a6acf21aba4b8773b97e72d1aa"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("verified_cards")}}, ensure_ascii=False)
         }
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return user_bank_card_list(r["data"]["verifiedCards"])

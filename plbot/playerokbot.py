@@ -442,6 +442,7 @@ class PlayerokBot:
             )
 
         self.send_message(event.chat.id, self.msg("new_deal", deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
+        
         if self.config["playerok"]["auto_deliveries"]["enabled"]:
             for auto_delivery in self.auto_deliveries:
                 for phrase in auto_delivery["keyphrases"]:

@@ -98,7 +98,10 @@ class EventListener:
         if not message:
             return []
         if message.text == "{{ITEM_PAID}}" and message.deal is not None:
-            return [NewDealEvent(message.deal, chat), ItemPaidEvent(message.deal, chat)]
+            return [
+                NewDealEvent(message.deal, chat), 
+                ItemPaidEvent(message.deal, chat)
+            ]
         elif message.text == "{{ITEM_SENT}}" and message.deal is not None:
             return [ItemSentEvent(message.deal, chat)]
         elif message.text == "{{DEAL_CONFIRMED}}" and message.deal is not None:
@@ -190,31 +193,31 @@ class EventListener:
             old_chat = old_chat_map.get(new_chat.id)
 
             if not old_chat:
-                # если это новый чат, парсим ивенты только последнего сообщения, ведь это - покупка товара
-                events.extend(self.parse_message_event(new_chat.last_message, new_chat))
-                continue
+                msg_list = self.account.get_chat_messages(new_chat.id, 24)
+                new_msgs = [msg for msg in msg_list.messages]
 
-            if not new_chat.last_message or not old_chat.last_message:
-                continue
+            elif old_chat:
+                if not new_chat.last_message or not old_chat.last_message:
+                    continue
 
-            if (
-                get_new_review_events 
-                and new_chat.last_message.deal 
-                and old_chat.last_message.deal
-                and new_chat.last_message.deal.id in self.__review_check_deals
-            ):
-                new_review_event = self._check_for_new_review(new_chat)
-                if new_review_event: events.append(new_review_event)
+                if (
+                    get_new_review_events 
+                    and new_chat.last_message.deal 
+                    and old_chat.last_message.deal
+                    and new_chat.last_message.deal.id in self.__review_check_deals
+                ):
+                    new_review_event = self._check_for_new_review(new_chat)
+                    if new_review_event: events.append(new_review_event)
 
-            if new_chat.last_message.id == old_chat.last_message.id:
-                continue
+                if new_chat.last_message.id == old_chat.last_message.id:
+                    continue
 
-            msg_list = self.account.get_chat_messages(new_chat.id, 24)
-            new_msgs = []
-            for msg in msg_list.messages:
-                if msg.id == old_chat.last_message.id:
-                    break
-                new_msgs.append(msg)
+                msg_list = self.account.get_chat_messages(new_chat.id, 24)
+                new_msgs = []
+                for msg in msg_list.messages:
+                    if msg.id == old_chat.last_message.id:
+                        break
+                    new_msgs.append(msg)
 
             if get_new_review_events and new_chat.last_message.deal:
                 self.__review_check_deals[new_chat.last_message.deal.id] = None

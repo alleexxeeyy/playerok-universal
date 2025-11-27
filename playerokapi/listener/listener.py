@@ -1,5 +1,6 @@
 from typing import Generator
 from logging import getLogger
+from datetime import datetime
 
 from ..account import Account
 from ..types import ChatList, ChatMessage, Chat
@@ -19,9 +20,13 @@ class EventListener:
         """ Объект аккаунта. """
 
         self.__logger = getLogger("playerokapi.listener")
-        self.__review_check_deals: dict = {} # {deal_id: last_known_testimonial_id}
-        self.__last_check_time: dict = {} # {deal_id: last_check_time}
-        self.__listened_messages: list = [] # [mess_id]
+        self.__review_check_deals: dict[str, str] = {} # {deal_id: last_known_testimonial_id}
+        self.__last_check_time: dict[str, datetime] = {} # {deal_id: last_check_time}
+        
+        self.__listened_messages: list[str] = [] # [mess_id]
+        self.__last_listened_messages: dict[str, ChatMessage] = {} # {chat_id: last_listened_message_obj} 
+       
+        self.__saved_deals: list[str] # [deal_id]
 
     def parse_chat_event(
         self, chat: Chat
@@ -97,11 +102,14 @@ class EventListener:
 
         if not message:
             return []
+        
         if message.text == "{{ITEM_PAID}}" and message.deal is not None:
-            return [
-                NewDealEvent(message.deal, chat), 
-                ItemPaidEvent(message.deal, chat)
-            ]
+            if message.deal.id not in self.__saved_deals:
+                self.__saved_deals.append(message.deal.id)
+                return [
+                    NewDealEvent(message.deal, chat), 
+                    ItemPaidEvent(message.deal, chat)
+                ]
         elif message.text == "{{ITEM_SENT}}" and message.deal is not None:
             return [ItemSentEvent(message.deal, chat)]
         elif message.text == "{{DEAL_CONFIRMED}}" and message.deal is not None:
@@ -192,6 +200,9 @@ class EventListener:
         for new_chat in new_chats.chats:
             old_chat = old_chat_map.get(new_chat.id)
 
+            if new_chat.id not in self.__last_listened_messages and new_chat.last_message:
+                self.__last_listened_messages[new_chat.id] = new_chat.last_message
+
             if not old_chat:
                 msg_list = self.account.get_chat_messages(new_chat.id, 24)
                 new_msgs = [msg for msg in msg_list.messages]
@@ -215,17 +226,18 @@ class EventListener:
                 msg_list = self.account.get_chat_messages(new_chat.id, 24)
                 new_msgs = []
                 for msg in msg_list.messages:
-                    if msg.id == old_chat.last_message.id:
+                    if datetime.fromisoformat(msg.created_at) <= datetime.fromisoformat(self.__last_listened_messages[new_chat.id].created_at):
                         break
                     new_msgs.append(msg)
 
             if get_new_review_events and new_chat.last_message.deal:
                 self.__review_check_deals[new_chat.last_message.deal.id] = None
 
-            for msg in reversed(new_msgs):
+            for msg in sorted(new_msgs, key=lambda m: m.created_at):
                 if msg.id in self.__listened_messages:
                     continue
                 self.__listened_messages.append(msg.id)
+                self.__last_listened_messages[new_chat.id] = msg
                 events.extend(self.parse_message_event(msg, new_chat))
         return events
 

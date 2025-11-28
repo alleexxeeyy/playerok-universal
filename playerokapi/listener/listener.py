@@ -26,7 +26,7 @@ class EventListener:
         self.__listened_messages: list[str] = [] # [mess_id]
         self.__last_listened_messages: dict[str, ChatMessage] = {} # {chat_id: last_listened_message_obj} 
        
-        self.__saved_deals: list[str] # [deal_id]
+        self.__saved_deals: list[str] = [] # [deal_id]
 
     def parse_chat_event(
         self, chat: Chat

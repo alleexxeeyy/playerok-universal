@@ -20,12 +20,10 @@ class EventListener:
         """ Объект аккаунта. """
 
         self.__logger = getLogger("playerokapi.listener")
-        self.__review_check_deals: dict[str, str] = {} # {deal_id: last_known_testimonial_id}
+        self.__review_check_deals: list[str] = [] # [deal_id]
         self.__last_check_time: dict[str, datetime] = {} # {deal_id: last_check_time}
         
         self.__listened_messages: list[str] = [] # [mess_id]
-        self.__last_listened_messages: dict[str, ChatMessage] = {} # {chat_id: last_listened_message_obj} 
-       
         self.__saved_deals: list[str] = [] # [deal_id]
 
     def parse_chat_event(
@@ -144,19 +142,7 @@ class EventListener:
             self.__last_check_time[deal_id] = now
             return True
         return False
-
-    def _check_for_new_review(
-        self, chat: Chat
-    ) -> NewReviewEvent | None:
-        deal_id = chat.last_message.deal.id
-        # проверка раз в N минут, или только если прошло время, или если что-то изменилось
-        if not self._should_check_deal(deal_id):
-            return
-        deal = self.account.get_deal(deal_id)
-        if deal.review is not None:
-            del self.__review_check_deals[deal_id]
-            return NewReviewEvent(deal, chat)
-
+            
     def get_message_events(
         self, old_chats: ChatList, new_chats: ChatList, get_new_review_events: bool
     ) -> list[
@@ -194,51 +180,44 @@ class EventListener:
         _or_ `playerokapi.listener.events.DealProblemResolvedEvent` \
         _or_ `playerokapi.listener.events.DealStatusChangedEvent(message.deal)`
         """
-
+        
         events = []
-        old_chat_map = {chat.id: chat for chat in old_chats.chats}
-        for new_chat in new_chats.chats:
-            old_chat = old_chat_map.get(new_chat.id)
-
-            if new_chat.id not in self.__last_listened_messages and new_chat.last_message:
-                self.__last_listened_messages[new_chat.id] = new_chat.last_message
-
-            if not old_chat:
-                msg_list = self.account.get_chat_messages(new_chat.id, 24)
-                new_msgs = [msg for msg in msg_list.messages]
-
-            elif old_chat:
-                if not new_chat.last_message or not old_chat.last_message:
+        if get_new_review_events:
+            for deal_id in self.__review_check_deals:
+                if not self._should_check_deal(deal_id):
                     continue
+                deal = self.account.get_deal(deal_id)
+                if deal.review is not None:
+                    del self.__review_check_deals[self.__review_check_deals.index(deal_id)]
+                    try: deal.chat = self.account.get_chat(deal.chat.id)
+                    except: pass
+                    events.append(NewReviewEvent(deal, deal.chat))
+        
+        old_chats_last_mess_ids = [chat.last_message.id for chat in old_chats.chats if chat.last_message] if old_chats else []
+        new_chats_last_mess_ids = [chat.last_message.id for chat in new_chats.chats if chat.last_message] if new_chats else []
+        if old_chats_last_mess_ids != new_chats_last_mess_ids:
+            old_chat_map = {chat.id: chat for chat in old_chats.chats}
+            for new_chat in new_chats.chats:
+                old_chat = old_chat_map.get(new_chat.id)
 
-                if (
-                    get_new_review_events 
-                    and new_chat.last_message.deal 
-                    and old_chat.last_message.deal
-                    and new_chat.last_message.deal.id in self.__review_check_deals
-                ):
-                    new_review_event = self._check_for_new_review(new_chat)
-                    if new_review_event: events.append(new_review_event)
+                if not old_chat:
+                    msg_list = self.account.get_chat_messages(new_chat.id, 24)
+                    new_msgs = [msg for msg in msg_list.messages]
+                elif old_chat:
+                    if not new_chat.last_message or not old_chat.last_message:
+                        continue
+                    if new_chat.last_message.id == old_chat.last_message.id:
+                        continue
+                    msg_list = self.account.get_chat_messages(new_chat.id, 24)
+                    new_msgs = [msg for msg in msg_list.messages if datetime.fromisoformat(msg.created_at) > datetime.fromisoformat(old_chat.last_message.created_at)]
 
-                if new_chat.last_message.id == old_chat.last_message.id:
-                    continue
-
-                msg_list = self.account.get_chat_messages(new_chat.id, 24)
-                new_msgs = []
-                for msg in msg_list.messages:
-                    if datetime.fromisoformat(msg.created_at) <= datetime.fromisoformat(self.__last_listened_messages[new_chat.id].created_at):
-                        break
-                    new_msgs.append(msg)
-
-            if get_new_review_events and new_chat.last_message.deal:
-                self.__review_check_deals[new_chat.last_message.deal.id] = None
-
-            for msg in sorted(new_msgs, key=lambda m: m.created_at):
-                if msg.id in self.__listened_messages:
-                    continue
-                self.__listened_messages.append(msg.id)
-                self.__last_listened_messages[new_chat.id] = msg
-                events.extend(self.parse_message_event(msg, new_chat))
+                for msg in sorted(new_msgs, key=lambda m: m.created_at):
+                    if msg.id in self.__listened_messages:
+                        continue
+                    if get_new_review_events and msg.deal and msg.deal.id not in self.__review_check_deals:
+                        self.__review_check_deals.append(new_chat.last_message.deal.id)
+                    self.__listened_messages.append(msg.id)
+                    events.extend(self.parse_message_event(msg, new_chat))
         return events
 
     def listen(
@@ -256,7 +235,7 @@ class EventListener:
         | DealProblemResolvedEvent
         | DealStatusChangedEvent,
         None,
-        None,
+        None
     ]:
         """
         "Слушает" события в чатах. 
@@ -286,16 +265,15 @@ class EventListener:
         chats: ChatList = None
         while True:
             try:
-                next_chats = self.account.get_chats(10)
+                next_chats = self.account.get_chats(24)
                 if not chats:
                     events = self.get_chat_events(next_chats)
                     for event in events:
                         yield event
-                elif chats != next_chats:
+                else:
                     events = self.get_message_events(chats, next_chats, get_new_review_events)
                     for event in events:
                         yield event
-
                 chats = next_chats
             except Exception as e:
                 self.__logger.error(f"Ошибка при получении ивентов: {e}")

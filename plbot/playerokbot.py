@@ -187,10 +187,10 @@ class PlayerokBot:
             except plapi_exceptions.RequestFailedError:
                 continue
             except Exception as e:
-                text = text.replace('\n', '').strip()
+                text = text.replace('\n', ' ').strip()
                 self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при отправке сообщения {Fore.LIGHTWHITE_EX}«{text}» {Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id} {Fore.LIGHTRED_EX}: {Fore.WHITE}{e}")
                 return
-        text = text.replace('\n', '').strip()
+        text = text.replace('\n', ' ').strip()
         self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось отправить сообщение {Fore.LIGHTWHITE_EX}«{text}» {Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id}")
 
     def restore_last_sold_item(self, item: Item):

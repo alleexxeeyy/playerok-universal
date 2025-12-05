@@ -142,7 +142,12 @@ class EventListener:
             self.__last_check_time[deal_id] = now
             return True
         return False
-            
+    
+    def _correct_isodate(
+        self, iso_date: str
+    ) -> datetime:
+        return datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
+
     def get_message_events(
         self, old_chats: ChatList, new_chats: ChatList, get_new_review_events: bool
     ) -> list[
@@ -209,7 +214,7 @@ class EventListener:
                     if new_chat.last_message.id == old_chat.last_message.id:
                         continue
                     msg_list = self.account.get_chat_messages(new_chat.id, 24)
-                    new_msgs = [msg for msg in msg_list.messages if datetime.fromisoformat(msg.created_at) > datetime.fromisoformat(old_chat.last_message.created_at)]
+                    new_msgs = [msg for msg in msg_list.messages if self._correct_isodate(msg.created_at) > self._correct_isodate(old_chat.last_message.created_at)]
 
                 for msg in sorted(new_msgs, key=lambda m: m.created_at):
                     if msg.id in self.__listened_messages:

@@ -751,6 +751,7 @@ def my_item(data: dict) -> "MyItem":
         user=user_profile(data.get("user")),
         priority=PriorityTypes.__members__.get(data.get("priority")),
         priority_price=data.get("priorityPrice"),
+        sequence=data.get("sequence"),
         status_expiration_date=data.get("statusExpirationDate"),
         status_description=data.get("statusDescription"),
         status_payment=transaction(data.get("statusPayment")),

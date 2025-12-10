@@ -1513,6 +1513,9 @@ class MyItem:
     :param priority_price: Цены статуса приоритета.
     :type priority_price: `int`
 
+    :param sequence: Позиция предмета в таблице товаров пользователей.
+    :type sequence: `int` or `None`
+
     :param status_expiration_date: Дата истечения статуса приоритета.
     :type status_expiration_date: `str` or `None`
 
@@ -1544,7 +1547,7 @@ class MyItem:
                  attachments: list[FileObject], attributes: dict, buyer: UserProfile, category: GameCategory, comment: str | None,
                  data_fields: list[GameCategoryDataField] | None, fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses,
                  user: UserProfile, prev_price: int, prev_fee_multiplier: float, seller_notified_about_fee_change: bool, 
-                 priority: PriorityTypes, priority_price: int, status_expiration_date: str | None, status_description: str | None,
+                 priority: PriorityTypes, priority_price: int, sequence: int | None, status_expiration_date: str | None, status_description: str | None,
                  status_payment: Transaction | None, views_counter: int, is_editable: bool, approval_date: str | None, deleted_at: str | None, 
                  updated_at: str | None, created_at: str | None):
         self.id: str = id
@@ -1595,6 +1598,8 @@ class MyItem:
         """ Статус приоритета предмета. """
         self.priority_price: int = priority_price
         """ Цены статуса приоритета. """
+        self.sequence: int | None = sequence
+        """ Позиция предмета в таблице товаров пользователей. """
         self.status_expiration_date: str | None = status_expiration_date
         """ Дата истечения статуса приоритета. """
         self.status_description: str | None = status_description

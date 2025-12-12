@@ -220,7 +220,7 @@ class EventListener:
                     if msg.id in self.__listened_messages:
                         continue
                     if get_new_review_events and msg.deal and msg.deal.id not in self.__review_check_deals:
-                        self.__review_check_deals.append(new_chat.last_message.deal.id)
+                        self.__review_check_deals.append(msg.deal.id)
                     self.__listened_messages.append(msg.id)
                     events.extend(self.parse_message_event(msg, new_chat))
         return events

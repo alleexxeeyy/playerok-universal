@@ -618,7 +618,7 @@ class Account:
         """
         headers = {"accept": "*/*"}
         payload = {
-            "operationName": "chats",
+            "operationName": "userChats",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "type": type.name if type else None, "status": status.name if status else None}, "hasSupportAccess": False}, ensure_ascii=False),
             "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("chats")}}, ensure_ascii=False)
         }

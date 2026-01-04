@@ -16,6 +16,9 @@ from .settings_deliv_page import *
 from .settings_restore import *
 from .settings_restore_included import *
 from .settings_restore_excluded import *
+from .settings_bump import *
+from .settings_bump_included import *
+from .settings_bump_excluded import *
 from .settings_logger import *
 from .settings_mess import *
 from .settings_mess_page import *

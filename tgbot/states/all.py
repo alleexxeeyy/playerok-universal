@@ -33,6 +33,15 @@ class RestoreItemsStates(StatesGroup):
     waiting_for_new_excluded_restore_items_keyphrases_file = State()
 
 
+class BumpItemsStates(StatesGroup):
+    waiting_for_day_max_sequence = State()
+    waiting_for_night_max_sequence = State()
+    waiting_for_new_included_bump_item_keyphrases = State()
+    waiting_for_new_included_bump_items_keyphrases_file = State()
+    waiting_for_new_excluded_bump_item_keyphrases = State()
+    waiting_for_new_excluded_bump_items_keyphrases_file = State()
+
+
 class CustomCommandsStates(StatesGroup):
     waiting_for_page = State()
     waiting_for_new_custom_command = State()

@@ -16,12 +16,21 @@ from ..callback_handlers.page import callback_message_page, callback_module_page
 router = Router()
 
 
-@router.callback_query(F.data == "switch_auto_restore_items_enabled")
-async def callback_switch_auto_restore_items_enabled(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "switch_auto_restore_items_sold")
+async def callback_switch_auto_restore_items_sold(callback: CallbackQuery, state: FSMContext):
     config = sett.get("config")
-    config["playerok"]["auto_restore_items"]["enabled"] = not config["playerok"]["auto_restore_items"]["enabled"]
+    config["playerok"]["auto_restore_items"]["sold"] = not config["playerok"]["auto_restore_items"]["sold"]
     sett.set("config", config)
     return await callback_settings_navigation(callback, calls.SettingsNavigation(to="restore"), state)
+
+
+@router.callback_query(F.data == "switch_auto_restore_items_expired")
+async def callback_switch_auto_restore_items_expired(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_restore_items"]["expired"] = not config["playerok"]["auto_restore_items"]["expired"]
+    sett.set("config", config)
+    return await callback_settings_navigation(callback, calls.SettingsNavigation(to="restore"), state)
+
 
 @router.callback_query(F.data == "switch_auto_restore_items_all")
 async def callback_switch_auto_restore_items_all(callback: CallbackQuery, state: FSMContext):
@@ -29,6 +38,22 @@ async def callback_switch_auto_restore_items_all(callback: CallbackQuery, state:
     config["playerok"]["auto_restore_items"]["all"] = not config["playerok"]["auto_restore_items"]["all"]
     sett.set("config", config)
     return await callback_settings_navigation(callback, calls.SettingsNavigation(to="restore"), state)
+
+
+@router.callback_query(F.data == "switch_auto_bump_items_enabled")
+async def callback_switch_auto_bump_items_enabled(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_bump_items"]["enabled"] = not config["playerok"]["auto_bump_items"]["enabled"]
+    sett.set("config", config)
+    return await callback_settings_navigation(callback, calls.SettingsNavigation(to="bump"), state)
+
+
+@router.callback_query(F.data == "switch_auto_bump_items_all")
+async def callback_switch_auto_bump_items_all(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_bump_items"]["all"] = not config["playerok"]["auto_bump_items"]["all"]
+    sett.set("config", config)
+    return await callback_settings_navigation(callback, calls.SettingsNavigation(to="bump"), state)
 
 
 @router.callback_query(F.data == "switch_read_chat_enabled")

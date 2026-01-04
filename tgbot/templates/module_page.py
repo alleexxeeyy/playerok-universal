@@ -14,11 +14,11 @@ def module_page_text(module_uuid: UUID):
         🔧 <b>Управление модулем</b>
 
         <b>Модуль</b> <code>{module.meta.name}</code>:          
-        ┣ UUID: <b>{module.uuid}</b>
-        ┣ Версия: <b>{module.meta.version}</b>
-        ┣ Описание: <blockquote>{module.meta.description}</blockquote>
-        ┣ Авторы: <b>{module.meta.authors}</b>
-        ┗ Ссылки: <b>{module.meta.links}</b>
+        ・ UUID: <b>{module.uuid}</b>
+        ・ Версия: <b>{module.meta.version}</b>
+        ・ Описание: <blockquote>{module.meta.description}</blockquote>
+        ・ Авторы: <b>{module.meta.authors}</b>
+        ・ Ссылки: <b>{module.meta.links}</b>
 
         🔌 <b>Состояние:</b> {'🟢 Включен' if module.enabled else '🔴 Выключен'}
 

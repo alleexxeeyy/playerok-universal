@@ -22,7 +22,7 @@ async def callback_enter_token(callback: CallbackQuery, state: FSMContext):
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_auth_float_text(f"🔐 Введите новый <b>токен</b> вашего аккаунта ↓\n┗ Текущее: <code>{golden_key}</code>"), 
+        text=templ.settings_auth_float_text(f"🔐 Введите новый <b>токен</b> вашего аккаунта ↓\n・ Текущее: <code>{golden_key}</code>"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
     )
 
@@ -35,7 +35,7 @@ async def callback_enter_user_agent(callback: CallbackQuery, state: FSMContext):
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_auth_float_text(f"🎩 Введите новый <b>user_agent</b> вашего браузера ↓\n┗ Текущее: <code>{user_agent}</code>"), 
+        text=templ.settings_auth_float_text(f"🎩 Введите новый <b>user_agent</b> вашего браузера ↓\n・ Текущее: <code>{user_agent}</code>"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
     )
 
@@ -48,7 +48,7 @@ async def callback_enter_proxy(callback: CallbackQuery, state: FSMContext):
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_conn_float_text(f"🌐 Введите новый <b>прокси-сервер</b> (формат: user:pass@ip:port или ip:port) ↓\n┗ Текущее: <code>{proxy}</code>"), 
+        text=templ.settings_conn_float_text(f"🌐 Введите новый <b>прокси-сервер</b> (формат: user:pass@ip:port или ip:port) ↓\n・ Текущее: <code>{proxy}</code>"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
     )
 
@@ -61,7 +61,7 @@ async def callback_enter_requests_timeout(callback: CallbackQuery, state: FSMCon
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_conn_float_text(f"🛜 Введите новый <b>таймаут подключения</b> (в секундах) ↓\n┗ Текущее: <code>{requests_timeout}</code>"), 
+        text=templ.settings_conn_float_text(f"🛜 Введите новый <b>таймаут подключения</b> (в секундах) ↓\n・ Текущее: <code>{requests_timeout}</code>"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
     )
 
@@ -74,7 +74,7 @@ async def callback_enter_listener_requests_delay(callback: CallbackQuery, state:
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_conn_float_text(f"⏱️ Введите новую <b>периодичность запросов</b> (в секундах) ↓\n┗ Текущее: <code>{requests_timeout}</code>"), 
+        text=templ.settings_conn_float_text(f"⏱️ Введите новую <b>периодичность запросов</b> (в секундах) ↓\n・ Текущее: <code>{requests_timeout}</code>"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
     )
 
@@ -87,7 +87,7 @@ async def callback_enter_watermark_value(callback: CallbackQuery, state: FSMCont
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_other_float_text(f"✍️©️ Введите новый <b>водяной знак</b> под сообщениями ↓\n┗ Текущее: <code>{watermark_value}</code>"), 
+        text=templ.settings_other_float_text(f"✍️©️ Введите новый <b>водяной знак</b> под сообщениями ↓\n・ Текущее: <code>{watermark_value}</code>"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="other").pack())
     )
 
@@ -115,6 +115,56 @@ async def callback_enter_new_excluded_restore_item_keyphrases(callback: Callback
         message=callback.message, 
         text=templ.settings_new_restore_excluded_float_text(f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно исключить из авто-восстановления (указываются через запятую, например, \"samp аккаунт, со всеми данными\") ↓"), 
         reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
+    )
+
+
+@router.callback_query(F.data == "enter_auto_bump_items_day_max_sequence")
+async def callback_enter_auto_bump_items_day_max_sequence(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    await state.set_state(states.BumpItemsStates.waiting_for_day_max_sequence)
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.settings_bump_float_text(f"👥☀️ Введите <b>максимальную позицию товара днём</b> (с 06:00 до 22:00 по МСК)"), 
+        reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_auto_bump_items_night_max_sequence")
+async def callback_enter_auto_bump_items_night_max_sequence(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    await state.set_state(states.BumpItemsStates.waiting_for_night_max_sequence)
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.settings_bump_float_text(f"👥🌙 Введите <b>максимальную позицию товара ночью</b> (с 22:00 до 06:00 по МСК)"), 
+        reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_new_included_bump_item_keyphrases")
+async def callback_enter_new_included_bump_item_keyphrases(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+    await state.set_state(states.BumpItemsStates.waiting_for_new_included_bump_item_keyphrases)
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.settings_new_bump_included_float_text(f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно включить в авто-поднятие (указываются через запятую, например, \"samp аккаунт, со всеми данными\") ↓"), 
+        reply_markup=templ.back_kb(calls.IncludedBumpItemsPagination(page=last_page).pack())
+    )
+
+
+@router.callback_query(F.data == "enter_new_excluded_bump_item_keyphrases")
+async def callback_enter_new_excluded_bump_item_keyphrases(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+    await state.set_state(states.BumpItemsStates.waiting_for_new_excluded_bump_item_keyphrases)
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.settings_new_bump_excluded_float_text(f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно исключить из авто-поднятия (указываются через запятую, например, \"samp аккаунт, со всеми данными\") ↓"), 
+        reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
     )
         
 
@@ -158,7 +208,7 @@ async def callback_enter_custom_command_answer(callback: CallbackQuery, state: F
         await throw_float_message(
             state=state, 
             message=callback.message, 
-            text=templ.settings_comm_page_float_text(f"💬 Введите новый <b>текст ответа</b> команды <code>{custom_command}</code> ↓\n┗ Текущее: <blockquote>{custom_command_answer}</blockquote>"), 
+            text=templ.settings_comm_page_float_text(f"💬 Введите новый <b>текст ответа</b> команды <code>{custom_command}</code> ↓\n・ Текущее: <blockquote>{custom_command_answer}</blockquote>"), 
             reply_markup=templ.back_kb(calls.CustomCommandPage(command=custom_command).pack())
         )
     except Exception as e:
@@ -213,7 +263,7 @@ async def callback_enter_auto_delivery_keyphrases(callback: CallbackQuery, state
         await throw_float_message(
             state=state, 
             message=callback.message, 
-            text=templ.settings_deliv_page_float_text(f"🔑 Введите новые <b>ключевые фразы</b> названия товара, на который авто-выдачи (указываются через запятую)\n┗ Текущее: <code>{auto_delivery_message}</code>"), 
+            text=templ.settings_deliv_page_float_text(f"🔑 Введите новые <b>ключевые фразы</b> названия товара, на который авто-выдачи (указываются через запятую)\n・ Текущее: <code>{auto_delivery_message}</code>"), 
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=auto_delivery_index).pack())
         )
     except Exception as e:
@@ -242,7 +292,7 @@ async def callback_enter_auto_delivery_message(callback: CallbackQuery, state: F
         await throw_float_message(
             state=state, 
             message=callback.message, 
-            text=templ.settings_deliv_page_float_text(f"💬 Введите новое <b>сообщение</b> после покупки\n┗ Текущее: <blockquote>{auto_delivery_message}</blockquote>"), 
+            text=templ.settings_deliv_page_float_text(f"💬 Введите новое <b>сообщение</b> после покупки\n・ Текущее: <blockquote>{auto_delivery_message}</blockquote>"), 
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=auto_delivery_index).pack())
         )
     except Exception as e:
@@ -285,7 +335,7 @@ async def callback_enter_message_text(callback: CallbackQuery, state: FSMContext
         await throw_float_message(
             state=state, 
             message=callback.message, 
-            text=templ.settings_mess_float_text(f"💬 Введите новый <b>текст сообщения</b> <code>{message_id}</code> ↓\n┗ Текущее: <blockquote>{mess_text}</blockquote>"), 
+            text=templ.settings_mess_float_text(f"💬 Введите новый <b>текст сообщения</b> <code>{message_id}</code> ↓\n・ Текущее: <blockquote>{mess_text}</blockquote>"), 
             reply_markup=templ.back_kb(calls.MessagesPagination(page=last_page).pack())
         )
     except Exception as e:
@@ -307,6 +357,6 @@ async def callback_enter_tg_logging_chat_id(callback: CallbackQuery, state: FSMC
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_logger_float_text(f"💬 Введите новый <b>ID чата для логов</b> (вы можете указать как цифровой ID, так и юзернейм чата) ↓\n┗ Текущее: <code>{tg_logging_chat_id}</code>"), 
+        text=templ.settings_logger_float_text(f"💬 Введите новый <b>ID чата для логов</b> (вы можете указать как цифровой ID, так и юзернейм чата) ↓\n・ Текущее: <code>{tg_logging_chat_id}</code>"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="logger").pack())
     )

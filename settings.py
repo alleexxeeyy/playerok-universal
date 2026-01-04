@@ -42,8 +42,15 @@ CONFIG = SettingsFile(
                 "enabled": True
             },
             "auto_restore_items": {
-                "enabled": True,
+                "sold": True,
+                "expired": True,
                 "all": True
+            },
+            "auto_bump_items": {
+                "enabled": False,
+                "all": False,
+                "day_max_sequence": 15,
+                "night_max_sequence": 30,
             },
             "auto_complete_deals": {
                 "enabled": True
@@ -161,7 +168,16 @@ AUTO_RESTORE_ITEMS = SettingsFile(
         "excluded": []
     }
 )
-DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS]
+AUTO_BUMP_ITEMS = SettingsFile(
+    name="auto_bump_items",
+    path="bot_settings/auto_bump_items.json",
+    need_restore=False,
+    default={
+        "included": [],
+        "excluded": []
+    }
+)
+DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_BUMP_ITEMS]
 
 
 def validate_config(config, default):

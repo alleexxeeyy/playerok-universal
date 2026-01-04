@@ -105,11 +105,13 @@ def setup_logger(log_file: str = "logs/latest.log"):
     ))
 
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
+    
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
+    
     return logger
     
 

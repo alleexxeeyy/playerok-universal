@@ -44,6 +44,8 @@ async def callback_settings_navigation(callback: CallbackQuery, callback_data: c
         await throw_float_message(state, callback.message, templ.settings_conn_text(), templ.settings_conn_kb(), callback)
     elif to == "restore":
         await throw_float_message(state, callback.message, templ.settings_restore_text(), templ.settings_restore_kb(), callback)
+    elif to == "bump":
+        await throw_float_message(state, callback.message, templ.settings_bump_text(), templ.settings_bump_kb(), callback)
     elif to == "logger":
         await throw_float_message(state, callback.message, templ.settings_logger_text(), templ.settings_logger_kb(), callback)
     elif to == "other":

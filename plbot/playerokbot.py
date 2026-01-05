@@ -10,9 +10,9 @@ import copy
 from colorama import Fore
 
 from playerokapi.account import Account
-from playerokapi import exceptions as plapi_exceptions
 from playerokapi.enums import *
 from playerokapi.types import *
+from playerokapi.exceptions import *
 from playerokapi.listener.events import *
 from playerokapi.listener.listener import EventListener
 from playerokapi.types import Chat, Item
@@ -263,8 +263,9 @@ class PlayerokBot:
         :return: Массив предметов профиля.
         :rtype: `list` of `playerokapi.types.ItemProfile`
         """
+        
         my_items: list[ItemProfile] = []
-        """try:
+        try:
             user = self.account.get_user(self.account.id)
             next_cursor = None
             saved_items = []
@@ -282,13 +283,13 @@ class PlayerokBot:
                 next_cursor = _items.page_info.end_cursor
                 time.sleep(0.3)
             self.saved_items = saved_items
-        except plapi_exceptions.RequestError:"""
-        for item_dict in list(self.saved_items):
-            item = self._deserealize_item(item_dict)
-            if statuses is None or item.status in statuses:
-                my_items.append(item)
-                if len(my_items) >= count and count != -1:
-                    return my_items
+        except RequestError:
+            for item_dict in list(self.saved_items):
+                item = self._deserealize_item(item_dict)
+                if statuses is None or item.status in statuses:
+                    my_items.append(item)
+                    if len(my_items) >= count and count != -1:
+                        return my_items
         return my_items
 
 

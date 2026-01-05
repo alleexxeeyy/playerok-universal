@@ -5,6 +5,7 @@ import json
 from .account import Account, get_account
 from . import parser
 from .enums import *
+from .misc import PERSISTED_QUERIES
 
 
 
@@ -323,7 +324,6 @@ class UserProfile:
         self.__account: Account | None = get_account()
         """ Объект аккаунта (для методов). """
 
-
     def get_items(self, count: int = 24, statuses: list[ItemStatuses] | None = None,
                   after_cursor: str | None = None) -> ItemProfileList:
         """
@@ -353,7 +353,7 @@ class UserProfile:
         payload = {
             "operationName": "items",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "status": payload_status}, "showForbiddenImage": False}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "29ff7e8c607c7b3f2fa3c7a9e02a3a184bf92905e8ea75ba237c8c7f005287a3"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("items")}}, ensure_ascii=False)
         }
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
         return parser.item_profile_list(r["data"]["items"])
@@ -426,7 +426,7 @@ class UserProfile:
         payload = {
             "operationName": "testimonials",
             "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": filters, "sort": {"direction": sort_direction.name if sort_direction else None, "field": sort_field}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": "773d40b7efec82a4b86021ba8bcaa462f68eb236e255926f2168c5cd4685e881"}}, ensure_ascii=False)
+            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("testimonials")}}, ensure_ascii=False)
         }
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
         return parser.review_list(r["data"]["testimonials"])

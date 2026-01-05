@@ -6,6 +6,7 @@ import pytz
 from threading import Thread
 import textwrap
 import shutil
+import copy
 from colorama import Fore
 
 from playerokapi.account import Account
@@ -50,6 +51,7 @@ class PlayerokBot:
         self.auto_bump_items = sett.get("auto_bump_items")
 
         self.initialized_users = data.get("initialized_users")
+        self.saved_items = data.get("saved_items")
         self.stats = get_stats()
 
         self.account = self.playerok_account = Account(
@@ -193,6 +195,61 @@ class PlayerokBot:
         text = text.replace('\n', ' ').strip()
         self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось отправить сообщение {Fore.LIGHTWHITE_EX}«{text}» {Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id}")
 
+    def _serealize_item(self, item: ItemProfile) -> dict:
+        return {
+            "id": item.id,
+            "slug": item.slug,
+            "priority": item.priority.name if item.priority else None,
+            "status": item.status.name if item.status else None,
+            "name": item.name,
+            "price": item.price,
+            "raw_price": item.raw_price,
+            "seller_type": item.seller_type.name if item.seller_type else None,
+            "attachment": {
+                "id": item.attachment.id,
+                "url": item.attachment.url,
+                "filename": item.attachment.filename,
+                "mime": item.attachment.mime,
+            },
+            "user": {
+                "id": item.user.id,
+                "username": item.user.username,
+                "role": item.user.role.name if item.user.role else None,
+                "avatar_url": item.user.avatar_url,
+                "is_online": item.user.is_online,
+                "is_blocked": item.user.is_blocked,
+                "rating": item.user.rating,
+                "reviews_count": item.user.reviews_count,
+                "support_chat_id": item.user.support_chat_id,
+                "system_chat_id": item.user.system_chat_id,
+                "created_at": item.user.created_at
+            },
+            "approval_date": item.approval_date,
+            "priority_position": item.priority_position,
+            "views_counter": item.views_counter,
+            "fee_multiplier": item.fee_multiplier,
+            "created_at": item.created_at
+        }
+    
+    def _deserealize_item(self, item_data: dict) -> ItemProfile:
+        item_data = copy.deepcopy(item_data)
+        user_data = item_data.pop("user")
+        user_data["role"] = UserTypes.__members__.get(user_data["role"]) if user_data["role"] else None
+        user = UserProfile(**user_data)
+        user.__account = self.account
+        item_data["user"] = user
+        
+        attachment_data = item_data.pop("attachment")
+        attachment = FileObject(**attachment_data)
+        item_data["attachment"] = attachment
+
+        item_data["priority"] = PriorityTypes.__members__.get(item_data["priority"]) if item_data["priority"] else None
+        item_data["status"] = ItemStatuses.__members__.get(item_data["status"]) if item_data["status"] else None
+        item_data["seller_type"] = UserTypes.__members__.get(item_data["seller_type"]) if item_data["seller_type"] else None
+
+        item = ItemProfile(**item_data)
+        return item
+
     def get_my_items(self, count: int = -1, statuses: list[ItemStatuses] | None = None) -> list[ItemProfile]:
         """
         Получает все предметы аккаунта.
@@ -206,20 +263,32 @@ class PlayerokBot:
         :return: Массив предметов профиля.
         :rtype: `list` of `playerokapi.types.ItemProfile`
         """
-        user = self.account.get_user(self.account.id)
         my_items: list[ItemProfile] = []
-        next_cursor = None
-        while True:
-            _items = user.get_items(statuses=statuses, after_cursor=next_cursor)
-            for _item in _items.items:
-                if _item.id not in [item.id for item in my_items]:
-                    my_items.append(_item)
-                    if len(my_items) >= count and count != -1:
-                        return my_items
-            if not _items.page_info.has_next_page:
-                break
-            next_cursor = _items.page_info.end_cursor
-            time.sleep(0.3)
+        """try:
+            user = self.account.get_user(self.account.id)
+            next_cursor = None
+            saved_items = []
+
+            while True:
+                _items = user.get_items(statuses=statuses, after_cursor=next_cursor)
+                for _item in _items.items:
+                    if _item.id not in [item.id for item in my_items]:
+                        my_items.append(_item)
+                        saved_items.append(self._serealize_item(_item))
+                        if len(my_items) >= count and count != -1:
+                            return my_items
+                if not _items.page_info.has_next_page:
+                    break
+                next_cursor = _items.page_info.end_cursor
+                time.sleep(0.3)
+            self.saved_items = saved_items
+        except plapi_exceptions.RequestError:"""
+        for item_dict in list(self.saved_items):
+            item = self._deserealize_item(item_dict)
+            if statuses is None or item.status in statuses:
+                my_items.append(item)
+                if len(my_items) >= count and count != -1:
+                    return my_items
         return my_items
 
 
@@ -401,6 +470,7 @@ class PlayerokBot:
                 set_title(f"Playerok Universal v{VERSION} | {self.account.username}: {balance}₽")
                 if self.stats != get_stats(): set_stats(self.stats)
                 if data.get("initialized_users") != self.initialized_users: data.set("initialized_users", self.initialized_users)
+                if data.get("saved_items") != self.saved_items: data.set("saved_items", self.saved_items); print(11)
                 if sett.get("config") != self.config: self.config = sett.get("config")
                 if sett.get("messages") != self.messages: self.messages = sett.get("messages")
                 if sett.get("custom_commands") != self.custom_commands: self.custom_commands = sett.get("custom_commands")
@@ -562,34 +632,8 @@ class PlayerokBot:
     async def _on_item_paid(self, event: ItemPaidEvent):
         if event.deal.user.id == self.account.id:
             return
-        elif not self.config["playerok"]["auto_restore_items"]["enabled"]:
-            return
-        
-        included = any(
-            any(
-                phrase.lower() in event.deal.item.name.lower()
-                or event.deal.item.name.lower() == phrase.lower()
-                for phrase in included_item
-            )
-            for included_item in self.auto_restore_items["included"]
-        )
-        excluded = any(
-            any(
-                phrase.lower() in event.deal.item.name.lower()
-                or event.deal.item.name.lower() == phrase.lower()
-                for phrase in excluded_item
-            )
-            for excluded_item in self.auto_restore_items["excluded"]
-        )
-
-        if (
-            self.config["playerok"]["auto_restore_items"]["all"]
-            and not excluded
-        ) or (
-            not self.config["playerok"]["auto_restore_items"]["all"]
-            and included
-        ):
-            self.restore_last_sold_item(event.deal.item)
+        if self.config["playerok"]["auto_restore_items"]["sold"]:
+            self.restore_item(event.deal.item)
         
 
     async def _on_deal_status_changed(self, event: DealStatusChangedEvent):
@@ -663,6 +707,10 @@ class PlayerokBot:
             self.logger.info(f" ・ Пароль: {Fore.LIGHTWHITE_EX}{password}")
             self.logger.info(f"{ACCENT_COLOR}───────────────────────────────────────")
             self.logger.info("")
+        
+        print('getting items...')
+        items = self.get_my_items()
+        print('got items:', items)
 
         add_bot_event_handler("ON_PLAYEROK_BOT_INIT", PlayerokBot._on_playerok_bot_init, 0)
         add_playerok_event_handler(EventTypes.NEW_MESSAGE, PlayerokBot._on_new_message, 0)

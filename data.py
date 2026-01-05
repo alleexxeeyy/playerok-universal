@@ -15,8 +15,12 @@ INITIALIZED_USERS = DataFile(
     path="bot_data/initialized_users.json",
     default=[]
 )
-
-DATA = [INITIALIZED_USERS]
+SAVED_ITEMS = DataFile(
+    name="saved_items",
+    path="bot_data/saved_items.json",
+    default=[]
+)
+DATA = [INITIALIZED_USERS, SAVED_ITEMS]
 
 
 def get_json(path: str, default: dict | list) -> dict:

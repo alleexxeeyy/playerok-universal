@@ -468,7 +468,7 @@ class PlayerokBot:
                 )
 
         if event.chat.id not in [self.account.system_chat_id, self.account.support_chat_id]:
-            self.initialized_users.append(event.deal.user.id)
+            self.initialized_users.append(event.message.user.id)
         
             if str(event.message.text).lower() in ["!команды", "!commands"]:
                 self.send_message(event.chat.id, self.msg("cmd_commands"))

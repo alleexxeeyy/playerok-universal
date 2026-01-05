@@ -1,4 +1,3 @@
-
 PERSISTED_QUERIES = {
     "user": "2e2e3b656d2ba48e0b2cd5eeedf88ef70e4aabb4ac4d9d9e9b8feff343a37d98",
     "deals": "c3b623b5fe0758cf91b2335ebf36ff65f8650a6672a792a3ca7a36d270d396fb",

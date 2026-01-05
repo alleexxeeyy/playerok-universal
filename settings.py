@@ -1,6 +1,7 @@
 import os
 import json
 import copy
+import tempfile
 from dataclasses import dataclass
 
 
@@ -279,8 +280,19 @@ def set_json(path: str, new: dict):
     :param new: Новые данные.
     :type new: `dict`
     """
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(new, f, indent=4, ensure_ascii=False)
+    dir_name = os.path.dirname(path)
+    
+    with tempfile.NamedTemporaryFile( # атомарная запись файла
+        "w",
+        encoding="utf-8",
+        dir=dir_name,
+        delete=False
+    ) as tmp:
+        json.dump(new, tmp, ensure_ascii=False, indent=4)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+
+    os.replace(tmp.name, path)
 
 
 class Settings:

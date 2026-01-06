@@ -708,10 +708,6 @@ class PlayerokBot:
             self.logger.info(f" ・ Пароль: {Fore.LIGHTWHITE_EX}{password}")
             self.logger.info(f"{ACCENT_COLOR}───────────────────────────────────────")
             self.logger.info("")
-        
-        print('getting items...')
-        items = self.get_my_items()
-        print('got items:', items)
 
         add_bot_event_handler("ON_PLAYEROK_BOT_INIT", PlayerokBot._on_playerok_bot_init, 0)
         add_playerok_event_handler(EventTypes.NEW_MESSAGE, PlayerokBot._on_new_message, 0)

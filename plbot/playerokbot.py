@@ -471,7 +471,7 @@ class PlayerokBot:
                 set_title(f"Playerok Universal v{VERSION} | {self.account.username}: {balance}₽")
                 if self.stats != get_stats(): set_stats(self.stats)
                 if data.get("initialized_users") != self.initialized_users: data.set("initialized_users", self.initialized_users)
-                if data.get("saved_items") != self.saved_items: data.set("saved_items", self.saved_items); print(11)
+                if data.get("saved_items") != self.saved_items: data.set("saved_items", self.saved_items)
                 if sett.get("config") != self.config: self.config = sett.get("config")
                 if sett.get("messages") != self.messages: self.messages = sett.get("messages")
                 if sett.get("custom_commands") != self.custom_commands: self.custom_commands = sett.get("custom_commands")

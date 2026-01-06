@@ -207,6 +207,7 @@ class EventListener:
                 old_chat = old_chat_map.get(new_chat.id)
 
                 if not old_chat:
+                    time.sleep(2)
                     msg_list = self.account.get_chat_messages(new_chat.id, 24)
                     new_msgs = [msg for msg in msg_list.messages]
                 elif old_chat:

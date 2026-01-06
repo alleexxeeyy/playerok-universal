@@ -324,6 +324,7 @@ class UserProfile:
         self.__account: Account | None = get_account()
         """ Объект аккаунта (для методов). """
 
+
     def get_items(self, count: int = 24, statuses: list[ItemStatuses] | None = None,
                   after_cursor: str | None = None) -> ItemProfileList:
         """

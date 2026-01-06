@@ -18,15 +18,34 @@ from playerokapi.listener.listener import EventListener
 from playerokapi.types import Chat, Item
 
 from __init__ import ACCENT_COLOR, VERSION
-from core.utils import set_title, shutdown, run_async_in_thread
-from core.handlers import add_bot_event_handler, add_playerok_event_handler, call_bot_event, call_playerok_event
+from core.utils import (
+    set_title, 
+    shutdown, 
+    run_async_in_thread
+)
+from core.handlers import (
+    add_bot_event_handler, 
+    add_playerok_event_handler, 
+    call_bot_event, 
+    call_playerok_event
+)
 from settings import DATA, Settings as sett
 from logging import getLogger
 from data import Data as data
-from tgbot.telegrambot import get_telegram_bot, get_telegram_bot_loop
-from tgbot.templates import log_text, log_new_mess_kb, log_new_deal_kb
+from tgbot.telegrambot import (
+    get_telegram_bot, 
+    get_telegram_bot_loop
+)
+from tgbot.templates import (
+    log_text, 
+    log_new_mess_kb, 
+    log_new_deal_kb
+)
 
-from .stats import get_stats, set_stats
+from .stats import (
+    get_stats, 
+    set_stats
+)
 
 
 def get_playerok_bot() -> PlayerokBot | None:
@@ -263,7 +282,7 @@ class PlayerokBot:
         :return: Массив предметов профиля.
         :rtype: `list` of `playerokapi.types.ItemProfile`
         """
-        
+
         my_items: list[ItemProfile] = []
         try:
             user = self.account.get_user(self.account.id)
@@ -283,13 +302,15 @@ class PlayerokBot:
                 next_cursor = _items.page_info.end_cursor
                 time.sleep(0.3)
             self.saved_items = saved_items
-        except RequestError:
+        except (RequestError, RequestFailedError) as e:
             for item_dict in list(self.saved_items):
                 item = self._deserealize_item(item_dict)
                 if statuses is None or item.status in statuses:
                     my_items.append(item)
                     if len(my_items) >= count and count != -1:
                         return my_items
+            if not my_items: 
+                raise e
         return my_items
 
 
@@ -388,7 +409,7 @@ class PlayerokBot:
 
                 new_item = self.account.publish_item(item.id, priority_status.id)
                 if new_item.status in [ItemStatuses.PENDING_APPROVAL, ItemStatuses.APPROVED]:
-                    self.logger.info(f"{Fore.LIGHTWHITE_EX}«{(item.name[:32] + '...') if len(item.name) > 32 else item.name}» {Fore.WHITE}— {Fore.YELLOW}восстановлен")
+                    self.logger.info(f"{Fore.LIGHTWHITE_EX}«{(item.name[:32] + '...') if len(item.name) > 32 else item.name}» {Fore.WHITE}— {Fore.YELLOW}товар восстановлен")
                 else:
                     self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось восстановить предмет «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}». Его статус: {Fore.WHITE}{new_item.status.name}")
         except Exception as e:
@@ -538,7 +559,10 @@ class PlayerokBot:
                     get_telegram_bot_loop()
                 )
 
-        if event.chat.id not in [self.account.system_chat_id, self.account.support_chat_id]:
+        if (
+            event.chat.id not in [self.account.system_chat_id, self.account.support_chat_id]
+            and event.message.text is not None
+        ):
             self.initialized_users.append(event.message.user.id)
         
             if str(event.message.text).lower() in ["!команды", "!commands"]:
@@ -597,6 +621,8 @@ class PlayerokBot:
     async def _on_new_deal(self, event: NewDealEvent):
         if event.deal.user.id == self.account.id:
             return
+        try: event.deal.item = self.account.get_item(event.deal.item.id)
+        except: pass
         
         self.log_new_deal(event.deal)
         if (
@@ -607,14 +633,14 @@ class PlayerokBot:
                 get_telegram_bot().log_event(
                     text=log_text(
                         title=f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', 
-                        text=f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {event.deal.item.name}\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"
+                        text=f"<b>Покупатель:</b> {event.deal.user.username}\n<b>Предмет:</b> {(event.deal.item.name or '-')}\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"
                     ),
                     kb=log_new_deal_kb(event.deal.user.username, event.deal.id)
                 ), 
                 get_telegram_bot_loop()
             )
 
-        self.send_message(event.chat.id, self.msg("new_deal", deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
+        self.send_message(event.chat.id, self.msg("new_deal", deal_item_name=(event.deal.item.name or "-"), deal_item_price=event.deal.item.price))
         
         if event.chat.id not in [self.account.system_chat_id, self.account.support_chat_id]:
             if event.deal.user.id not in self.initialized_users:
@@ -624,7 +650,7 @@ class PlayerokBot:
         if self.config["playerok"]["auto_deliveries"]["enabled"]:
             for auto_delivery in self.auto_deliveries:
                 for phrase in auto_delivery["keyphrases"]:
-                    if phrase.lower() in event.deal.item.name.lower() or event.deal.item.name.lower() == phrase.lower():
+                    if phrase.lower() in (event.deal.item.name or "").lower() or (event.deal.item.name or "").lower() == phrase.lower():
                         self.send_message(event.chat.id, "\n".join(auto_delivery["message"]))
                         break
         if self.config["playerok"]["auto_complete_deals"]["enabled"]:
@@ -634,7 +660,14 @@ class PlayerokBot:
         if event.deal.user.id == self.account.id:
             return
         if self.config["playerok"]["auto_restore_items"]["sold"]:
-            self.restore_item(event.deal.item)
+            my_items = self.get_my_items(count=12, statuses=[ItemStatuses.SOLD])
+            try: 
+                item = [
+                    item for item in my_items
+                    if item.name == event.deal.item.name
+                ][0]
+            except: return
+            self.restore_item(item)
         
 
     async def _on_deal_status_changed(self, event: DealStatusChangedEvent):

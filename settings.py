@@ -298,7 +298,7 @@ def set_json(path: str, new: dict):
 class Settings:
     
     @staticmethod
-    def get(name: str, data: list[SettingsFile] = DATA) -> dict | None:
+    def get(name: str, data: list[SettingsFile] = DATA) -> dict | list | None:
         try: 
             file = [file for file in data if file.name == name][0]
             return get_json(file.path, file.default, file.need_restore)

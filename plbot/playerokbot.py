@@ -321,55 +321,58 @@ class PlayerokBot:
         :param item: Объект предмета.
         :type item: `playerokapi.types.MyItem`
         """
-        included = any(
-            any(
-                phrase.lower() in item.name.lower()
-                or item.name.lower() == phrase.lower()
-                for phrase in included_item
+        try:
+            included = any(
+                any(
+                    phrase.lower() in item.name.lower()
+                    or item.name.lower() == phrase.lower()
+                    for phrase in included_item
+                )
+                for included_item in self.auto_bump_items["included"]
             )
-            for included_item in self.auto_bump_items["included"]
-        )
-        excluded = any(
-            any(
-                phrase.lower() in item.name.lower()
-                or item.name.lower() == phrase.lower()
-                for phrase in excluded_item
+            excluded = any(
+                any(
+                    phrase.lower() in item.name.lower()
+                    or item.name.lower() == phrase.lower()
+                    for phrase in excluded_item
+                )
+                for excluded_item in self.auto_bump_items["excluded"]
             )
-            for excluded_item in self.auto_bump_items["excluded"]
-        )
 
-        if (
-            self.config["playerok"]["auto_bump_items"]["all"]
-            and not excluded
-        ) or (
-            not self.config["playerok"]["auto_bump_items"]["all"]
-            and included
-        ):
-            current_time = datetime.now(pytz.timezone('Europe/Moscow'))
-            if 22 <= current_time.hour or current_time.hour < 6: 
-                max_sequence = self.config["playerok"]["auto_bump_items"]["night_max_sequence"]
-            else: 
-                max_sequence = self.config["playerok"]["auto_bump_items"]["day_max_sequence"]
+            if (
+                self.config["playerok"]["auto_bump_items"]["all"]
+                and not excluded
+            ) or (
+                not self.config["playerok"]["auto_bump_items"]["all"]
+                and included
+            ):
+                current_time = datetime.now(pytz.timezone('Europe/Moscow'))
+                if 22 <= current_time.hour or current_time.hour < 6: 
+                    max_sequence = self.config["playerok"]["auto_bump_items"]["night_max_sequence"]
+                else: 
+                    max_sequence = self.config["playerok"]["auto_bump_items"]["day_max_sequence"]
 
-            if item.sequence > max_sequence or item.sequence == 0:
-                priority_statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
-                try: prem_status = [status for status in priority_statuses if status.type == PriorityTypes.PREMIUM][0]
-                except: return
-                try: 
+                if item.sequence > max_sequence or item.sequence == 0:
+                    priority_statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
+                    try: prem_status = [status for status in priority_statuses if status.type == PriorityTypes.PREMIUM][0]
+                    except: return
                     time.sleep(0.5)
                     self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
                     self.logger.error(f"{Fore.LIGHTWHITE_EX}«{(item.name[:32] + '...') if len(item.name) > 32 else item.name}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
                     time.sleep(1)
-                except Exception as e:
-                    self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}»: {Fore.WHITE}{e}")
-    
+        except Exception as e:
+            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}»: {Fore.WHITE}{e}")
+
     def bump_items(self): 
         """Поднимает все товары профиля."""
-        items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
-        for item in items:
-            try: item = self.account.get_item(item.id)
-            except: pass
-            self.bump_item(item)
+        try:
+            items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
+            for item in items:
+                try: item = self.account.get_item(item.id)
+                except: continue
+                self.bump_item(item)
+        except Exception as e:
+            self.logger.error(f"{Fore.LIGHTRED_EX} Ошибка при поднятии предметов: {Fore.WHITE}")
 
     def restore_item(self, item: Item):
         """ 
@@ -417,12 +420,15 @@ class PlayerokBot:
             
     def restore_expired_items(self):
         """Восстанавливает все истекшие предмета профиля."""
-        items = self.get_my_items(statuses=[ItemStatuses.EXPIRED])
-        for item in items:
-            time.sleep(0.5)
-            try: item = self.account.get_item(item.id)
-            except: pass
-            self.restore_item(item)
+        try:
+            items = self.get_my_items(statuses=[ItemStatuses.EXPIRED])
+            for item in items:
+                time.sleep(0.5)
+                try: item = self.account.get_item(item.id)
+                except: pass
+                self.restore_item(item)
+        except Exception as e:
+            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении истёкших предметов: {Fore.WHITE}{e}")
 
 
     def log_new_message(self, message: ChatMessage, chat: Chat):
@@ -461,7 +467,7 @@ class PlayerokBot:
         self.logger.info(f"{Fore.YELLOW}Новый отзыв по сделке {deal.id}:")
         self.logger.info(f" ・ Оценка: {Fore.LIGHTYELLOW_EX}{'★' * deal.review.rating or 5} ({deal.review.rating or 5})")
         self.logger.info(f" ・ Текст: {Fore.LIGHTWHITE_EX}{deal.review.text}")
-        self.logger.info(f" ・ Оставил: {Fore.LIGHTWHITE_EX}{deal.review.user.username}")
+        self.logger.info(f" ・ Оставил: {Fore.LIGHTWHITE_EX}{deal.review.creator.username}")
         self.logger.info(f" ・ Дата: {Fore.LIGHTWHITE_EX}{datetime.fromisoformat(deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}")
         self.logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
 

@@ -370,7 +370,8 @@ class PlayerokBot:
             for item in items:
                 try: item = self.account.get_item(item.id)
                 except: continue
-                self.bump_item(item)
+                if item.priority == PriorityTypes.PREMIUM:
+                    self.bump_item(item)
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX} Ошибка при поднятии предметов: {Fore.WHITE}")
 

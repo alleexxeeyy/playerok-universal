@@ -271,6 +271,7 @@ class EventListener:
                         except: pass
                     
                     yield NewReviewEvent(deal, deal.chat)
+            time.sleep(1)
 
     def listen(
         self, 

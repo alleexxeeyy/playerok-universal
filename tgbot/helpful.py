@@ -105,9 +105,9 @@ async def throw_float_message(
     state: FSMContext,
     message: Message,
     text: str = None,
-    photo: str = None,
     reply_markup: InlineKeyboardMarkup = None,
     callback: CallbackQuery = None,
+    photo: str = None,
     send: bool = False
 ) -> Message | None:
     

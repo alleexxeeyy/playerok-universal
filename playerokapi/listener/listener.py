@@ -1,9 +1,11 @@
 import json
 import uuid
+import time
 from logging import getLogger
 from typing import Generator
 from threading import Thread
 from queue import Queue
+from collections import deque
 
 import websocket
 import ssl
@@ -33,8 +35,9 @@ class EventListener:
         self.account: Account = account
         """ Объект аккаунта. """
 
+        self.processed_messages = deque(maxlen=1000)
         self.chat_subscriptions = {}
-        self.review_check_deals = {}
+        self.review_check_deals = []
         self.deal_checks = {}
         self.chats = []
         self.logger = getLogger("playerokapi.listener")
@@ -202,6 +205,7 @@ class EventListener:
         while True:
             msg = ws.recv()
             msg_data = json.loads(msg)
+            print(msg_data)
             self.logger.debug(f"websocket msg received: {msg_data}")
             
             if msg_data["type"] == "connection_ack":
@@ -213,19 +217,29 @@ class EventListener:
                 _chat = chat(msg_data["payload"]["data"]["chatUpdated"])
                 _message = chat_message(msg_data["payload"]["data"]["chatUpdated"]["lastMessage"])
 
-                if _chat.id in [chat_.id for chat_ in self.chats]:
+                is_new_chat = _chat.id not in [chat_.id for chat_ in self.chats]
+
+                if is_new_chat:
+                    self.chats.append(_chat)
+                    self._subscribe_chat_message_created(ws, _chat.id)
+                else:
                     for old_chat in self.chats:
                         if old_chat.id == _chat.id:
                             self.chats.remove(old_chat)
                             self.chats.append(_chat)
-                else:
-                    self.chats.append(_chat)
-                    self._subscribe_chat_message_created(ws, chat_.id)
+                            break
+
+                message_key = f"{_chat.id}:{_message.id if _message else 'none'}"
+                if message_key in self.processed_messages:
+                    continue
+                self.processed_messages.append(message_key)
                     
-                    events = [ChatInitializedEvent(_chat)]
-                    events.extend(self.parse_message_events(_message, _chat))
-                    for event in events:
-                        yield event
+                events = []
+                if is_new_chat:
+                    events.append(ChatInitializedEvent(_chat))
+                events.extend(self.parse_message_events(_message, _chat))
+                for event in events:
+                    yield event
 
             elif "chatMessageCreated" in msg_data["payload"]["data"]:
                 chat_id = self.chat_subscriptions.get(msg_data["id"])
@@ -233,13 +247,18 @@ class EventListener:
                 except: continue
                 _message = chat_message(msg_data["payload"]["data"]["chatMessageCreated"])
 
+                message_key = f"{chat_id}:{_message.id if _message else 'none'}"
+                if message_key in self.processed_messages:
+                    continue
+                self.processed_messages.append(message_key)
+
                 events = self.parse_message_events(_message, _chat)
                 for event in events:
                     yield event
 
     def _should_check_deal(self, deal_id, delay=30) -> bool:
         now = time.time()
-        info = self.deal_checks.get(deal_id, 0)
+        info = self.deal_checks.get(deal_id, {"last": 0, "tries": 0})
         last_time = info["last"]
         tries = info["tries"]
         
@@ -250,20 +269,22 @@ class EventListener:
             }
             return True
         elif tries >= 30:
-            del self.review_check_deals[deal_id]
+            if deal_id in self.review_check_deals:
+                self.review_check_deals.remove(deal_id)
             del self.deal_checks[deal_id]
 
         return False
     
     def listen_new_reviews(self):
         while True:
-            for deal_id in dict(self.review_check_deals):
+            for deal_id in list(self.review_check_deals):
                 if not self._should_check_deal(deal_id):
                     continue
                 deal = self.account.get_deal(deal_id)
                 
                 if deal.review is not None:
-                    del self.review_check_deals[self.review_check_deals.index(deal_id)]
+                    if deal_id in self.review_check_deals:
+                        self.review_check_deals.remove(deal_id)
                     
                     try: deal.chat = [chat_ for chat_ in self.chats if chat_.id == getattr(getattr(deal, "chat"), "id")][0]
                     except: 

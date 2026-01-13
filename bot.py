@@ -33,8 +33,11 @@ from updater import check_for_updates
 
 logger = getLogger(f"universal")
 
-main_loop = asyncio.get_event_loop()
-asyncio.set_event_loop(main_loop)
+try:
+    main_loop = asyncio.get_running_loop()
+except RuntimeError:
+    main_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(main_loop)
 
 init_colorama()
 init_main_loop(main_loop)

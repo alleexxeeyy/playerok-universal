@@ -1276,7 +1276,13 @@ class Account:
             raise TypeError("Не был передан ни один из обязательных аргументов: game_id, category_id")
         
         headers = {"accept": "*/*"}
-        filter = {"gameId": game_id, "status": [status.name] if status else None} if not category_id else {"gameCategoryId": category_id, "status": [status.name] if status else None}
+        filter = {
+            "gameId": game_id, 
+            "status": [status.name] if status else None
+        } if not category_id else {
+            "gameCategoryId": category_id, 
+            "status": [status.name] if status else None
+        }
         payload = {
             "operationName": "items",
             "variables": json.dumps({

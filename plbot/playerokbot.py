@@ -311,7 +311,7 @@ class PlayerokBot:
                     except: return
                     time.sleep(0.5)
                     self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
-                    self.logger.error(f"{Fore.LIGHTWHITE_EX}«{(item.name[:32] + '...') if len(item.name) > 32 else item.name}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
+                    self.logger.info(f"{Fore.LIGHTWHITE_EX}«{(item.name[:32] + '...') if len(item.name) > 32 else item.name}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
                     time.sleep(1)
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}»: {Fore.WHITE}{e}")

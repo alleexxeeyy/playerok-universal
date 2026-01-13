@@ -81,7 +81,7 @@ def check_for_updates():
         elif Version(VERSION) == Version(latest_release["tag_name"]):
             logger.info(f"У вас установлена последняя версия: {Fore.LIGHTWHITE_EX}{VERSION}")
             return
-        elif Version(VERSION) > Version(latest_release["tag_name"]):
+        elif Version(VERSION) < Version(latest_release["tag_name"]):
             logger.info(f"{Fore.YELLOW}Доступна новая версия: {Fore.LIGHTWHITE_EX}{latest_release['tag_name']}")
             if SKIP_UPDATES:
                 logger.info(

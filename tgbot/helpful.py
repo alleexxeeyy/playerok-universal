@@ -114,8 +114,8 @@ async def throw_float_message(
     if not text and not photo:
         return None
 
-    from . import get_telegram_bot
-    bot = get_telegram_bot()
+    from .telegrambot import get_telegram_bot
+    bot = get_telegram_bot().bot
 
     accent_id = await get_accent_message_id(state, message, bot)
     new_message_needed = need_new_message(message, bot, send)

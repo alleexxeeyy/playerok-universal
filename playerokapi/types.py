@@ -325,8 +325,12 @@ class UserProfile:
         """ Объект аккаунта (для методов). """
 
 
-    def get_items(self, count: int = 24, statuses: list[ItemStatuses] | None = None,
-                  after_cursor: str | None = None) -> ItemProfileList:
+    def get_items(
+        self, 
+        count: int = 24, 
+        statuses: list[ItemStatuses] | None = None,
+        after_cursor: str | None = None
+    ) -> ItemProfileList:
         """
         Получает предметы пользователя.
 
@@ -342,10 +346,6 @@ class UserProfile:
         :return: Страница профилей предметов.
         :rtype: `PlayerokAPI.types.ItemProfileList`
         """
-        payload_status = [] if statuses else None
-        if statuses:
-            for status in statuses:
-                payload_status.append(status.name)
         headers = {
             "Accept": "*/*",
             "Content-Type": "application/json",
@@ -353,16 +353,42 @@ class UserProfile:
         }
         payload = {
             "operationName": "items",
-            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": {"userId": self.id, "status": payload_status}, "showForbiddenImage": False}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("items")}}, ensure_ascii=False)
+            "variables": json.dumps({
+                "pagination": {
+                    "first": count, 
+                    "after": after_cursor
+                }, 
+                "filter": {
+                    "userId": self.id, 
+                    "status": [status.name for status in statuses] if statuses else None
+                }, 
+                "showForbiddenImage": False
+            }),
+            "extensions": json.dumps({
+                "persistedQuery": {
+                    "version": 1, 
+                    "sha256Hash": PERSISTED_QUERIES.get("items")
+                }
+            })
         }
+
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
         return parser.item_profile_list(r["data"]["items"])
 
-    def get_reviews(self, count: int = 24, status: ReviewStatuses = ReviewStatuses.APPROVED, 
-                    comment_required: bool = False, rating: int | None = None, game_id: str | None = None, 
-                    category_id: str | None = None, min_item_price: int | None = None, max_item_price: int | None = None, 
-                    sort_direction: SortDirections = SortDirections.DESC, sort_field: str = "createdAt", after_cursor: str | None = None) -> ReviewList:
+    def get_reviews(
+        self, 
+        count: int = 24, 
+        status: ReviewStatuses = ReviewStatuses.APPROVED, 
+        comment_required: bool = False, 
+        rating: int | None = None, 
+        game_id: str | None = None, 
+        category_id: str | None = None, 
+        min_item_price: int | None = None, 
+        max_item_price: int | None = None, 
+        sort_direction: SortDirections = SortDirections.DESC, 
+        sort_field: str = "createdAt", 
+        after_cursor: str | None = None
+    ) -> ReviewList:
         """
         Получает отзывы пользователя.
 
@@ -426,9 +452,25 @@ class UserProfile:
             filters["itemPrice"] = item_price
         payload = {
             "operationName": "testimonials",
-            "variables": json.dumps({"pagination": {"first": count, "after": after_cursor}, "filter": filters, "sort": {"direction": sort_direction.name if sort_direction else None, "field": sort_field}}, ensure_ascii=False),
-            "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": PERSISTED_QUERIES.get("testimonials")}}, ensure_ascii=False)
+            "variables": json.dumps({
+                "pagination": {
+                    "first": count, 
+                    "after": after_cursor
+                }, 
+                "filter": filters, 
+                "sort": {
+                    "direction": sort_direction.name if sort_direction else None, 
+                    "field": sort_field
+                }
+            }),
+            "extensions": json.dumps({
+                "persistedQuery": {
+                    "version": 1, 
+                    "sha256Hash": PERSISTED_QUERIES.get("testimonials")
+                }
+            })
         }
+        
         r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
         return parser.review_list(r["data"]["testimonials"])
 

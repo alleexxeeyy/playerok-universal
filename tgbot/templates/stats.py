@@ -14,9 +14,9 @@ def stats_text():
         Дата запуска бота: <b>{stats.bot_launch_time.strftime("%d.%m.%Y %H:%M:%S") or 'Не запущен'}</b>
 
         <b>Статистика с момента запуска:</b>
-        ┣ Выполнено: <b>{stats.deals_completed}</b>
-        ┣ Возвратов: <b>{stats.deals_refunded}</b>
-        ┗ Заработано: <b>{stats.earned_money}</b>₽
+        ・ Выполнено: <b>{stats.deals_completed}</b>
+        ・ Возвратов: <b>{stats.deals_refunded}</b>
+        ・ Заработано: <b>{stats.earned_money}</b>₽
 
         Выберите действие ↓
     """)

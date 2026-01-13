@@ -66,19 +66,6 @@ async def callback_enter_requests_timeout(callback: CallbackQuery, state: FSMCon
     )
 
 
-@router.callback_query(F.data == "enter_listener_requests_delay")
-async def callback_enter_listener_requests_delay(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(states.SettingsStates.waiting_for_listener_requests_delay)
-    config = sett.get("config")
-    requests_timeout = config["playerok"]["api"]["listener_requests_delay"] or "❌ Не задано"
-    await throw_float_message(
-        state=state, 
-        message=callback.message, 
-        text=templ.settings_conn_float_text(f"⏱️ Введите новую <b>периодичность запросов</b> (в секундах) ↓\n・ Текущее: <code>{requests_timeout}</code>"), 
-        reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
-    )
-
-
 @router.callback_query(F.data == "enter_watermark_value")
 async def callback_enter_watermark_value(callback: CallbackQuery, state: FSMContext):
     await state.set_state(states.SettingsStates.waiting_for_watermark_value)

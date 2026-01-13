@@ -15,7 +15,7 @@ from . import router as main_router
 from . import templates as templ
 
 
-logger = logging.getLogger(f"universal.telegram")
+logger = logging.getLogger("universal.telegram")
 
 
 def get_telegram_bot() -> TelegramBot | None:
@@ -47,7 +47,6 @@ class TelegramBot:
                 main_router.include_router(router)
         self.dp.include_router(main_router)
 
-
     async def _set_main_menu(self):
         try:
             main_menu_commands = [BotCommand(command="/start", description="🏠 Главное меню")]
@@ -59,8 +58,9 @@ class TelegramBot:
         try:
             short_description = textwrap.dedent(f"""
                 Playerok Universal — Современный бот-помощник для Playerok 🟦
-                ┕ Канал — @alexeyproduction
-                ┕ Бот — @alexey_production_bot
+                
+                ・ Канал — @alexeyproduction
+                ・ Бот — @alexey_production_bot
             """)
             await self.bot.set_my_short_description(short_description=short_description)
         except:
@@ -86,7 +86,6 @@ class TelegramBot:
             await self.bot.set_my_description(description=description)
         except:
             pass
-    
 
     async def run_bot(self):
         self.loop = asyncio.get_running_loop()
@@ -100,18 +99,8 @@ class TelegramBot:
         me = await self.bot.get_me()
         logger.info(f"{ACCENT_COLOR}Telegram бот {Fore.LIGHTCYAN_EX}@{me.username} {ACCENT_COLOR}запущен и активен")
         await self.dp.start_polling(self.bot, skip_updates=True, handle_signals=False)
-        
 
     async def call_seller(self, calling_name: str, chat_id: int | str):
-        """
-        Пишет админу в Telegram с просьбой о помощи от заказчика.
-                
-        :param calling_name: Никнейм покупателя.
-        :type calling_name: `str`
-
-        :param chat_id: ID чата с заказчиком.
-        :type chat_id: `int` or `str`
-        """
         config = sett.get("config")
         for user_id in config["telegram"]["bot"]["signed_users"]:
             await self.bot.send_message(
@@ -122,15 +111,6 @@ class TelegramBot:
             )
         
     async def log_event(self, text: str, kb: InlineKeyboardMarkup | None = None):
-        """
-        Логирует событие в чат TG бота.
-                
-        :param text: Текст лога.
-        :type text: `str`
-                
-        :param kb: Клавиатура с кнопками.
-        :type kb: `aiogram.types.InlineKeyboardMarkup` or `None`
-        """
         config = sett.get("config")
         chat_id = config["playerok"]["tg_logging"]["chat_id"]
         if not chat_id:

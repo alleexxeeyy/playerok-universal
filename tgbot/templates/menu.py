@@ -8,7 +8,7 @@ from .. import callback_datas as calls
 
 def menu_text():
     txt = textwrap.dedent(f"""
-        🏠 <b>Главное меню</b>
+        <b>🏠 Главное меню</b>
 
         <b>Playerok UNIVERSAL</b> v{VERSION}
         Бот-помощник для Playerok

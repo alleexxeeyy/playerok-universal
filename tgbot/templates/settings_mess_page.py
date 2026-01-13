@@ -11,11 +11,11 @@ def settings_mess_page_text(message_id: int):
     enabled = "🟢 Включено" if messages[message_id]["enabled"] else "🔴 Выключено"
     message_text = "\n".join(messages[message_id]["text"]) or "❌ Не задано"
     txt = textwrap.dedent(f"""
-        ✒️ <b>Редактирование сообщения</b>
+        <b>✒️ Редактирование сообщения</b>
 
-        🆔 <b>ID сообщения:</b> {message_id}
-        💡 <b>Состояние:</b> {enabled}
-        💬 <b>Текст сообщения:</b> <blockquote>{message_text}</blockquote>
+        <b>🆔 ID сообщения:</b> {message_id}
+        <b>💡 Состояние:</b> {enabled}
+        <b>💬 Текст сообщения:</b> <blockquote>{message_text}</blockquote>
 
         Выберите параметр для изменения ↓
     """)

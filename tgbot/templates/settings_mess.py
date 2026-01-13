@@ -10,7 +10,7 @@ from .. import callback_datas as calls
 def settings_mess_text():
     messages = sett.get("messages")
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки</b> → ✉️ <b>Сообщения</b>
+        <b>⚙️ Настройки</b> → ✉️ <b>Сообщения</b>
         Всего <b>{len(messages.keys())}</b> настраиваемых сообщений в конфиге
 
         Перемещайтесь по разделам ниже. Нажмите на сообщение, чтобы перейти в его редактирование ↓
@@ -59,7 +59,7 @@ def settings_mess_kb(page: int = 0):
 
 def settings_mess_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки</b> → ✉️ <b>Сообщения</b>
+        <b>⚙️ Настройки</b> → ✉️ <b>Сообщения</b>
         \n{placeholder}
     """)
     return txt

@@ -10,7 +10,7 @@ from .. import callback_datas as calls
 def settings_comms_text():
     custom_commands = sett.get("custom_commands")
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки</b> → ⌨️ <b>Пользовательские команды</b>
+        <b>⚙️ Настройки → ⌨️ Пользовательские команды</b>
         Всего <b>{len(custom_commands.keys())}</b> пользовательских команд в конфиге
 
         Перемещайтесь по разделам ниже. Нажмите на команду, чтобы перейти в её редактирование ↓
@@ -60,7 +60,7 @@ def settings_comms_kb(page: int = 0):
 
 def settings_comms_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки</b> → ⌨️ <b>Пользовательские команды</b>
+        <b>⚙️ Настройки → ⌨️ Пользовательские команды</b>
         \n{placeholder}
     """)
     return txt
@@ -68,7 +68,7 @@ def settings_comms_float_text(placeholder: str):
 
 def settings_new_comm_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Добавление пользовательской команды</b>
+        <b>⚙️ Добавление пользовательской команды</b>
         \n{placeholder}
     """)
     return txt

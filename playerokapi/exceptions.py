@@ -6,7 +6,7 @@ class CloudflareDetectedException(Exception):
     Ошибка обнаружения Cloudflare защиты при отправке запроса.
 
     :param response: Объект ответа.
-    :type response: `Response`
+    :type response: `requests.Response`
     """
 
     def __init__(self, response: requests.Response):
@@ -28,7 +28,7 @@ class RequestFailedError(Exception):
     Ошибка, которая возбуждается, если код ответа не равен 200.
 
     :param response: Объект ответа.
-    :type response: `Response`
+    :type response: `requests.Response`
     """
 
     def __init__(self, response: requests.Response):
@@ -50,7 +50,7 @@ class RequestError(Exception):
     Ошибка, которая возбуждается, если возникла ошибка при отправке запроса.
 
     :param response: Объект ответа.
-    :type response: `Response`
+    :type response: `requests.Response`
     """
 
     def __init__(self, response: requests.Response):
@@ -69,9 +69,7 @@ class RequestError(Exception):
 
 
 class UnauthorizedError(Exception):
-    """
-    Ошибка, которая возбуждается, если не удалось подключиться к аккаунту Playerok.
-    """
+    """Ошибка, которая возбуждается, если не удалось авторизоваться в аккаунте Playerok."""
 
     def __str__(self):
         return "Не удалось подключиться к аккаунту Playerok. Может вы указали неверный token?"

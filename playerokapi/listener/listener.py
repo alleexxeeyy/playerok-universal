@@ -1,9 +1,23 @@
-from typing import Generator
+import json
+import uuid
 from logging import getLogger
-from datetime import datetime
+from typing import Generator
+from threading import Thread
+from queue import Queue
+
+import websocket
+import ssl
 
 from ..account import Account
-from ..types import ChatList, ChatMessage, Chat
+from ..types import (
+    ChatMessage, 
+    Chat
+)
+from ..parser import (
+    chat, 
+    chat_message
+)
+from ..misc import QUERIES
 from .events import *
 
 
@@ -19,51 +33,11 @@ class EventListener:
         self.account: Account = account
         """ Объект аккаунта. """
 
-        self.__logger = getLogger("playerokapi.listener")
-        self.__review_check_deals: list[str] = [] # [deal_id]
-        self.__last_check_time: dict[str, datetime] = {} # {deal_id: last_check_time}
-        
-        self.__listened_messages: list[str] = [] # [mess_id]
-        self.__saved_deals: list[str] = [] # [deal_id]
-
-    def parse_chat_event(
-        self, chat: Chat
-    ) -> list[ChatInitializedEvent]:
-        """
-        Получает ивент с чата.
-
-        :param chat: Объект чата.
-        :type chat: `playerokapi.types.Chat`
-
-        :return: Массив ивентов.
-        :rtype: `list` of
-        `playerokapi.listener.events.ChatInitializedEvent`
-        """
-
-        if chat:
-            return [ChatInitializedEvent(chat)]
-        return []
-
-    def get_chat_events(
-        self, chats: ChatList
-    ) -> list[ChatInitializedEvent]:
-        """
-        Получает новые ивенты чатов.
-
-        :param chats: Страница чатов.
-        :type chats: `playerokapi.types.ChatList`
-
-        :return: Массив новых ивентов.
-        :rtype: `list` of
-        `playerokapi.listener.events.ChatInitializedEvent`
-        """
-
-        events = []
-        for chat in chats.chats:
-            this_events = self.parse_chat_event(chat=chat)
-            for event in this_events:
-                events.append(event)
-        return events
+        self.chat_subscriptions = {}
+        self.review_check_deals = {}
+        self.deal_checks = {}
+        self.chats = []
+        self.logger = getLogger("playerokapi.listener")
 
     def parse_message_events(
         self, message: ChatMessage, chat: Chat
@@ -78,36 +52,16 @@ class EventListener:
         | DealProblemResolvedEvent
         | DealStatusChangedEvent
     ]:
-        """
-        Получает ивент с сообщения.
-        
-        :param message: Объект сообщения.
-        :type message: `playerokapi.types.ChatMessage`
-
-        :return: Массив ивентов.
-        :rtype: `list` of 
-        `playerokapi.listener.events.ChatInitializedEvent` \
-        _or_ `playerokapi.listener.events.NewMessageEvent` \
-        _or_ `playerokapi.listener.events.NewDealEvent` \
-        _or_ `playerokapi.listener.events.ItemPaidEvent` \
-        _or_ `playerokapi.listener.events.ItemSentEvent` \
-        _or_ `playerokapi.listener.events.DealConfirmedEvent` \
-        _or_ `playerokapi.listener.events.DealRolledBackEvent` \
-        _or_ `playerokapi.listener.events.DealHasProblemEvent` \
-        _or_ `playerokapi.listener.events.DealProblemResolvedEvent` \
-        _or_ `playerokapi.listener.events.DealStatusChangedEvent(message.deal)`
-        """
-
         if not message:
             return []
         
         if message.text == "{{ITEM_PAID}}" and message.deal is not None:
-            if message.deal.id not in self.__saved_deals:
-                self.__saved_deals.append(message.deal.id)
-                return [
-                    NewDealEvent(message.deal, chat), 
-                    ItemPaidEvent(message.deal, chat)
-                ]
+            if message.deal.id not in self.review_check_deals:
+                self.review_check_deals.append(message.deal.id)
+            return [
+                NewDealEvent(message.deal, chat), 
+                ItemPaidEvent(message.deal, chat)
+            ]
         elif message.text == "{{ITEM_SENT}}" and message.deal is not None:
             return [ItemSentEvent(message.deal, chat)]
         elif message.text == "{{DEAL_CONFIRMED}}" and message.deal is not None:
@@ -132,111 +86,196 @@ class EventListener:
             ]
 
         return [NewMessageEvent(message, chat)]
+    
+    def _send_connection_init(self, ws):
+        ws.send(json.dumps({
+            "type": "connection_init", 
+            "payload": {
+                "x-gql-op": "ws-subscription",
+                "x-gql-path": "/self.chats/[id]",
+                "x-timezone-offset": -180
+            }
+        }))
 
-    def _should_check_deal(
-        self, deal_id: int, delay: int = 30
-    ) -> bool:
+    def _subscribe_chat_updated(self, ws):
+        ws.send(json.dumps({
+            "id": str(uuid.uuid4()), 
+            "payload": {
+                "extensions": {},
+                "operationName": "chatUpdated",
+                "query": QUERIES.get("chatUpdated"),
+                "variables": {
+                    "filter": {
+                        "userId": self.account.id
+                    },
+                    "showForbiddenImage": True
+                }
+            },
+            "type": "subscribe"
+        }))
+
+    def _subscribe_chat_marked_as_read(self, ws):
+        ws.send(json.dumps({
+            "id": str(uuid.uuid4()), 
+            "payload": {
+                "extensions": {},
+                "operationName": "chatMarkedAsRead",
+                "query": QUERIES.get("chatMarkedAsRead"),
+                "variables": {
+                    "filter": {
+                        "userId": self.account.id
+                    },
+                    "showForbiddenImage": True
+                }
+            },
+            "type": "subscribe"
+        }))
+
+    def _subscribe_user_updated(self, ws):
+        ws.send(json.dumps({
+            "id": str(uuid.uuid4()), 
+            "payload": {
+                "extensions": {},
+                "operationName": "userUpdated",
+                "query": QUERIES.get("userUpdated"),
+                "variables": {
+                    "userId": self.account.id
+                }
+            },
+            "type": "subscribe"
+        }))
+
+    def _subscribe_chat_message_created(self, ws, chat_id):
+        _uuid = str(uuid.uuid4())
+        self.chat_subscriptions[_uuid] = chat_id
+        ws.send(json.dumps({
+            "id": _uuid, 
+            "payload": {
+                "extensions": {},
+                "operationName": "chatMessageCreated",
+                "query": QUERIES.get("chatMessageCreated"),
+                "variables": {
+                    "filter": {
+                        "chatId": chat_id
+                    }
+                }
+            },
+            "type": "subscribe"
+        }))
+        
+    def listen_new_messages(self):
+        headers = {
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+            "cache-control": "no-cache",
+            "connection": "Upgrade",
+            "origin": "https://playerok.com",
+            "pragma": "no-cache",
+            "sec-websocket-extensions": "permessage-deflate; client_max_window_bits",
+            "cookie": f"token={self.account.token}",
+            "user-agent": self.account.user_agent
+        }
+
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ssl_context.check_hostname = True
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        ssl_context.load_default_certs()
+        ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+
+        chat_list = self.account.get_chats(count=24)
+        self.chats = [chat for chat in chat_list.chats]
+        for chat_ in self.chats:
+            yield ChatInitializedEvent(chat_)
+
+        ws = websocket.WebSocket(
+            sslopt={"context": ssl_context}
+        )
+        ws.connect(
+            url="wss://ws.playerok.com/graphql",
+            header=[f"{k}: {v}" for k, v in headers.items()],
+            subprotocols=["graphql-transport-ws"]
+        )
+
+        self._send_connection_init(ws)          
+
+        while True:
+            msg = ws.recv()
+            msg_data = json.loads(msg)
+            self.logger.debug(f"websocket msg received: {msg_data}")
+            
+            if msg_data["type"] == "connection_ack":
+                self._subscribe_chat_updated(ws)
+                for chat_ in self.chats:
+                    self._subscribe_chat_message_created(ws, chat_.id)
+            
+            elif "chatUpdated" in msg_data["payload"]["data"]:
+                _chat = chat(msg_data["payload"]["data"]["chatUpdated"])
+                _message = chat_message(msg_data["payload"]["data"]["chatUpdated"]["lastMessage"])
+
+                if _chat.id in [chat_.id for chat_ in self.chats]:
+                    for old_chat in self.chats:
+                        if old_chat.id == _chat.id:
+                            self.chats.remove(old_chat)
+                            self.chats.append(_chat)
+                else:
+                    self.chats.append(_chat)
+                    self._subscribe_chat_message_created(ws, chat_.id)
+                    
+                    events = [ChatInitializedEvent(_chat)]
+                    events.extend(self.parse_message_events(_message, _chat))
+                    for event in events:
+                        yield event
+
+            elif "chatMessageCreated" in msg_data["payload"]["data"]:
+                chat_id = self.chat_subscriptions.get(msg_data["id"])
+                try: _chat = [chat_ for chat_ in self.chats if chat_.id == chat_id][0]
+                except: continue
+                _message = chat_message(msg_data["payload"]["data"]["chatMessageCreated"])
+
+                events = self.parse_message_events(_message, _chat)
+                for event in events:
+                    yield event
+
+    def _should_check_deal(self, deal_id, delay=30) -> bool:
         now = time.time()
-        last_time = self.__last_check_time.get(deal_id, 0)
+        info = self.deal_checks.get(deal_id, 0)
+        last_time = info["last"]
+        tries = info["tries"]
+        
         if now - last_time > delay:
-            self.__last_check_time[deal_id] = now
+            self.deal_checks[deal_id] = {
+                "last": now,
+                "tries": tries+1
+            }
             return True
+        elif tries >= 30:
+            del self.review_check_deals[deal_id]
+            del self.deal_checks[deal_id]
+
         return False
     
-    def _correct_isodate(
-        self, iso_date: str
-    ) -> datetime:
-        return datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
-
-    def get_message_events(
-        self, old_chats: ChatList, new_chats: ChatList, get_new_review_events: bool
-    ) -> list[
-        NewMessageEvent
-        | NewDealEvent
-        | NewReviewEvent
-        | ItemPaidEvent
-        | ItemSentEvent
-        | DealConfirmedEvent
-        | DealRolledBackEvent
-        | DealHasProblemEvent
-        | DealProblemResolvedEvent
-        | DealStatusChangedEvent
-    ]:
-        """
-        Получает новые ивенты сообщений, сравнивая старые чаты с новыми полученными.
-        
-        :param old_chats: Старые чаты.
-        :type old_chats: `playerokapi.types.ChatList`
-        
-        :param new_chats: Новые чаты.
-        :type new_chats: `playerokapi.types.ChatList`
-
-        :return: Массив новых ивентов.
-        :rtype: `list` of 
-        `playerokapi.listener.events.ChatInitializedEvent` \
-        _or_ `playerokapi.listener.events.NewMessageEvent` \
-        _or_ `playerokapi.listener.events.NewDealEvent` \
-        _or_ `playerokapi.listener.events.NewReviewEvent` \
-        _or_ `playerokapi.listener.events.ItemPaidEvent` \
-        _or_ `playerokapi.listener.events.ItemSentEvent` \
-        _or_ `playerokapi.listener.events.DealConfirmedEvent` \
-        _or_ `playerokapi.listener.events.DealRolledBackEvent` \
-        _or_ `playerokapi.listener.events.DealHasProblemEvent` \
-        _or_ `playerokapi.listener.events.DealProblemResolvedEvent` \
-        _or_ `playerokapi.listener.events.DealStatusChangedEvent(message.deal)`
-        """
-        
-        events = []
-
-        if get_new_review_events:
-            for deal_id in self.__review_check_deals:
+    def listen_new_reviews(self):
+        while True:
+            for deal_id in dict(self.review_check_deals):
                 if not self._should_check_deal(deal_id):
                     continue
                 deal = self.account.get_deal(deal_id)
+                
                 if deal.review is not None:
-                    del self.__review_check_deals[self.__review_check_deals.index(deal_id)]
-                    try: deal.chat = self.account.get_chat(deal.chat.id)
-                    except: pass
-                    events.append(NewReviewEvent(deal, deal.chat))
-        
-        old_chats_last_mess_ids = [chat.last_message.id for chat in old_chats.chats if chat.last_message] if old_chats else []
-        new_chats_last_mess_ids = [chat.last_message.id for chat in new_chats.chats if chat.last_message] if new_chats else []
-        if old_chats_last_mess_ids != new_chats_last_mess_ids:
-            old_chat_map = {chat.id: chat for chat in old_chats.chats}
-            for new_chat in new_chats.chats:
-                old_chat = old_chat_map.get(new_chat.id)
-
-                if not old_chat:
-                    time.sleep(2)
-                    msg_list = self.account.get_chat_messages(new_chat.id, 24)
-                    new_msgs = [msg for msg in msg_list.messages]
-                elif old_chat:
-                    if not new_chat.last_message or not old_chat.last_message:
-                        continue
-                    if new_chat.last_message.id == old_chat.last_message.id:
-                        continue
-                    time.sleep(2) # ебучая задержка, потому что плеерок сразу не отображает новые сообщения в запросе
-                    msg_list = self.account.get_chat_messages(new_chat.id, 24)
-                    new_msgs = [
-                        msg for msg in msg_list.messages 
-                        if self._correct_isodate(msg.created_at) > self._correct_isodate(old_chat.last_message.created_at)
-                    ]
-                    if new_chat.last_message.id not in [msg.id for msg in new_msgs]:
-                        new_msgs.append(new_chat.last_message)
-                    #new_msgs = [new_chat.last_message]
-
-                for msg in sorted(new_msgs, key=lambda m: m.created_at):
-                    if msg.id in self.__listened_messages:
-                        continue
-                    if get_new_review_events and msg.deal and msg.deal.id not in self.__review_check_deals:
-                        self.__review_check_deals.append(msg.deal.id)
-                    self.__listened_messages.append(msg.id)
-                    events.extend(self.parse_message_events(msg, new_chat))
-        
-        return events
+                    del self.review_check_deals[self.review_check_deals.index(deal_id)]
+                    
+                    try: deal.chat = [chat_ for chat_ in self.chats if chat_.id == getattr(getattr(deal, "chat"), "id")][0]
+                    except: 
+                        try: deal.chat = self.account.get_chat(deal.chat.id)
+                        except: pass
+                    
+                    yield NewReviewEvent(deal, deal.chat)
 
     def listen(
-        self, requests_delay: int | float = 4, get_new_review_events: bool = True
+        self, 
+        get_new_message_events: bool = True,
+        get_new_review_events: bool = True
     ) -> Generator[
         ChatInitializedEvent
         | NewMessageEvent
@@ -252,44 +291,19 @@ class EventListener:
         None,
         None
     ]:
-        """
-        "Слушает" события в чатах. 
-        Бесконечно отправляет запросы, узнавая новые события из чатов.
+        if not any([get_new_review_events, get_new_message_events]):
+            return
+        
+        q = Queue()
 
-        :param requests_delay: Периодичность отправления запросов (в секундах).
-        :type requests_delay: `int` or `float`
+        def run(gen):
+            for event in gen:
+                q.put(event)
 
-        :param get_new_review_events: Нужно ли слушать новые отзывы? (отправляет больше запросов).
-        :type get_new_review_events: `bool`
+        if get_new_message_events:
+            Thread(target=run, args=(self.listen_new_messages(),), daemon=True).start()
+        if get_new_review_events:
+            Thread(target=run, args=(self.listen_new_reviews(),), daemon=True).start()
 
-        :return: Полученный ивент.
-        :rtype: `Generator` of
-        `playerokapi.listener.events.ChatInitializedEvent` \
-        _or_ `playerokapi.listener.events.NewMessageEvent` \
-        _or_ `playerokapi.listener.events.NewDealEvent` \
-        _or_ `playerokapi.listener.events.NewReviewEvent` \
-        _or_ `playerokapi.listener.events.ItemPaidEvent` \
-        _or_ `playerokapi.listener.events.ItemSentEvent` \
-        _or_ `playerokapi.listener.events.DealConfirmedEvent` \
-        _or_ `playerokapi.listener.events.DealRolledBackEvent` \
-        _or_ `playerokapi.listener.events.DealHasProblemEvent` \
-        _or_ `playerokapi.listener.events.DealProblemResolvedEvent` \
-        _or_ `playerokapi.listener.events.DealStatusChangedEvent(message.deal)`
-        """
-
-        chats: ChatList = None
         while True:
-            try:
-                next_chats = self.account.get_chats(24)
-                if not chats:
-                    events = self.get_chat_events(next_chats)
-                    for event in events:
-                        yield event
-                else:
-                    events = self.get_message_events(chats, next_chats, get_new_review_events)
-                    for event in events:
-                        yield event
-                chats = next_chats
-            except Exception as e:
-                self.__logger.error(f"Ошибка при получении ивентов: {e}")
-            time.sleep(requests_delay)
+            yield q.get()

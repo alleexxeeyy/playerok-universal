@@ -11,10 +11,10 @@ def settings_auth_text():
     token = config["playerok"]["api"]["token"][:5] + ("*" * 10) or "❌ Не задано"
     user_agent = config["playerok"]["api"]["user_agent"] or "❌ Не задано"
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки → 🔑 Авторизация</b>
+        <b>⚙️ Настройки → 🔑 Авторизация</b>
 
-        🔐 <b>Токен:</b> {token}
-        🎩 <b>User-Agent:</b> {user_agent}
+        <b>🔐 Токен:</b> {token}
+        <b>🎩 User-Agent:</b> {user_agent}
 
         Выберите параметр для изменения ↓
     """)
@@ -39,7 +39,7 @@ def settings_auth_kb():
 
 def settings_auth_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки → 🔑 Авторизация</b>
+        <b>⚙️ Настройки → 🔑 Авторизация</b>
         \n{placeholder}
     """)
     return txt

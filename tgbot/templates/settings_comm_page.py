@@ -10,10 +10,10 @@ def settings_comm_page_text(command: str):
     custom_commands = sett.get("custom_commands")
     command_text = "\n".join(custom_commands[command]) or "❌ Не задано"
     txt = textwrap.dedent(f"""
-        ✏️ <b>Редактирование пользовательской команды</b>
+        <b>✏️ Редактирование пользовательской команды</b>
 
-        ⌨️ <b>Команда:</b> {command}
-        💬 <b>Ответ:</b> 
+        <b>⌨️ Команда:</b> {command}
+        <b>💬 Ответ:</b> 
         <blockquote>{command_text}</blockquote>
 
         Выберите параметр для изменения ↓
@@ -38,7 +38,7 @@ def settings_comm_page_kb(command: str, page: int = 0):
 
 def settings_comm_page_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ✏️ <b>Редактирование пользовательской команды</b>
+        <b>✏️ Редактирование пользовательской команды</b>
         \n{placeholder}
     """)
     return txt

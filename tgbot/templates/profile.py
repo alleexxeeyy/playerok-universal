@@ -10,7 +10,7 @@ def profile_text():
     acc = get_playerok_bot().playerok_account.get()
     profile = acc.profile
     txt = textwrap.dedent(f"""
-        👤 <b>Мой профиль</b>
+        <b>👤 Мой профиль</b>
 
         <b>🆔 ID:</b> <code>{profile.id}</code>
         <b>👤 Никнейм:</b> {profile.username}

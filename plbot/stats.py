@@ -10,7 +10,7 @@ class Stats:
     earned_money: int
 
         
-_stats = Stats(
+stats = Stats(
     bot_launch_time=None,
     deals_completed=0,
     deals_refunded=0,
@@ -19,9 +19,9 @@ _stats = Stats(
 
 
 def get_stats() -> Stats:
-    return _stats
+    return stats
 
 
 def set_stats(new):
-    global _stats
-    _stats = new
+    global stats
+    stats = new

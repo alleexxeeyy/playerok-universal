@@ -84,54 +84,31 @@ class PlayerokBot:
         """Словарь последних запомненных чатов.\nВ формате: {`chat_id` _or_ `username`: `chat_obj`, ...}"""
 
     def get_chat_by_id(self, chat_id: str) -> Chat:
-        """ 
-        Получает чат с пользователем из запомненных чатов по его ID.
-        Запоминает и получает чат, если он не запомнен.
-        
-        :param chat_id: ID чата.
-        :type chat_id: `str`
-        
-        :return: Объект чата.
-        :rtype: `playerokapi.types.Chat`
-        """
         if chat_id in self.__saved_chats:
             return self.__saved_chats[chat_id]
         self.__saved_chats[chat_id] = self.account.get_chat(chat_id)
         return self.get_chat_by_id(chat_id)
 
     def get_chat_by_username(self, username: str) -> Chat:
-        """ 
-        Получает чат с пользователем из запомненных чатов по никнейму собеседника.
-        Запоминает и получает чат, если он не запомнен.
-        
-        :param username: Юзернейм собеседника чата.
-        :type username: `str`
-        
-        :return: Объект чата.
-        :rtype: `playerokapi.types.Chat`
-        """
         if username in self.__saved_chats:
             return self.__saved_chats[username]
         self.__saved_chats[username] = self.account.get_chat_by_username(username)
         return self.get_chat_by_username(username)
     
+    def refresh_account(self):
+        self.account = self.playerok_account = self.account.get()
+
+    def check_banned(self):
+        user = self.account.get_user(self.account.id)
+        if user.is_blocked:
+            self.logger.critical(f"")
+            self.logger.critical(f"{Fore.LIGHTRED_EX}Ваш Playerok аккаунт был заблокирован! К сожалению, я не могу продолжать работу на заблокированном аккаунте...")
+            self.logger.critical(f"Напишите в тех. поддержку Playerok, чтобы узнать причину бана и как можно быстрее решить эту проблему.")
+            self.logger.critical(f"")
+            shutdown()
+    
     def msg(self, message_name: str, messages_config_name: str = "messages", 
             messages_data: dict = DATA, **kwargs) -> str | None:
-        """ 
-        Получает отформатированное сообщение из словаря сообщений.
-
-        :param message_name: Наименование сообщения в словаре сообщений (ID).
-        :type message_name: `str`
-
-        :param messages_config_name: Имя файла конфигурации сообщений.
-        :type messages_config_name: `str`
-
-        :param messages_data: Словарь данных конфигурационных файлов.
-        :type messages_data: `dict` or `None`
-
-        :return: Отформатированное сообщение или None, если сообщение выключено.
-        :rtype: `str` or `None`
-        """
         class SafeDict(dict):
             def __missing__(self, key):
                 return "{" + key + "}"
@@ -150,23 +127,6 @@ class PlayerokBot:
             pass
         return f"Не удалось получить сообщение {message_name}"
     
-
-    def refresh_account(self):
-        """Обновляет данные об аккаунте Playerok."""
-        self.account = self.playerok_account = self.account.get()
-
-    def check_banned(self):
-        """
-        Проверяет, забанен ли аккаунт Playerok.
-        Если аккаунт забанен, заканчивает работу бота.
-        """
-        user = self.account.get_user(self.account.id)
-        if user.is_blocked:
-            self.logger.critical(f"")
-            self.logger.critical(f"{Fore.LIGHTRED_EX}Ваш Playerok аккаунт был заблокирован! К сожалению, я не могу продолжать работу на заблокированном аккаунте...")
-            self.logger.critical(f"Напишите в тех. поддержку Playerok, чтобы узнать причину бана и как можно быстрее решить эту проблему.")
-            self.logger.critical(f"")
-            shutdown()
 
     def send_message(self, chat_id: str, text: str | None = None, photo_file_path: str | None = None,
                      mark_chat_as_read: bool = None, exclude_watermark: bool = False, max_attempts: int = 3) -> ChatMessage:
@@ -282,7 +242,6 @@ class PlayerokBot:
         :return: Массив предметов профиля.
         :rtype: `list` of `playerokapi.types.ItemProfile`
         """
-
         my_items: list[ItemProfile] = []
         try:
             user = self.account.get_user(self.account.id)
@@ -315,12 +274,6 @@ class PlayerokBot:
 
 
     def bump_item(self, item: MyItem):
-        """ 
-        Поднимает товар (обновляет его PREMIUM статус).
-        
-        :param item: Объект предмета.
-        :type item: `playerokapi.types.MyItem`
-        """
         try:
             included = any(
                 any(
@@ -364,7 +317,6 @@ class PlayerokBot:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}»: {Fore.WHITE}{e}")
 
     def bump_items(self): 
-        """Поднимает все товары профиля."""
         try:
             items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
             for item in items:
@@ -376,12 +328,6 @@ class PlayerokBot:
             self.logger.error(f"{Fore.LIGHTRED_EX} Ошибка при поднятии предметов: {Fore.WHITE}")
 
     def restore_item(self, item: Item):
-        """ 
-        Восстанавливает предмет (повторно публикукет его).
-        
-        :param item: Объект предмета.
-        :type item: `playerokapi.types.Item`
-        """
         try:
             included = any(
                 any(
@@ -420,7 +366,6 @@ class PlayerokBot:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении предмета «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}»: {Fore.WHITE}{e}")
             
     def restore_expired_items(self):
-        """Восстанавливает все истекшие предмета профиля."""
         try:
             items = self.get_my_items(statuses=[ItemStatuses.EXPIRED])
             for item in items:
@@ -522,7 +467,7 @@ class PlayerokBot:
             while True:
                 if self.config["playerok"]["auto_restore_items"]["expired"]:
                     self.restore_expired_items()
-                time.sleep(30)
+                time.sleep(35)
 
         def bump_items_loop():
             while True:
@@ -759,10 +704,10 @@ class PlayerokBot:
 
         async def listener_loop():
             listener = EventListener(self.account)
-            for event in listener.listen(requests_delay=self.config["playerok"]["api"]["listener_requests_delay"]):
+            for event in listener.listen():
                 await call_playerok_event(event.type, [self, event])
 
         run_async_in_thread(listener_loop)
-        self.logger.info(f"Слушатель событий запущен")
+        self.logger.info("Слушатель событий запущен")
 
         await call_bot_event("ON_PLAYEROK_BOT_INIT", [self])

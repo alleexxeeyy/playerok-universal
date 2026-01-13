@@ -11,10 +11,10 @@ def settings_deliv_page_text(index: int):
     keyphrases = "</code>, <code>".join(auto_deliveries[index].get("keyphrases")) or "❌ Не задано"
     message = "\n".join(auto_deliveries[index].get("message")) or "❌ Не задано"
     txt = textwrap.dedent(f"""
-        ✏️ <b>Редактирование авто-выдачи</b>
+        <b>✏️ Редактирование авто-выдачи</b>
 
-        🔑 <b>Ключевые фразы:</b> <code>{keyphrases}</code>
-        💬 <b>Сообщение:</b> <blockquote>{message}</blockquote>
+        <b>🔑 Ключевые фразы:</b> <code>{keyphrases}</code>
+        <b>💬 Сообщение:</b> <blockquote>{message}</blockquote>
 
         Выберите параметр для изменения ↓
     """)
@@ -40,7 +40,7 @@ def settings_deliv_page_kb(index: int, page: int = 0):
 
 def settings_deliv_page_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ✏️ <b>Редактирование авто-выдачи</b>
+        <b>✏️ Редактирование авто-выдачи</b>
         \n{placeholder}
     """)
     return txt

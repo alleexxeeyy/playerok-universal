@@ -23,8 +23,7 @@ CONFIG = SettingsFile(
                 "token": "",
                 "user_agent": "",
                 "proxy": "",
-                "requests_timeout": 30,
-                "listener_requests_delay": 4
+                "requests_timeout": 30
             },
             "watermark": {
                 "enabled": True,

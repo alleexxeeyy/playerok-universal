@@ -10,7 +10,7 @@ from .. import callback_datas as calls
 def settings_delivs_text():
     auto_deliveries = sett.get("auto_deliveries")
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки</b> → 🚀 <b>Авто-выдача</b>
+        <b>⚙️ Настройки → 🚀 Авто-выдача</b>
         Всего <b>{len(auto_deliveries)}</b> настроенных товаров для авто-выдачи в конфиге
 
         Перемещайтесь по разделам ниже. Нажмите на ID товара, чтобы перейти в редактирование его авто-выдачи ↓
@@ -60,7 +60,7 @@ def settings_delivs_kb(page: int = 0):
 
 def settings_deliv_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки</b> → ⌨️ <b>Авто-выдача</b>
+        <b>⚙️ Настройки → ⌨️ Авто-выдача</b>
         \n{placeholder}
     """)
     return txt
@@ -68,7 +68,7 @@ def settings_deliv_float_text(placeholder: str):
 
 def settings_new_deliv_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        🚀 <b>Добавление пользовательской авто-выдачи</b>
+        <b>🚀 Добавление пользовательской авто-выдачи</b>
         \n{placeholder}
     """)
     return txt

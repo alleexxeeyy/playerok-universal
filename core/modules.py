@@ -18,7 +18,7 @@ from core.handlers import (
 from core.utils import install_requirements
 
 
-logger = getLogger(f"universal.modules")
+logger = getLogger("universal.modules")
 
 
 @dataclass

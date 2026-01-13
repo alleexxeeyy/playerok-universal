@@ -18,11 +18,11 @@ def settings_logger_text():
     event_new_problem = "🟢" if tg_logging_events["new_problem"] else "🔴"
     event_deal_status_changed = "🟢" if tg_logging_events["deal_status_changed"] else "🔴"
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки → 👀 Логгер</b>
+        <b>⚙️ Настройки → 👀 Логгер</b>
 
-        👀 <b>Логгирование ивентов Playerok в Telegram:</b> {tg_logging_enabled}
-        💬 <b>ID чата для логов:</b> <b>{tg_logging_chat_id}</b>
-        📢 <b>Ивенты логгирования:</b>
+        <b>👀 Логгирование ивентов Playerok в Telegram:</b> {tg_logging_enabled}
+        <b>💬 ID чата для логов:</b> {tg_logging_chat_id}
+        <b>📢 Ивенты логгирования:</b>
         ・ {event_new_user_message} <b>💬👤 Новое сообщение от пользователя</b>
         ・ {event_new_system_message} <b>💬⚙️ Новое системное сообщение</b>
         ・ {event_new_deal} <b>📋 Новая сделка</b>
@@ -72,7 +72,7 @@ def settings_logger_kb():
 
 def settings_logger_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки → 👀 Логгер</b>
+        <b>⚙️ Настройки → 👀 Логгер</b>
         \n{placeholder}
     """)
     return txt

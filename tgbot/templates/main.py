@@ -33,7 +33,7 @@ def destroy_kb():
 
 def do_action_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        🧩 <b>Действие</b>
+        <b>🧩 Действие</b>
         \n{placeholder}
     """)
     return txt
@@ -79,7 +79,7 @@ def log_new_review_kb(username: str, deal_id: str):
 
 def sign_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        🔐 <b>Авторизация</b>
+        <b>🔐 Авторизация</b>
         \n{placeholder}
     """)
     return txt

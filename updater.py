@@ -93,12 +93,11 @@ def check_for_updates():
             logger.info(f"Загружаю обновление {latest_release['tag_name']}...")
             bytes = download_update(latest_release)
             if not bytes:
+                print("no bytes")
                 return
             logger.info(f"Устанавливаю обновление {latest_release['tag_name']}...")
             if install_update(latest_release, bytes):
                 logger.info(f"{Fore.YELLOW}Обновление {Fore.LIGHTWHITE_EX}{latest_release['tag_name']} {Fore.YELLOW}было успешно установлено.")
                 restart()
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обновлении: {Fore.WHITE}{e}")

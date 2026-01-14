@@ -43,7 +43,7 @@ CONFIG = SettingsFile(
             },
             "auto_restore_items": {
                 "sold": True,
-                "expired": True,
+                "expired": False,
                 "all": True
             },
             "auto_bump_items": {

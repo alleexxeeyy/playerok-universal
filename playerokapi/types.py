@@ -217,10 +217,13 @@ class AccountProfile:
 
     :param has_enabled_notifications: Включены ли уведомления на аккаунте.
     :type has_enabled_notifications: `bool`
+
+    :param unread_chats_counter: Количество непрочитанных чатов.
+    :type unread_chats_counter: `int` or `None`
     """
     def __init__(self, id: str, username: str, email: str, balance: AccountBalance, stats: AccountStats, role: UserTypes, avatar_url: str, is_online: bool, is_blocked: bool,
                  is_blocked_for: str, is_verified: bool, rating: int, reviews_count: int, created_at: str, support_chat_id: str, system_chat_id: str,
-                 has_frozen_balance: bool, has_enabled_notifications: bool):
+                 has_frozen_balance: bool, has_enabled_notifications: bool, unread_chats_counter: int | None):
         self.id: str = id
         """ ID аккаунта. """
         self.username: str = username
@@ -257,6 +260,8 @@ class AccountProfile:
         """ Заморожен ли баланс на аккаунте. """
         self.has_enabled_notifications: bool = has_enabled_notifications
         """ Включены ли уведомления на аккаунте. """
+        self.unread_chats_counter: bool | None = unread_chats_counter
+        """ Количество непрочитанных сообщений. """
 
 
 class UserProfile:

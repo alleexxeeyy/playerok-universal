@@ -259,9 +259,8 @@ class Account:
             "variables": {}
         }
         
-        r = self.request("post", f"{self.base_url}/graphql", headers, payload)
-        rjson = r.json()
-        data: dict = rjson["data"]["viewer"]
+        r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
+        data: dict = r["data"]["viewer"]
         if data is None:
             raise UnauthorizedError()
         
@@ -279,6 +278,7 @@ class Account:
         self.last_item_created_at = data.get("lastItemCreatedAt")
         self.has_confirmed_phone_number = data.get("hasConfirmedPhoneNumber")
         self.can_publish_items = data.get("canPublishItems")
+        self.unread_chats_counter = data.get("unreadChatsCounter")
         
         headers = {"accept": "*/*"}
         payload = {

@@ -634,6 +634,7 @@ def account_profile(data: dict) -> "AccountProfile":
         system_chat_id=profile.get("systemChatId"),
         has_frozen_balance=data.get("hasFrozenBalance"),
         has_enabled_notifications=data.get("hasEnabledNotifications"),
+        unread_chats_counter=data.get("unreadChatsCounter")
     )
 
 

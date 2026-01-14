@@ -5,7 +5,6 @@ from logging import getLogger
 from typing import Generator
 from threading import Thread
 from queue import Queue
-from collections import deque
 
 import websocket
 import ssl
@@ -35,13 +34,21 @@ class EventListener:
         self.account: Account = account
         """ Объект аккаунта. """
 
-        self.processed_messages = deque(maxlen=1000)
         self.chat_subscriptions = {}
         self.review_check_deals = []
         self.deal_checks = {}
         self.chats = []
         self.logger = getLogger("playerokapi.listener")
 
+    def _get_actual_message(
+        self, message_id: str, chat_id: str
+    ):
+        time.sleep(4) # задержка, так как playerok не позволяет получать новые сообщения слишком быстро
+        msg_list = self.account.get_chat_messages(chat_id, count=12)
+        try: msg = [msg for msg in msg_list.messages if msg.id == message_id][0]
+        except: return
+        return msg
+    
     def parse_message_events(
         self, message: ChatMessage, chat: Chat
     ) -> list[
@@ -58,35 +65,52 @@ class EventListener:
         if not message:
             return []
         
-        if message.text == "{{ITEM_PAID}}" and message.deal is not None:
-            if message.deal.id not in self.review_check_deals:
-                self.review_check_deals.append(message.deal.id)
-            return [
-                NewDealEvent(message.deal, chat), 
-                ItemPaidEvent(message.deal, chat)
-            ]
-        elif message.text == "{{ITEM_SENT}}" and message.deal is not None:
-            return [ItemSentEvent(message.deal, chat)]
-        elif message.text == "{{DEAL_CONFIRMED}}" and message.deal is not None:
-            return [
-                DealConfirmedEvent(message.deal, chat),
-                DealStatusChangedEvent(message.deal, chat),
-            ]
-        elif message.text == "{{DEAL_ROLLED_BACK}}" and message.deal is not None:
-            return [
-                DealRolledBackEvent(message.deal, chat),
-                DealStatusChangedEvent(message.deal, chat),
-            ]
-        elif message.text == "{{DEAL_HAS_PROBLEM}}" and message.deal is not None:
-            return [
-                DealHasProblemEvent(message.deal, chat),
-                DealStatusChangedEvent(message.deal, chat),
-            ]
-        elif message.text == "{{DEAL_PROBLEM_RESOLVED}}" and message.deal is not None:
-            return [
-                DealProblemResolvedEvent(message.deal, chat),
-                DealStatusChangedEvent(message.deal, chat),
-            ]
+        if message.text == "{{ITEM_PAID}}":
+            actual_msg = self._get_actual_message(message.id, chat.id)
+            if actual_msg and actual_msg.deal is not None:
+                if actual_msg.deal.id not in self.review_check_deals:
+                    self.review_check_deals.append(actual_msg.deal.id)
+                return [
+                    NewDealEvent(actual_msg.deal, chat), 
+                    ItemPaidEvent(actual_msg.deal, chat)
+                ]
+        
+        elif message.text == "{{ITEM_SENT}}":
+            actual_msg = self._get_actual_message(message.id, chat.id)
+            if actual_msg and actual_msg.deal is not None:
+                return [ItemSentEvent(actual_msg.deal, chat)]
+        
+        elif message.text == "{{DEAL_CONFIRMED}}":
+            actual_msg = self._get_actual_message(message.id, chat.id)
+            if actual_msg and actual_msg.deal is not None:
+                return [
+                    DealConfirmedEvent(actual_msg.deal, chat),
+                    DealStatusChangedEvent(actual_msg.deal, chat),
+                ]
+        
+        elif message.text == "{{DEAL_ROLLED_BACK}}":
+            actual_msg = self._get_actual_message(message.id, chat.id)
+            if actual_msg and actual_msg.deal is not None:
+                return [
+                    DealRolledBackEvent(actual_msg.deal, chat),
+                    DealStatusChangedEvent(actual_msg.deal, chat),
+                ]
+        
+        elif message.text == "{{DEAL_HAS_PROBLEM}}":
+            actual_msg = self._get_actual_message(message.id, chat.id)
+            if actual_msg and actual_msg.deal is not None:
+                return [
+                    DealHasProblemEvent(actual_msg.deal, chat),
+                    DealStatusChangedEvent(actual_msg.deal, chat),
+                ]
+        
+        elif message.text == "{{DEAL_PROBLEM_RESOLVED}}":
+            actual_msg = self._get_actual_message(message.id, chat.id)
+            if actual_msg and actual_msg.deal is not None:
+                return [
+                    DealProblemResolvedEvent(actual_msg.deal, chat),
+                    DealStatusChangedEvent(actual_msg.deal, chat),
+                ]
 
         return [NewMessageEvent(message, chat)]
     
@@ -165,6 +189,12 @@ class EventListener:
             },
             "type": "subscribe"
         }))
+
+    def _is_chat_subscribed(self, chat_id):
+        for _, sub_chat_id in self.chat_subscriptions.items():
+            if chat_id == sub_chat_id:
+                return True
+        return False
         
     def listen_new_messages(self):
         headers = {
@@ -186,7 +216,7 @@ class EventListener:
         ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
         ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
 
-        chat_list = self.account.get_chats(count=24)
+        chat_list = self.account.get_chats(count=24) # инициализация первых 24 чатов
         self.chats = [chat for chat in chat_list.chats]
         for chat_ in self.chats:
             yield ChatInitializedEvent(chat_)
@@ -205,7 +235,6 @@ class EventListener:
         while True:
             msg = ws.recv()
             msg_data = json.loads(msg)
-            print(msg_data)
             self.logger.debug(f"websocket msg received: {msg_data}")
             
             if msg_data["type"] == "connection_ack":
@@ -213,48 +242,43 @@ class EventListener:
                 for chat_ in self.chats:
                     self._subscribe_chat_message_created(ws, chat_.id)
             
-            elif "chatUpdated" in msg_data["payload"]["data"]:
-                _chat = chat(msg_data["payload"]["data"]["chatUpdated"])
-                _message = chat_message(msg_data["payload"]["data"]["chatUpdated"]["lastMessage"])
-
-                is_new_chat = _chat.id not in [chat_.id for chat_ in self.chats]
-
-                if is_new_chat:
-                    self.chats.append(_chat)
-                    self._subscribe_chat_message_created(ws, _chat.id)
-                else:
-                    for old_chat in self.chats:
-                        if old_chat.id == _chat.id:
-                            self.chats.remove(old_chat)
-                            self.chats.append(_chat)
-                            break
-
-                message_key = f"{_chat.id}:{_message.id if _message else 'none'}"
-                if message_key in self.processed_messages:
-                    continue
-                self.processed_messages.append(message_key)
+            else:
+                if "chatUpdated" in msg_data["payload"]["data"]:
+                    _chat = chat(msg_data["payload"]["data"]["chatUpdated"])
+                    _message = chat_message(msg_data["payload"]["data"]["chatUpdated"]["lastMessage"])
                     
-                events = []
-                if is_new_chat:
-                    events.append(ChatInitializedEvent(_chat))
-                events.extend(self.parse_message_events(_message, _chat))
-                for event in events:
-                    yield event
+                    already_subscribed = self._is_chat_subscribed(_chat.id)
+                    is_new_chat = _chat.id not in [chat_.id for chat_ in self.chats]
 
-            elif "chatMessageCreated" in msg_data["payload"]["data"]:
-                chat_id = self.chat_subscriptions.get(msg_data["id"])
-                try: _chat = [chat_ for chat_ in self.chats if chat_.id == chat_id][0]
-                except: continue
-                _message = chat_message(msg_data["payload"]["data"]["chatMessageCreated"])
+                    if is_new_chat:
+                        self.chats.append(_chat)
+                    if not already_subscribed:
+                        self._subscribe_chat_message_created(ws, _chat.id)
+                    else:
+                        for old_chat in self.chats:
+                            if old_chat.id == _chat.id:
+                                self.chats.remove(old_chat)
+                                self.chats.append(_chat)
+                                break
+                    
+                    if not already_subscribed: # если ещё не были подписаны на чат - получаем новое сообщение в этом ивенте
+                        events = []
+                        if is_new_chat:
+                            events.append(ChatInitializedEvent(_chat))
+                        events.extend(self.parse_message_events(_message, _chat))
+                        for event in events:
+                            yield event
+                    # иначе, если уже подписаны на чат - получаем сообщение из chatMessageCreated
 
-                message_key = f"{chat_id}:{_message.id if _message else 'none'}"
-                if message_key in self.processed_messages:
-                    continue
-                self.processed_messages.append(message_key)
+                if "chatMessageCreated" in msg_data["payload"]["data"]:
+                    chat_id = self.chat_subscriptions.get(msg_data["id"])
+                    try: _chat = [chat_ for chat_ in self.chats if chat_.id == chat_id][0]
+                    except: continue
+                    _message = chat_message(msg_data["payload"]["data"]["chatMessageCreated"])
 
-                events = self.parse_message_events(_message, _chat)
-                for event in events:
-                    yield event
+                    events = self.parse_message_events(_message, _chat)
+                    for event in events:
+                        yield event
 
     def _should_check_deal(self, deal_id, delay=30) -> bool:
         now = time.time()

@@ -305,7 +305,7 @@ class PlayerokBot:
                 else: 
                     max_sequence = self.config["playerok"]["auto_bump_items"]["day_max_sequence"]
 
-                if item.sequence > max_sequence or item.sequence == 0:
+                if item.sequence > max_sequence:
                     priority_statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
                     try: prem_status = [status for status in priority_statuses if status.type == PriorityTypes.PREMIUM][0]
                     except: return

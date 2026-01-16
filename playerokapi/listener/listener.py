@@ -222,7 +222,7 @@ class EventListener:
     
     def _proccess_new_chat_message(self, chat, message):
         events = []
-        already_subscribed = self._is_chat_subscribed(chat.id)
+        is_subscribed = self._is_chat_subscribed(chat.id)
         is_new_chat = chat.id not in [chat_.id for chat_ in self.chats]
 
         if is_new_chat:
@@ -234,7 +234,7 @@ class EventListener:
                     self.chats.append(chat)
                     break
 
-        if not already_subscribed: # если ещё не были подписаны на чат - подписываемся и получаем новое сообщение в этом ивенте
+        if not is_subscribed: # если ещё не были подписаны на чат - подписываемся и получаем новое сообщение в этом ивенте
             self._subscribe_chat_message_created(chat.id)
             if is_new_chat:
                 events.append(ChatInitializedEvent(chat))
@@ -256,12 +256,15 @@ class EventListener:
             "user-agent": self.account.user_agent
         }
 
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ssl_context.check_hostname = True
-        ssl_context.verify_mode = ssl.CERT_REQUIRED
-        ssl_context.load_default_certs()
-        ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
-        ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+        try:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            ssl_context.check_hostname = True
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+            ssl_context.load_default_certs()
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+            ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+        except:
+            ssl_context = None
 
         chat_list = self.account.get_chats(count=24) # инициализация первых 24 чатов
         self.chats = [chat for chat in chat_list.chats]
@@ -271,7 +274,7 @@ class EventListener:
         while True:
             try:
                 self.ws = websocket.WebSocket(
-                    sslopt={"context": ssl_context}
+                    sslopt={"context": ssl_context} if ssl_context else None
                 )
                 self.ws.connect(
                     url="wss://ws.playerok.com/graphql",
@@ -284,7 +287,7 @@ class EventListener:
                 while True:
                     msg = self.ws.recv()
                     msg_data = json.loads(msg)
-                    self.logger.debug(f"websocket msg received: {msg_data}")
+                    self.logger.debug(f"WS msg received: {msg_data}")
                     
                     if msg_data["type"] == "connection_ack":
                         self._subscribe_chat_updated()
@@ -313,7 +316,8 @@ class EventListener:
                             events = self._parse_message_events(_message, _chat)
                             for event in events:
                                 yield event
-            except websocket._exceptions.WebSocketException:
+            except websocket._exceptions.WebSocketException as e:
+                self.logger.error(f"Ошибка при подключении к WebSocket`у, пробую переподключиться...")
                 time.sleep(3)
 
     def _should_check_deal(self, deal_id, delay=30, max_tries=30) -> bool:

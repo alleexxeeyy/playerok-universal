@@ -331,10 +331,12 @@ class PlayerokBot:
 
     def bump_items(self): 
         try:
+            bumped_items = []
             items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
             for item in items:
-                try: item = self.account.get_item(item.id)
-                except: continue
+                if item.id in bumped_items:
+                    continue
+                bumped_items.append(item.id)
                 if item.priority == PriorityTypes.PREMIUM:
                     self.bump_item(item)
         except Exception as e:
@@ -384,8 +386,12 @@ class PlayerokBot:
             
     def restore_expired_items(self):
         try:
+            restored_items = []
             items = self.get_my_items(statuses=[ItemStatuses.EXPIRED])
             for item in items:
+                if item.id in restored_items:
+                    continue
+                restored_items.append(item.id)
                 time.sleep(0.5)
                 self.restore_item(item)
         except Exception as e:

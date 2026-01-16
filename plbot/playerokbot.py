@@ -342,7 +342,7 @@ class PlayerokBot:
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX} Ошибка при поднятии предметов: {Fore.WHITE}")
 
-    def restore_item(self, item: Item | ItemProfile):
+    def restore_item(self, item: Item | MyItem | ItemProfile):
         try:
             included = any(
                 any(
@@ -368,10 +368,6 @@ class PlayerokBot:
                 not self.config["playerok"]["auto_restore_items"]["all"]
                 and included
             ):
-                if not isinstance(item, MyItem):
-                    try: item = self.account.get_item(item.id)
-                    except: return
-
                 priority_statuses = self.account.get_item_priority_statuses(item.id, item.price)
                 try: priority_status = [status for status in priority_statuses if status.type == PriorityTypes.DEFAULT or status.price == 0][0]
                 except IndexError: priority_status = [status for status in priority_statuses][0]
@@ -633,7 +629,12 @@ class PlayerokBot:
         if event.deal.user.id == self.account.id:
             return
         if self.config["playerok"]["auto_restore_items"]["sold"]:
-            self.restore_item(event.deal.item)
+            try: 
+                items = self.get_my_items(count=6, statuses=[ItemStatuses.SOLD])
+                item = [it for it in items if it.name == event.deal.item.name][0]
+            except: 
+                return
+            self.restore_item(item)
         
 
     async def _on_deal_status_changed(self, event: DealStatusChangedEvent):

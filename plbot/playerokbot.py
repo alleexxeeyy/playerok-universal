@@ -243,37 +243,46 @@ class PlayerokBot:
         :rtype: `list` of `playerokapi.types.ItemProfile`
         """
         my_items: list[ItemProfile] = []
+        
         try:
             user = self.account.get_user(self.account.id)
             next_cursor = None
-            saved_items = []
+            saved_item_ids = [item["id"] for item in self.saved_items]
 
             while True:
                 _items = user.get_items(statuses=statuses, after_cursor=next_cursor)
+                
                 for _item in _items.items:
-                    if _item.id not in [item.id for item in my_items]:
+                    is_added = _item.id in [item.id for item in my_items]
+                    is_saved = _item.id in saved_item_ids
+
+                    if not is_added:
                         my_items.append(_item)
-                        saved_items.append(self._serealize_item(_item))
+                        if not is_saved:
+                            self.saved_items.append(self._serealize_item(_item))
                         if len(my_items) >= count and count != -1:
                             return my_items
+                
                 if not _items.page_info.has_next_page:
                     break
                 next_cursor = _items.page_info.end_cursor
                 time.sleep(0.3)
-            self.saved_items = saved_items
         except (RequestError, RequestFailedError) as e:
             for item_dict in list(self.saved_items):
                 item = self._deserealize_item(item_dict)
+                
                 if statuses is None or item.status in statuses:
                     my_items.append(item)
                     if len(my_items) >= count and count != -1:
                         return my_items
+            
             if not my_items: 
                 raise e
+            
         return my_items
 
 
-    def bump_item(self, item: MyItem):
+    def bump_item(self, item: ItemProfile | MyItem):
         try:
             included = any(
                 any(
@@ -299,6 +308,10 @@ class PlayerokBot:
                 not self.config["playerok"]["auto_bump_items"]["all"]
                 and included
             ):
+                if not isinstance(item, MyItem):
+                    try: item = self.account.get_item(item.id)
+                    except: return
+                
                 current_time = datetime.now(pytz.timezone('Europe/Moscow'))
                 if 22 <= current_time.hour or current_time.hour < 6: 
                     max_sequence = self.config["playerok"]["auto_bump_items"]["night_max_sequence"]
@@ -327,7 +340,7 @@ class PlayerokBot:
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX} Ошибка при поднятии предметов: {Fore.WHITE}")
 
-    def restore_item(self, item: Item):
+    def restore_item(self, item: Item | ItemProfile):
         try:
             included = any(
                 any(
@@ -353,6 +366,10 @@ class PlayerokBot:
                 not self.config["playerok"]["auto_restore_items"]["all"]
                 and included
             ):
+                if not isinstance(item, MyItem):
+                    try: item = self.account.get_item(item.id)
+                    except: return
+
                 priority_statuses = self.account.get_item_priority_statuses(item.id, item.price)
                 try: priority_status = [status for status in priority_statuses if status.type == PriorityTypes.DEFAULT or status.price == 0][0]
                 except IndexError: priority_status = [status for status in priority_statuses][0]
@@ -370,8 +387,6 @@ class PlayerokBot:
             items = self.get_my_items(statuses=[ItemStatuses.EXPIRED])
             for item in items:
                 time.sleep(0.5)
-                try: item = self.account.get_item(item.id)
-                except: pass
                 self.restore_item(item)
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении истёкших предметов: {Fore.WHITE}{e}")
@@ -467,7 +482,7 @@ class PlayerokBot:
             while True:
                 if self.config["playerok"]["auto_restore_items"]["expired"]:
                     self.restore_expired_items()
-                time.sleep(35)
+                time.sleep(45)
 
         def bump_items_loop():
             while True:
@@ -612,14 +627,7 @@ class PlayerokBot:
         if event.deal.user.id == self.account.id:
             return
         if self.config["playerok"]["auto_restore_items"]["sold"]:
-            my_items = self.get_my_items(count=12, statuses=[ItemStatuses.SOLD])
-            try: 
-                item = [
-                    item for item in my_items
-                    if item.name == event.deal.item.name
-                ][0]
-            except: return
-            self.restore_item(item)
+            self.restore_item(event.deal.item)
         
 
     async def _on_deal_status_changed(self, event: DealStatusChangedEvent):

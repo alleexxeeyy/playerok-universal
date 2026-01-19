@@ -274,7 +274,9 @@ class EventListener:
 
         while True:
             try:
-                self.ws = websocket.WebSocket()
+                self.ws = websocket.WebSocket(
+                    sslopt={"ca_certs": self.account.__tmp_cert_path}
+                )
                 self.ws.connect(
                     url="wss://ws.playerok.com/graphql",
                     header=[f"{k}: {v}" for k, v in headers.items()],

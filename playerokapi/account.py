@@ -106,9 +106,9 @@ class Account:
         self.profile: AccountProfile | None = None
         """Профиль аккаунта (не путать с профилем пользователя). \n\n_Заполняется при первом использовании get()_"""
 
-        self.__cert_path = os.path.join(os.path.dirname(__file__), "cacert.pem")
-        self.__tmp_cert_path = os.path.join(tempfile.gettempdir(), "cacert.pem")
-        shutil.copyfile(self.__cert_path, self.__tmp_cert_path)
+        self._cert_path = os.path.join(os.path.dirname(__file__), "cacert.pem")
+        self._tmp_cert_path = os.path.join(tempfile.gettempdir(), "cacert.pem")
+        shutil.copyfile(self._cert_path, self._tmp_cert_path)
 
         self._refresh_clients()
         self.logger = getLogger("playerokapi")
@@ -121,7 +121,7 @@ class Account:
             impersonate="chrome",
             timeout=10,
             proxy=self.__proxy_string,
-            verify=self.__tmp_cert_path
+            verify=self._tmp_cert_path
         )
 
     def request(

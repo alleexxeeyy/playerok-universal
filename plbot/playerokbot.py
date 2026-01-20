@@ -263,8 +263,8 @@ class PlayerokBot:
                 if not _items.page_info.has_next_page:
                     break
                 next_cursor = _items.page_info.end_cursor
-                
                 time.sleep(0.5)
+            
             self.saved_items = svd_items
         except (RequestError, RequestFailedError) as e:
             for itm_dict in list(self.saved_items):
@@ -389,7 +389,7 @@ class PlayerokBot:
                 else:
                     self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось восстановить предмет «{item_name_frmtd}». Его статус: {Fore.WHITE}{new_item.status.name}")
         except Exception as e:
-            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении предмета «{item_name_frmtd}»: {Fore.WHITE}{e}")
+            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении предмета «{item.name}»: {Fore.WHITE}{e}")
             
     def restore_expired_items(self):
         try:

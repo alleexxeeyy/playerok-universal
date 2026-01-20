@@ -309,8 +309,11 @@ class PlayerokBot:
                 and included
             ):
                 if not isinstance(item, MyItem):
-                    try: item = self.account.get_item(item.id)
-                    except: return
+                    try: 
+                        item = self.account.get_item(item.id)
+                        time.sleep(120) # задержка, так как на плеерке не сразу меняется текущая позиция товара
+                    except: 
+                        return
                 
                 current_time = datetime.now(pytz.timezone('Europe/Moscow'))
                 if 22 <= current_time.hour or current_time.hour < 6: 
@@ -342,7 +345,6 @@ class PlayerokBot:
                 bumped_items.append(item.id)
                 
                 if item.priority == PriorityTypes.PREMIUM:
-                    time.sleep(120) # задержка, так как на плеерке не сразу меняется позиция товара
                     self.bump_item(item)
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX} Ошибка при поднятии предметов: {Fore.WHITE}{e}")

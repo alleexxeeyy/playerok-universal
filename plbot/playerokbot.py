@@ -243,39 +243,38 @@ class PlayerokBot:
         :rtype: `list` of `playerokapi.types.ItemProfile`
         """
         my_items: list[ItemProfile] = []
+        svd_items: list[dict] = []
         
         try:
             user = self.account.get_user(self.account.id)
             next_cursor = None
-            saved_item_ids = [item["id"] for item in self.saved_items]
 
             while True:
-                _items = user.get_items(statuses=statuses, after_cursor=next_cursor)
+                _items = user.get_items(after_cursor=next_cursor)
                 
-                for _item in _items.items:
-                    is_added = _item.id in [item.id for item in my_items]
-                    is_saved = _item.id in saved_item_ids
-
-                    if not is_added:
-                        my_items.append(_item)
-                        if not is_saved:
-                            self.saved_items.append(self._serealize_item(_item))
-                        if len(my_items) >= count and count != -1:
-                            return my_items
+                for itm in _items.items:
+                    svd_items.append(self._serealize_item(itm))
+                    
+                    if statuses is None or itm.status in statuses:
+                        my_items.append(itm)
+                    if len(my_items) >= count and count != -1:
+                        return my_items
                 
                 if not _items.page_info.has_next_page:
                     break
                 next_cursor = _items.page_info.end_cursor
-                time.sleep(0.3)
-        except (RequestError, RequestFailedError) as e:
-            for item_dict in list(self.saved_items):
-                item = self._deserealize_item(item_dict)
                 
-                if statuses is None or item.status in statuses:
-                    my_items.append(item)
+                time.sleep(0.5)
+            self.saved_items = svd_items
+        except (RequestError, RequestFailedError) as e:
+            for itm_dict in list(self.saved_items):
+                itm = self._deserealize_item(itm_dict)
+                
+                if statuses is None or itm.status in statuses:
+                    my_items.append(itm)
                     if len(my_items) >= count and count != -1:
                         return my_items
-            
+
             if not my_items: 
                 raise e
             
@@ -311,6 +310,8 @@ class PlayerokBot:
                 if not isinstance(item, MyItem):
                     try: 
                         item = self.account.get_item(item.id)
+                        if item.status != ItemStatuses.APPROVED:
+                            return
                         time.sleep(120) # задержка, так как на плеерке не сразу меняется текущая позиция товара
                     except: 
                         return
@@ -379,6 +380,7 @@ class PlayerokBot:
                 try: priority_status = [status for status in priority_statuses if status.type == PriorityTypes.DEFAULT or status.price == 0][0]
                 except IndexError: priority_status = [status for status in priority_statuses][0]
 
+                time.sleep(0.5)
                 new_item = self.account.publish_item(item.id, priority_status.id)
                 item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
                 

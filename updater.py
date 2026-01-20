@@ -41,7 +41,7 @@ def download_update(release_info: dict) -> bytes:
     zip_url = release_info['zipball_url']
     zip_response = requests.get(zip_url)
     if zip_response.status_code != 200:
-        raise Exception(f"При скачивании архива обновления произошла ошибка: {zip_response.status_code}")
+        raise Exception(f"Ошибка при скачивании архива обновления: {zip_response.status_code}")
     return zip_response.content
 
 
@@ -93,7 +93,6 @@ def check_for_updates():
             logger.info(f"Загружаю обновление {latest_release['tag_name']}...")
             bytes = download_update(latest_release)
             if not bytes:
-                print("no bytes")
                 return
             logger.info(f"Устанавливаю обновление {latest_release['tag_name']}...")
             if install_update(latest_release, bytes):

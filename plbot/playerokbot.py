@@ -322,25 +322,30 @@ class PlayerokBot:
                     priority_statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
                     try: prem_status = [status for status in priority_statuses if status.type == PriorityTypes.PREMIUM][0]
                     except: return
+                    
                     time.sleep(0.5)
                     self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
-                    self.logger.info(f"{Fore.LIGHTWHITE_EX}«{(item.name[:32] + '...') if len(item.name) > 32 else item.name}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
-                    time.sleep(1)
+                    
+                    item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
+                    self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
         except Exception as e:
-            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}»: {Fore.WHITE}{e}")
+            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{item.name}»: {Fore.WHITE}{e}")
 
     def bump_items(self): 
         try:
             bumped_items = []
             items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
+            
             for item in items:
                 if item.id in bumped_items:
                     continue
                 bumped_items.append(item.id)
+                
                 if item.priority == PriorityTypes.PREMIUM:
+                    time.sleep(120) # задержка, так как на плеерке не сразу меняется позиция товара
                     self.bump_item(item)
         except Exception as e:
-            self.logger.error(f"{Fore.LIGHTRED_EX} Ошибка при поднятии предметов: {Fore.WHITE}")
+            self.logger.error(f"{Fore.LIGHTRED_EX} Ошибка при поднятии предметов: {Fore.WHITE}{e}")
 
     def restore_item(self, item: Item | MyItem | ItemProfile):
         try:
@@ -373,21 +378,25 @@ class PlayerokBot:
                 except IndexError: priority_status = [status for status in priority_statuses][0]
 
                 new_item = self.account.publish_item(item.id, priority_status.id)
+                item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
+                
                 if new_item.status in [ItemStatuses.PENDING_APPROVAL, ItemStatuses.APPROVED]:
-                    self.logger.info(f"{Fore.LIGHTWHITE_EX}«{(item.name[:32] + '...') if len(item.name) > 32 else item.name}» {Fore.WHITE}— {Fore.YELLOW}товар восстановлен")
+                    self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}товар восстановлен")
                 else:
-                    self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось восстановить предмет «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}». Его статус: {Fore.WHITE}{new_item.status.name}")
+                    self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось восстановить предмет «{item_name_frmtd}». Его статус: {Fore.WHITE}{new_item.status.name}")
         except Exception as e:
-            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении предмета «{(item.name[:32] + '...') if len(item.name) > 32 else item.name}»: {Fore.WHITE}{e}")
+            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении предмета «{item_name_frmtd}»: {Fore.WHITE}{e}")
             
     def restore_expired_items(self):
         try:
             restored_items = []
             items = self.get_my_items(statuses=[ItemStatuses.EXPIRED])
+            
             for item in items:
                 if item.id in restored_items:
                     continue
                 restored_items.append(item.id)
+                
                 time.sleep(0.5)
                 self.restore_item(item)
         except Exception as e:
@@ -472,7 +481,7 @@ class PlayerokBot:
 
         def refresh_account_loop():
             while True:
-                time.sleep(1)
+                time.sleep(1800)
                 self.refresh_account()
 
         def check_banned_loop():
@@ -505,14 +514,22 @@ class PlayerokBot:
         if event.message.user.id == self.account.id:
             return
 
+        is_support_chat = event.chat.id in (self.account.system_chat_id, self.account.support_chat_id)
         if (
             self.config["playerok"]["tg_logging"]["enabled"]
             and (self.config["playerok"]["tg_logging"]["events"]["new_user_message"] 
             or self.config["playerok"]["tg_logging"]["events"]["new_system_message"])
         ):
             do = False
-            if self.config["playerok"]["tg_logging"]["events"]["new_user_message"] and event.message.user.username not in ["Playerok.com", "Поддержка"]: do = True 
-            if self.config["playerok"]["tg_logging"]["events"]["new_system_message"] and event.message.user.username in ["Playerok.com", "Поддержка"]: do = True 
+            if (
+                self.config["playerok"]["tg_logging"]["events"]["new_user_message"] 
+                and not is_support_chat
+            ) or (
+                self.config["playerok"]["tg_logging"]["events"]["new_system_message"] 
+                and is_support_chat
+            ): 
+                do = True 
+            
             if do:
                 text = f"<b>{event.message.user.username}:</b> "
                 text += event.message.text or ""
@@ -529,7 +546,7 @@ class PlayerokBot:
                 )
 
         if (
-            event.chat.id not in [self.account.system_chat_id, self.account.support_chat_id]
+            not is_support_chat
             and event.message.text is not None
         ):
             self.initialized_users.append(event.message.user.id)
@@ -611,10 +628,13 @@ class PlayerokBot:
 
         self.send_message(event.chat.id, self.msg("new_deal", deal_item_name=(event.deal.item.name or "-"), deal_item_price=event.deal.item.price))
         
-        if event.chat.id not in [self.account.system_chat_id, self.account.support_chat_id]:
-            if event.deal.user.id not in self.initialized_users:
-                self.send_message(event.chat.id, self.msg("first_message", username=event.deal.user.username))
-                self.initialized_users.append(event.deal.user.id)
+        is_support_chat = event.chat.id in (self.account.system_chat_id, self.account.support_chat_id)
+        if (
+            event.deal.user.id not in self.initialized_users
+            and not is_support_chat
+        ):
+            self.send_message(event.chat.id, self.msg("first_message", username=event.deal.user.username))
+            self.initialized_users.append(event.deal.user.id)
                 
         if self.config["playerok"]["auto_deliveries"]["enabled"]:
             for auto_delivery in self.auto_deliveries:

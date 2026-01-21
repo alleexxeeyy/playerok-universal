@@ -223,7 +223,7 @@ class Account:
                 break
             self._refresh_clients()
             delay = min(120.0, 5.0 * (2 ** attempt)) 
-            self.logger.error(f"Cloudflare Detected, пробую отправить запрос снова через {delay} секунд")
+            self.logger.warning(f"Cloudflare Detected, пробую отправить запрос снова через {delay} секунд")
             time.sleep(delay)
         else:
             raise CloudflareDetectedException(resp)
@@ -235,7 +235,7 @@ class Account:
                     if exc.error_code != 500:
                         break
                     delay = min(120.0, 2 ** attempt)
-                    self.logger.error(f"500 Error Code, пробую отправить запрос снова через {delay} секунд")
+                    self.logger.warning(f"500 Error Code, пробую отправить запрос снова через {delay} секунд")
                     time.sleep(delay)
                 else:
                     raise exc

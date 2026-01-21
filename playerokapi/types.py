@@ -333,6 +333,8 @@ class UserProfile:
     def get_items(
         self, 
         count: int = 24, 
+        game_id: str | None = None, 
+        category_id: str | None = None, 
         statuses: list[ItemStatuses] | None = None,
         after_cursor: str | None = None
     ) -> ItemProfileList:
@@ -341,6 +343,12 @@ class UserProfile:
 
         :param count: Кол-во предеметов, которые нужно получить (не более 24 за один запрос), _опционально_.
         :type count: `int`
+        
+        :param game_id: ID игры/приложения, чьи предметы нужно получить, _опционально_.
+        :type game_id: `str` or `None`
+
+        :param category_id: ID категории игры/приложения, чьи предметы нужно получить, _опционально_.
+        :type category_id: `str` or `None`
 
         :param status: Массив типов предметов, которые нужно получить. Некоторые статусы можно получить только, если это профиль вашего аккаунта. Если не указано, получает сразу все возможные.
         :type status: `list[playerokapi.enums.ItemStatuses]`
@@ -365,7 +373,9 @@ class UserProfile:
                 }, 
                 "filter": {
                     "userId": self.id, 
-                    "status": [status.name for status in statuses] if statuses else None
+                    "status": [status.name for status in statuses] if statuses else None,
+                    "gameId": game_id,
+                    "gameCategoryId": category_id
                 }, 
                 "showForbiddenImage": False
             }),

@@ -318,7 +318,8 @@ class EventListener:
                             for event in events:
                                 yield event
             except websocket._exceptions.WebSocketException as e:
-                self.logger.error(f"Ошибка при подключении к WebSocket`у, пробую переподключиться...")
+                self.logger.error(f"Ошибка при подключении к WebSocket: {e}")
+                self.logger.error(f"Переподключаюсь к WebSocket...")
                 time.sleep(3)
 
     def _should_check_deal(self, deal_id, delay=30, max_tries=30) -> bool:

@@ -372,14 +372,20 @@ class EventListener:
             self._last_chat_check = time.time()
             self._possible_new_chat.clear()
             
-            try: chat_list = self.account.get_chats(count=5, type=ChatTypes.PM)
-            except: continue
             known_chat_ids = [chat_.id for chat_ in self.chats]
-
+            
+            for _ in range(3):
+                chat_list = self.account.get_chats(count=5, type=ChatTypes.PM)
+                new_deal_exists = any(
+                    chat_ for chat_ in chat_list.chats 
+                    if chat_.last_message.text == "{{ITEM_PAID}}"
+                )
+                if new_deal_exists: break
+                else: time.sleep(4)
+            
             for chat_ in chat_list.chats:
                 if chat_.id in known_chat_ids:
                     continue
-
                 if chat_.last_message.text == "{{ITEM_PAID}}":
                     events = self._proccess_new_chat_message(chat_, chat_.last_message)
                     for event in events:

@@ -262,13 +262,13 @@ class PlayerokBot:
             next_cursor = None
 
             while True:
-                _items = user.get_items(
+                itm_list = user.get_items(
                     after_cursor=next_cursor, 
                     game_id=game_id, 
                     category_id=category_id
                 )
                 
-                for itm in _items.items:
+                for itm in itm_list.items:
                     svd_items.append(self._serealize_item(itm))
                     
                     if statuses is None or itm.status in statuses:
@@ -276,9 +276,9 @@ class PlayerokBot:
                         if len(my_items) >= count and count != -1:
                             return my_items
                 
-                if not _items.page_info.has_next_page:
+                if not itm_list.page_info.has_next_page:
                     break
-                next_cursor = _items.page_info.end_cursor
+                next_cursor = itm_list.page_info.end_cursor
                 time.sleep(0.5)
             
             self.saved_items = svd_items
@@ -292,7 +292,7 @@ class PlayerokBot:
                         return my_items
 
             if not my_items: 
-                raise e
+                raise
             
         return my_items
 
@@ -668,13 +668,17 @@ class PlayerokBot:
     async def _on_item_paid(self, event: ItemPaidEvent):
         if event.deal.user.id == self.account.id:
             return
+        
         if self.config["playerok"]["auto_restore_items"]["sold"]:
-            try: 
+            for _ in range(3):
                 items = self.get_my_items(count=6, statuses=[ItemStatuses.SOLD])
-                item = [it for it in items if it.name == event.deal.item.name][0]
-            except: 
-                return
-            self.restore_item(item)
+                try: 
+                    item = [it for it in items if it.name == event.deal.item.name][0]
+                    self.restore_item(item)
+                    break
+                except: 
+                    time.sleep(4)
+                
         
 
     async def _on_deal_status_changed(self, event: DealStatusChangedEvent):

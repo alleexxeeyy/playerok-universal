@@ -10,10 +10,9 @@ from .. import callback_datas as calls
 def settings_bump_included_text():
     included_bump_items = sett.get("auto_bump_items").get("included")
     txt = textwrap.dedent(f"""
-        <b>⬆️ Поднятие → ➕ Включенные</b>
-        Всего <b>{len(included_bump_items)}</b> включенных предметов для авто-поднятия
+        <b>⬆️➕ Включенные</b>
 
-        Перемещайтесь по разделам ниже. Нажмите на корзину справа от ключевых фраз, чтобы удалить товар из включенных ↓
+        Всего <b>{len(included_bump_items)}</b> включенных предметов:
     """)
     return txt
 
@@ -56,7 +55,6 @@ def settings_bump_included_kb(page: int = 0):
     ])
     rows.append([
         InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="bump").pack()),
-        InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.IncludedBumpItemsPagination(page=page).pack())
     ])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -65,7 +63,7 @@ def settings_bump_included_kb(page: int = 0):
 
 def settings_bump_included_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>⬆️ Поднятие → ➕ Включенные</b>
+        <b>⬆️➕ Включенные</b>
         \n{placeholder}
     """)
     return txt
@@ -73,7 +71,7 @@ def settings_bump_included_float_text(placeholder: str):
 
 def settings_new_bump_included_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>⬆️➕ Добавление нового включенного предмета</b>
+        <b>⬆️➕ Добавление включенного предмета</b>
         \n{placeholder}
     """)
     return txt

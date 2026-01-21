@@ -18,17 +18,18 @@ def settings_logger_text():
     event_new_problem = "🟢" if tg_logging_events["new_problem"] else "🔴"
     event_deal_status_changed = "🟢" if tg_logging_events["deal_status_changed"] else "🔴"
     txt = textwrap.dedent(f"""
-        <b>⚙️ Настройки → 👀 Логгер</b>
+        <b>👀 Логгер</b>
 
-        <b>👀 Логгирование ивентов Playerok в Telegram:</b> {tg_logging_enabled}
+        <b>👀 Логгирование ивентов:</b> {tg_logging_enabled}
         <b>💬 ID чата для логов:</b> {tg_logging_chat_id}
-        <b>📢 Ивенты логгирования:</b>
-        ・ {event_new_user_message} <b>💬👤 Новое сообщение от пользователя</b>
-        ・ {event_new_system_message} <b>💬⚙️ Новое системное сообщение</b>
-        ・ {event_new_deal} <b>📋 Новая сделка</b>
-        ・ {event_new_review} <b>💬✨ Новый отзыв</b>
-        ・ {event_new_problem} <b>🤬 Новая жалоба в сделке</b>
-        ・ {event_deal_status_changed} <b>🔄️📋 Статус сделки изменился</b>
+        
+        <b>📢 Ивенты:</b>
+        <b>・ {event_new_user_message}  💬👤 Новое сообщение от пользователя</b>
+        <b>・ {event_new_system_message}  💬⚙️ Новое системное сообщение</b>
+        <b>・ {event_new_deal}  📋 Новая сделка</b>
+        <b>・ {event_new_review}  💬✨ Новый отзыв</b>
+        <b>・ {event_new_problem}  🤬 Новая жалоба в сделке</b>
+        <b>・ {event_deal_status_changed}  🔄️📋 Статус сделки изменился</b>
         
         Выберите параметр для изменения ↓
     """)
@@ -50,19 +51,18 @@ def settings_logger_kb():
         [InlineKeyboardButton(text=f"👀 Логгирование ивентов Playerok в Telegram: {tg_logging_enabled}", callback_data="switch_tg_logging_enabled")],
         [InlineKeyboardButton(text=f"💬 ID чата для логов: {tg_logging_chat_id}", callback_data="enter_tg_logging_chat_id")],
         [
-        InlineKeyboardButton(text=f"{event_new_user_message} 💬👤 Новое сообщение от пользователя", callback_data="switch_tg_logging_event_new_user_message"),
-        InlineKeyboardButton(text=f"{event_new_system_message} 💬⚙️ Новое системное сообщение", callback_data="switch_tg_logging_event_new_system_message"),
-        InlineKeyboardButton(text=f"{event_new_deal} 📋 Новая сделка", callback_data="switch_tg_logging_event_new_deal")
+        InlineKeyboardButton(text=f"{event_new_user_message}  💬👤 Новое сообщение от пользователя", callback_data="switch_tg_logging_event_new_user_message"),
+        InlineKeyboardButton(text=f"{event_new_system_message}  💬⚙️ Новое системное сообщение", callback_data="switch_tg_logging_event_new_system_message"),
         ],
         [
-        InlineKeyboardButton(text=f"{event_new_review} 💬✨ Новый отзыв", callback_data="switch_tg_logging_event_new_review"),
-        InlineKeyboardButton(text=f"{event_new_problem} 🤬 Новая жалоба в сделке", callback_data="switch_tg_logging_event_new_problem"),
-        InlineKeyboardButton(text=f"{event_deal_status_changed} 🔄️📋 Статус сделки изменился", callback_data="switch_tg_logging_event_deal_status_changed")
+        InlineKeyboardButton(text=f"{event_new_deal}  📋 Новая сделка", callback_data="switch_tg_logging_event_new_deal"),
+        InlineKeyboardButton(text=f"{event_new_review}  💬✨ Новый отзыв", callback_data="switch_tg_logging_event_new_review"),
         ],
         [
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack()),
-        InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.SettingsNavigation(to="logger").pack())
-        ]
+        InlineKeyboardButton(text=f"{event_new_problem}  🤬 Новая жалоба в сделке", callback_data="switch_tg_logging_event_new_problem"),
+        InlineKeyboardButton(text=f"{event_deal_status_changed}  🔄️📋 Статус сделки изменился", callback_data="switch_tg_logging_event_deal_status_changed")
+        ],
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack())]
     ]
     if config["playerok"]["tg_logging"]["chat_id"]:
         rows[1].append(InlineKeyboardButton(text=f"❌💬 Очистить", callback_data="clean_tg_logging_chat_id"))
@@ -72,7 +72,7 @@ def settings_logger_kb():
 
 def settings_logger_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>⚙️ Настройки → 👀 Логгер</b>
+        <b>👀 Логгер</b>
         \n{placeholder}
     """)
     return txt

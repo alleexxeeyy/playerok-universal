@@ -10,10 +10,9 @@ from .. import callback_datas as calls
 def settings_restore_included_text():
     included_restore_items = sett.get("auto_restore_items").get("included")
     txt = textwrap.dedent(f"""
-        <b>♻️ Восстановление → ➕ Включенные</b>
-        Всего <b>{len(included_restore_items)}</b> включенных предметов для авто-восстановления
+        <b>♻️➕ Включенные</b>
 
-        Перемещайтесь по разделам ниже. Нажмите на корзину справа от ключевых фраз, чтобы удалить товар из включенных ↓
+        Всего <b>{len(included_restore_items)}</b> включенных предметов:
     """)
     return txt
 
@@ -55,8 +54,7 @@ def settings_restore_included_kb(page: int = 0):
         InlineKeyboardButton(text="➕📄 Добавить много", callback_data="send_new_included_restore_items_keyphrases_file"),
     ])
     rows.append([
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="restore").pack()),
-        InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.IncludedRestoreItemsPagination(page=page).pack())
+        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="restore").pack())
     ])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -65,7 +63,7 @@ def settings_restore_included_kb(page: int = 0):
 
 def settings_restore_included_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>♻️ Восстановление → ➕ Включенные</b>
+        <b>♻️➕ Включенные</b>
         \n{placeholder}
     """)
     return txt
@@ -73,7 +71,7 @@ def settings_restore_included_float_text(placeholder: str):
 
 def settings_new_restore_included_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>♻️➕ Добавление нового включенного предмета</b>
+        <b>♻️➕ Добавление включенного предмета</b>
         \n{placeholder}
     """)
     return txt

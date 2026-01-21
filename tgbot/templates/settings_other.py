@@ -15,19 +15,15 @@ def settings_other_text():
     watermark_enabled = "🟢 Включено" if config["playerok"]["watermark"]["enabled"] else "🔴 Выключено"
     watermark_value = config["playerok"]["watermark"]["value"] or "❌ Не задано"
     txt = textwrap.dedent(f"""
-        <b>⚙️ Настройки → ⌨️ Прочее</b>
+        <b>🔧 Прочее</b>
 
         <b>👀 Чтение чата перед отправкой сообщения:</b> {switch_read_chat_enabled}
         <b>☑️ Авто-подтверждение заказов:</b> {auto_complete_deals_enabled}
         <b>⌨️ Пользовательские команды:</b> {custom_commands_enabled}
         <b>🚀 Авто-выдача:</b> {auto_deliveries_enabled}
+        
         <b>©️ Водяной знак под сообщениями:</b> {watermark_enabled}
         <b>✍️©️ Водяной знак:</b> {watermark_value}
-
-        <b>Что такое автоматические ответы на отзывы?</b>
-        Когда покупатель будет оставлять отзыв, бот будет автоматически отвечать на него. В ответе на отзыв будут написаны детали заказа.
-
-        Выберите параметр для изменения ↓
     """)
     return txt
 
@@ -47,10 +43,7 @@ def settings_other_kb():
         [InlineKeyboardButton(text=f"🚀 Авто-выдача: {auto_deliveries_enabled}", callback_data="switch_auto_deliveries_enabled")],
         [InlineKeyboardButton(text=f"©️ Водяной знак под сообщениями: {watermark_enabled}", callback_data="switch_watermark_enabled")],
         [InlineKeyboardButton(text=f"✍️©️ Водяной знак: {watermark_value}", callback_data="enter_watermark_value")],
-        [
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack()),
-        InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.SettingsNavigation(to="other").pack())
-        ]
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack())]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
@@ -58,7 +51,7 @@ def settings_other_kb():
 
 def settings_other_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>⚙️ Настройки → ⌨️ Прочее</b>
+        <b>🔧 Прочее</b>
         \n{placeholder}
     """)
     return txt

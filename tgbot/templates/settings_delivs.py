@@ -10,10 +10,9 @@ from .. import callback_datas as calls
 def settings_delivs_text():
     auto_deliveries = sett.get("auto_deliveries")
     txt = textwrap.dedent(f"""
-        <b>⚙️ Настройки → 🚀 Авто-выдача</b>
-        Всего <b>{len(auto_deliveries)}</b> настроенных товаров для авто-выдачи в конфиге
+        <b>🚀 Авто-выдача</b>
 
-        Перемещайтесь по разделам ниже. Нажмите на ID товара, чтобы перейти в редактирование его авто-выдачи ↓
+        Всего <b>{len(auto_deliveries)}</b> товаров с авто-выдачей:
     """)
     return txt
 
@@ -33,8 +32,12 @@ def settings_delivs_kb(page: int = 0):
 
     for deliv in list(auto_deliveries)[start_offset:end_offset]:
         keyphrases = ", ".join(deliv.get("keyphrases")) or "❌ Не задано"
+        keyphrases_frmtd = keyphrases[:32] + ("..." if len(keyphrases) > 32 else "")
         message = "\n".join(deliv.get("message")) or "❌ Не задано"
-        rows.append([InlineKeyboardButton(text=f"{keyphrases[:32] + ('...' if len(keyphrases) > 32 else '')} → {message}", callback_data=calls.AutoDeliveryPage(index=auto_deliveries.index(deliv)).pack())])
+        rows.append([InlineKeyboardButton(
+            text=f"{keyphrases_frmtd} → {message}", 
+            callback_data=calls.AutoDeliveryPage(index=auto_deliveries.index(deliv)).pack()
+        )])
 
     if total_pages > 1:
         buttons_row = []
@@ -51,7 +54,6 @@ def settings_delivs_kb(page: int = 0):
     rows.append([InlineKeyboardButton(text="➕🚀 Добавить", callback_data="enter_new_auto_delivery_keyphrases")])
     rows.append([
         InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack()),
-        InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.AutoDeliveriesPagination(page=page).pack())
     ])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -60,7 +62,7 @@ def settings_delivs_kb(page: int = 0):
 
 def settings_deliv_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>⚙️ Настройки → ⌨️ Авто-выдача</b>
+        <b>🚀 Авто-выдача</b>
         \n{placeholder}
     """)
     return txt
@@ -68,7 +70,7 @@ def settings_deliv_float_text(placeholder: str):
 
 def settings_new_deliv_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>🚀 Добавление пользовательской авто-выдачи</b>
+        <b>➕🚀 Добавление авто-выдачи</b>
         \n{placeholder}
     """)
     return txt

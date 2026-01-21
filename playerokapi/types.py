@@ -364,6 +364,13 @@ class UserProfile:
             "Content-Type": "application/json",
             "Origin": self.__account.base_url
         }
+        filter = {
+            "userId": self.id, 
+            "status": [status.name for status in statuses] if statuses else None
+        }
+        if game_id: filter["gameId"] = game_id
+        elif category_id: filter["gameCategoryId"] = category_id
+        
         payload = {
             "operationName": "items",
             "variables": json.dumps({
@@ -371,12 +378,7 @@ class UserProfile:
                     "first": count, 
                     "after": after_cursor
                 }, 
-                "filter": {
-                    "userId": self.id, 
-                    "status": [status.name for status in statuses] if statuses else None,
-                    "gameId": game_id,
-                    "gameCategoryId": category_id
-                }, 
+                "filter": filter, 
                 "showForbiddenImage": False
             }),
             "extensions": json.dumps({

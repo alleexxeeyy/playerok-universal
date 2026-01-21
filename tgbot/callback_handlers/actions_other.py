@@ -287,9 +287,9 @@ async def callback_add_new_custom_command(callback: CallbackQuery, state: FSMCon
         new_custom_command = data.get("new_custom_command")
         new_custom_command_answer = data.get("new_custom_command_answer")
         if not new_custom_command:
-            raise Exception("❌ Новая пользовательская команда не была найдена, повторите процесс с самого начала")
+            raise Exception("❌ Новая команда не была найдена, повторите процесс с самого начала")
         if not new_custom_command_answer:
-            raise Exception("❌ Ответ на новую пользовательскую команду не был найден, повторите процесс с самого начала")
+            raise Exception("❌ Ответ на новую команду не был найден, повторите процесс с самого начала")
 
         custom_commands[new_custom_command] = new_custom_command_answer.splitlines()
         sett.set("custom_commands", custom_commands)
@@ -298,7 +298,7 @@ async def callback_add_new_custom_command(callback: CallbackQuery, state: FSMCon
         await throw_float_message(
             state=state, 
             message=callback.message, 
-            text=templ.settings_new_comm_float_text(f"✅ <b>Пользовательская команда</b> <code>{new_custom_command}</code> была добавлена"), 
+            text=templ.settings_new_comm_float_text(f"✅ <b>Команда</b> <code>{new_custom_command}</code> была добавлена"), 
             reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=last_page).pack())
         )
     except Exception as e:
@@ -319,12 +319,12 @@ async def callback_confirm_deleting_custom_command(callback: CallbackQuery, stat
         data = await state.get_data()
         custom_command = data.get("custom_command")
         if not custom_command:
-            raise Exception("❌ Пользовательская команда не была найдена, повторите процесс с самого начала")
+            raise Exception("❌ Команда не была найдена, повторите процесс с самого начала")
         
         await throw_float_message(
             state=state, 
             message=callback.message, 
-            text=templ.settings_comm_page_float_text(f"🗑️ Подтвердите <b>удаление пользовательской команды</b> <code>{custom_command}</code>"), 
+            text=templ.settings_comm_page_float_text(f"🗑️ Подтвердите <b>удаление команды</b> <code>{custom_command}</code>"), 
             reply_markup=templ.confirm_kb(confirm_cb="delete_custom_command", cancel_cb=calls.CustomCommandPage(command=custom_command).pack())
         )
     except Exception as e:
@@ -347,14 +347,14 @@ async def callback_delete_custom_command(callback: CallbackQuery, state: FSMCont
         custom_commands = sett.get("custom_commands")
         custom_command = data.get("custom_command")
         if not custom_command:
-            raise Exception("❌ Пользовательская команда не была найдена, повторите процесс с самого начала")
+            raise Exception("❌ Команда не была найдена, повторите процесс с самого начала")
         
         del custom_commands[custom_command]
         sett.set("custom_commands", custom_commands)
         await throw_float_message(
             state=state, 
             message=callback.message, 
-            text=templ.settings_comm_page_float_text(f"✅ <b>Пользовательская команда</b> <code>{custom_command}</code> была удалена"), 
+            text=templ.settings_comm_page_float_text(f"✅ <b>Команда</b> <code>{custom_command}</code> была удалена"), 
             reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=last_page).pack())
         )
     except Exception as e:
@@ -419,7 +419,7 @@ async def callback_confirm_deleting_auto_delivery(callback: CallbackQuery, state
         await throw_float_message(
             state=state, 
             message=callback.message, 
-            text=templ.settings_deliv_page_float_text(f"🗑️ Подтвердите <b>удаление пользовательской авто-выдачи</b> для ключевых фраз <code>{auto_delivery_keyphrases}</code>"), 
+            text=templ.settings_deliv_page_float_text(f"🗑️ Подтвердите <b>удаление авто-выдачи</b> для ключевых фраз <code>{auto_delivery_keyphrases}</code>"), 
             reply_markup=templ.confirm_kb(confirm_cb="delete_auto_delivery", cancel_cb=calls.AutoDeliveryPage(index=auto_delivery_index).pack())
         )
     except Exception as e:

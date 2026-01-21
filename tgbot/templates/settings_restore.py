@@ -15,24 +15,22 @@ def settings_restore_text():
     auto_restore_items_included = len(auto_restore_items["included"])
     auto_restore_items_excluded = len(auto_restore_items["excluded"])
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки → ♻️ Восстановление</b>
+        <b>♻️ Восстановление</b>
 
-        ♻️ <b>Авто-восстановление предметов:</b>
-        ・ <b>🛒 Проданные:</b> {auto_restore_items_sold}
-        ・ <b>⏰ Истёкшие:</b> {auto_restore_items_expired}
+        <b>♻️ Авто-восстановление предметов:</b>
+        <b>・ Проданные:</b> {auto_restore_items_sold}
+        <b>・ Истёкшие:</b> {auto_restore_items_expired}
 
-        📦 <b>Восстанавливать:</b> {auto_restore_items_all}
+        <b>📦 Восстанавливать:</b> {auto_restore_items_all}
 
-        ➕ <b>Включенные:</b> {auto_restore_items_included}
-        ➖ <b>Исключенные:</b> {auto_restore_items_excluded}
+        <b>➕ Включенные:</b> {auto_restore_items_included}
+        <b>➖ Исключенные:</b> {auto_restore_items_excluded}
 
         <b>Что такое автоматическое восстановление предметов?</b>
         Эта функция позволит автоматически восстанавливать (заново выставлять) предмет, который только что купили или который истёк, чтобы он снова был на продаже. Предмет будет выставлен с тем же статусом приоритета, что и был раньше.
 
         <b>Примечание:</b>
         Если вы выберете "Все предметы", то будут восстанавливаться все товары, кроме тех, что указаны в исключениях. Если вы выберете "Указанные предметы", то будут восстанавливаться только те товары, которые вы добавите во включенные.
-        
-        Выберите параметр для изменения ↓
     """)
     return txt
 
@@ -53,10 +51,7 @@ def settings_restore_kb():
         InlineKeyboardButton(text=f"➕ Включенные: {auto_restore_items_included}", callback_data=calls.IncludedRestoreItemsPagination(page=0).pack()),
         InlineKeyboardButton(text=f"➖ Исключенные: {auto_restore_items_excluded}", callback_data=calls.ExcludedRestoreItemsPagination(page=0).pack())
         ],
-        [
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack()),
-        InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.SettingsNavigation(to="items").pack())
-        ]
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack())]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
@@ -64,7 +59,7 @@ def settings_restore_kb():
 
 def settings_restore_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки → ♻️ Восстановление</b>
+        <b>♻️ Восстановление</b>
         \n{placeholder}
     """)
     return txt

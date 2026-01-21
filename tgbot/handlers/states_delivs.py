@@ -73,11 +73,17 @@ async def handler_waiting_for_new_auto_delivery_message(message: types.Message, 
         data = await state.get_data()
         await state.update_data(new_auto_delivery_message=message.text.strip())
 
-        keyphrases = "</code>, <code>".join(data.get("new_auto_delivery_keyphrases"))
+        phrases = "</code>, <code>".join(data.get("new_auto_delivery_keyphrases"))
+        msg = message.text.strip()
+        
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_float_text(f"➕ Подтвердите <b>добавление авто-выдачи</b> с ключевыми фразами <code>{keyphrases}</code>"),
+            text=templ.settings_new_deliv_float_text(
+                f"✔️ Подтвердите <b>добавление авто-выдачи:</b>"
+                f"\n<b>· Ключевые фразы:</b> <code>{phrases}</code>"
+                f"\n<b>· Сообщение:</b> {msg}"
+            ),
             reply_markup=templ.confirm_kb(confirm_cb="add_new_auto_delivery", cancel_cb=calls.AutoDeliveriesPagination(page=data.get("last_page", 0)).pack())
         )
     except Exception as e:

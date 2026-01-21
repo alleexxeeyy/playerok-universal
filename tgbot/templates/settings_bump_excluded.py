@@ -10,10 +10,9 @@ from .. import callback_datas as calls
 def settings_bump_excluded_text():
     excluded_bump_items = sett.get("auto_bump_items").get("excluded")
     txt = textwrap.dedent(f"""
-        <b>⬆️ Поднятие → ➖ Исключенные</b>
-        Всего <b>{len(excluded_bump_items)}</b> исключенных предметов из авто-поднятия
+        <b>⬆️➖ Исключенные</b>
 
-        Перемещайтесь по разделам ниже. Нажмите на корзину справа от ключевых фраз, чтобы удалить товар из исключенных ↓
+        Всего <b>{len(excluded_bump_items)}</b> исключенных предметов:
     """)
     return txt
 
@@ -56,7 +55,6 @@ def settings_bump_excluded_kb(page: int = 0):
     ])
     rows.append([
         InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="bump").pack()),
-        InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.ExcludedBumpItemsPagination(page=page).pack())
     ])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -65,7 +63,7 @@ def settings_bump_excluded_kb(page: int = 0):
 
 def settings_bump_excluded_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>⬆️ Поднятие → ➖ Исключенные</b>
+        <b>⬆️➖ Исключенные</b>
         \n{placeholder}
     """)
     return txt
@@ -73,7 +71,7 @@ def settings_bump_excluded_float_text(placeholder: str):
 
 def settings_new_bump_excluded_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>⬆️➖ Добавление нового исключенного предмета</b>
+        <b>⬆️➖ Добавление исключенного предмета</b>
         \n{placeholder}
     """)
     return txt

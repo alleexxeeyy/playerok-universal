@@ -72,10 +72,18 @@ async def handler_waiting_for_new_custom_command_answer(message: types.Message, 
 
         data = await state.get_data()
         await state.update_data(new_custom_command_answer=message.text.strip())
+        
+        cmd = data.get("new_custom_command")
+        answr = message.text.strip()
+
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_comm_float_text(f"➕ Подтвердите <b>добавление новой команды</b> <code>{data['new_custom_command']}</code> ↓"),
+            text=templ.settings_new_comm_float_text(
+                f"✔️ Подтвердите <b>добавление новой команды:</b>"
+                f"\n<b>· Команда:</b> {cmd}"
+                f"\n<b>· Ответ:</b> <blockquote>{answr}</blockquote>"
+            ),
             reply_markup=templ.confirm_kb(confirm_cb="add_new_custom_command", cancel_cb=calls.CustomCommandsPagination(page=data.get("last_page", 0)).pack())
         )
     except Exception as e:

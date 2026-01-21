@@ -16,7 +16,7 @@ def settings_bump_text():
     auto_bump_items_included = len(auto_bump_items["included"])
     auto_bump_items_excluded = len(auto_bump_items["excluded"])
     txt = textwrap.dedent(f"""
-        <b>⚙️ Настройки → ⬆️ Поднятие</b>
+        <b>⬆️ Поднятие</b>
 
         <b>⬆️ Авто-поднятие предметов:</b> {auto_bump_items_enabled}
         <b>📦 Поднимать:</b> {auto_bump_items_all}
@@ -35,8 +35,6 @@ def settings_bump_text():
 
         <b>Примечание:</b>
         Если вы выберете "Все предметы", то будут подниматься все товары, кроме тех, что указаны в исключениях. Если вы выберете "Указанные предметы", то будут подниматься только те товары, которые вы добавите во включенные.
-
-        Выберите параметр для изменения ↓
     """)
     return txt
 
@@ -61,10 +59,7 @@ def settings_bump_kb():
         InlineKeyboardButton(text=f"➕ Включенные: {auto_bump_items_included}", callback_data=calls.IncludedBumpItemsPagination(page=0).pack()),
         InlineKeyboardButton(text=f"➖ Исключенные: {auto_bump_items_excluded}", callback_data=calls.ExcludedBumpItemsPagination(page=0).pack())
         ],
-        [
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack()),
-        InlineKeyboardButton(text="🔄️ Обновить", callback_data=calls.SettingsNavigation(to="bump").pack())
-        ]
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack())]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
@@ -72,7 +67,7 @@ def settings_bump_kb():
 
 def settings_bump_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>⚙️ Настройки → ⬆️ Поднятие</b>
+        <b>⬆️ Поднятие</b>
         \n{placeholder}
     """)
     return txt

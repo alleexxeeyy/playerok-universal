@@ -282,7 +282,7 @@ class PlayerokBot:
                 time.sleep(0.5)
             
             self.saved_items = svd_items
-        except (RequestError, RequestFailedError) as e:
+        except (RequestError, RequestFailedError):
             for itm_dict in list(self.saved_items):
                 itm = self._deserealize_item(itm_dict)
                 
@@ -323,44 +323,56 @@ class PlayerokBot:
                 not self.config["playerok"]["auto_bump_items"]["all"]
                 and included
             ):
-                if not isinstance(item, MyItem):
-                    try: 
-                        item = self.account.get_item(item.id)
-                        if item.status != ItemStatuses.APPROVED:
-                            return
-                        time.sleep(120) # задержка, так как на плеерке не сразу меняется текущая позиция товара
-                    except: 
-                        return
-                
-                current_time = datetime.now(pytz.timezone('Europe/Moscow'))
+                current_time = datetime.now(pytz.timezone("Europe/Moscow"))
                 if 22 <= current_time.hour or current_time.hour < 6: 
                     max_sequence = self.config["playerok"]["auto_bump_items"]["night_max_sequence"]
                 else: 
                     max_sequence = self.config["playerok"]["auto_bump_items"]["day_max_sequence"]
-
-                if item.sequence > max_sequence:
-                    priority_statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
-                    try: prem_status = [status for status in priority_statuses if status.type == PriorityTypes.PREMIUM][0]
+                
+                if not isinstance(item, MyItem):
+                    try: item = self.account.get_item(item.id)
                     except: return
-                    
+
+                table_items = []
+                crsr = None
+                while True:
+                    itms_list = self.account.get_items(
+                        category_id=item.category.id,
+                        after_cursor=crsr
+                    )
+                    table_items.extend([itm for itm in itms_list.items])
+                    if len(table_items) > max_sequence:
+                        break
+                    if not itms_list.page_info.has_next_page:
+                        break
+                    crsr = itms_list.page_info.end_cursor
                     time.sleep(0.5)
-                    self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
-                    
-                    item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
-                    self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
+
+                for sequence, table_item in enumerate(table_items, start=1):
+                    if table_item.id == item.id and sequence > max_sequence:
+                        priority_statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
+                        try: 
+                            prem_status = [
+                                status for status in priority_statuses 
+                                if status.type == PriorityTypes.PREMIUM
+                                or status.price > 0
+                            ][0]
+                        except: return
+                        
+                        time.sleep(0.5)
+                        self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
+                        
+                        item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
+                        self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
+                        return
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{item.name}»: {Fore.WHITE}{e}")
 
     def bump_items(self): 
         try:
-            bumped_items = []
             items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
             
             for item in items:
-                if item.id in bumped_items:
-                    continue
-                bumped_items.append(item.id)
-                
                 if item.priority == PriorityTypes.PREMIUM:
                     self.bump_item(item)
         except Exception as e:
@@ -519,7 +531,7 @@ class PlayerokBot:
             while True:
                 if self.config["playerok"]["auto_bump_items"]["enabled"]:
                     self.bump_items()
-                time.sleep(30)
+                time.sleep(75)
 
         Thread(target=endless_loop, daemon=True).start()
         Thread(target=refresh_account_loop, daemon=True).start()

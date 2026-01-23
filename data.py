@@ -20,7 +20,14 @@ SAVED_ITEMS = DataFile(
     path="bot_data/saved_items.json",
     default=[]
 )
-DATA = [INITIALIZED_USERS, SAVED_ITEMS]
+LATEST_EVENTS_TIMES = DataFile(
+    name="latest_events_times",
+    path="bot_data/latest_events_times.json",
+    default={
+        "auto_bump_items": None
+    }
+)
+DATA = [INITIALIZED_USERS, SAVED_ITEMS, LATEST_EVENTS_TIMES]
 
 
 def get_json(path: str, default: dict | list) -> dict:

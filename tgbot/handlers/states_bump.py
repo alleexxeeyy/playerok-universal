@@ -12,49 +12,24 @@ from ..helpful import throw_float_message
 router = Router()
 
 
-@router.message(states.BumpItemsStates.waiting_for_day_max_sequence, F.text)
-async def handler_waiting_for_day_max_sequence(message: types.Message, state: FSMContext):
-    try: 
-        await state.set_state(None)
-        if not message.text.strip().isdigit():
-            raise Exception("❌ Слишком короткое значение")
-
-        day_max_sequence = int(message.text.strip())
-        config = sett.get("config")
-        config["playerok"]["auto_bump_items"]["day_max_sequence"] = day_max_sequence
-        sett.set("config", config)
-
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.settings_bump_float_text(f"✅ <b>Максимальная позиция товара днём</b> была успешно изменена на <b>{day_max_sequence}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
-        )
-    except Exception as e:
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.settings_bump_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
-        )
-
-
-@router.message(states.BumpItemsStates.waiting_for_night_max_sequence, F.text)
-async def handler_waiting_for_night_max_sequence(message: types.Message, state: FSMContext):
+@router.message(states.BumpItemsStates.waiting_for_bump_items_interval, F.text)
+async def handler_waiting_for_bump_items_interval(message: types.Message, state: FSMContext):
     try: 
         await state.set_state(None)
         if not message.text.strip().isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
+        if int(message.text.strip()) <= 0:
+            raise Exception("❌ Слишком низкое значение")
 
-        night_max_sequence = int(message.text.strip())
+        interval = int(message.text.strip())
         config = sett.get("config")
-        config["playerok"]["auto_bump_items"]["night_max_sequence"] = night_max_sequence
+        config["playerok"]["auto_bump_items"]["interval"] = interval
         sett.set("config", config)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_bump_float_text(f"✅ <b>Максимальная позиция товара ночью</b> была успешно изменена на <b>{night_max_sequence}</b>"),
+            text=templ.settings_bump_float_text(f"✅ <b>Интервал поднятия предметов</b> был успешно изменён на <b>{interval}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
         )
     except Exception as e:

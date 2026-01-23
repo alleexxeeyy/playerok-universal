@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from threading import Thread
 import textwrap
@@ -71,6 +71,7 @@ class PlayerokBot:
 
         self.initialized_users = data.get("initialized_users")
         self.saved_items = data.get("saved_items")
+        self.latest_events_times = data.get("latest_events_times")
         self.stats = get_stats()
 
         self.account = self.playerok_account = Account(
@@ -81,7 +82,7 @@ class PlayerokBot:
         ).get()
 
         self.__saved_chats: dict[str, Chat] = {}
-        """Словарь последних запомненных чатов.\nВ формате: {`chat_id` _or_ `username`: `chat_obj`, ...}"""
+        """Словарь последних запомненных чатов. В формате: {`chat_id` _or_ `username`: `chat_obj`, ...}"""
 
     def get_chat_by_id(self, chat_id: str) -> Chat:
         if chat_id in self.__saved_chats:
@@ -101,10 +102,10 @@ class PlayerokBot:
     def check_banned(self):
         user = self.account.get_user(self.account.id)
         if user.is_blocked:
-            self.logger.critical(f"")
+            self.logger.critical("")
             self.logger.critical(f"{Fore.LIGHTRED_EX}Ваш Playerok аккаунт был заблокирован! К сожалению, я не могу продолжать работу на заблокированном аккаунте...")
             self.logger.critical(f"Напишите в тех. поддержку Playerok, чтобы узнать причину бана и как можно быстрее решить эту проблему.")
-            self.logger.critical(f"")
+            self.logger.critical("")
             shutdown()
     
     def msg(self, message_name: str, messages_config_name: str = "messages", 
@@ -127,6 +128,15 @@ class PlayerokBot:
             pass
         return f"Не удалось получить сообщение {message_name}"
     
+    def _event_datetime(self, event: str):
+        if self.latest_events_times[event]:
+            return (
+                datetime.fromisoformat(self.latest_events_times[event]) 
+                + timedelta(seconds=self.config["playerok"][event]["interval"])
+            )
+        else:
+            return datetime.now()
+
 
     def send_message(self, chat_id: str, text: str | None = None, photo_file_path: str | None = None,
                      mark_chat_as_read: bool = None, exclude_watermark: bool = False, max_attempts: int = 3) -> ChatMessage:
@@ -323,52 +333,58 @@ class PlayerokBot:
                 not self.config["playerok"]["auto_bump_items"]["all"]
                 and included
             ):
-                current_time = datetime.now(pytz.timezone("Europe/Moscow"))
-                if 22 <= current_time.hour or current_time.hour < 6: 
-                    max_sequence = self.config["playerok"]["auto_bump_items"]["night_max_sequence"]
-                else: 
-                    max_sequence = self.config["playerok"]["auto_bump_items"]["day_max_sequence"]
+                # current_time = datetime.now(pytz.timezone("Europe/Moscow"))
+                # if 22 <= current_time.hour or current_time.hour < 6: 
+                #     max_sequence = self.config["playerok"]["auto_bump_items"]["night_max_sequence"]
+                # else: 
+                #     max_sequence = self.config["playerok"]["auto_bump_items"]["day_max_sequence"]
                 
                 if not isinstance(item, MyItem):
                     try: item = self.account.get_item(item.id)
                     except: return
 
-                table_items = []
-                crsr = None
-                while True:
-                    itms_list = self.account.get_items(
-                        category_id=item.category.id,
-                        after_cursor=crsr
-                    )
-                    table_items.extend([itm for itm in itms_list.items])
-                    if len(table_items) > max_sequence:
-                        break
-                    if not itms_list.page_info.has_next_page:
-                        break
-                    crsr = itms_list.page_info.end_cursor
-                    time.sleep(0.5)
+                # table_items = []
+                # crsr = None
+                # while True:
+                #     itms_list = self.account.get_items(
+                #         category_id=item.category.id,
+                #         after_cursor=crsr
+                #     )
+                #     table_items.extend([itm for itm in itms_list.items])
+                #     if len(table_items) > max_sequence:
+                #         break
+                #     if not itms_list.page_info.has_next_page:
+                #         break
+                #     crsr = itms_list.page_info.end_cursor
+                #     time.sleep(0.5)
 
-                for sequence, table_item in enumerate(table_items, start=1):
-                    if table_item.id == item.id and sequence > max_sequence:
-                        priority_statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
-                        try: 
-                            prem_status = [
-                                status for status in priority_statuses 
-                                if status.type == PriorityTypes.PREMIUM
-                                or status.price > 0
-                            ][0]
-                        except: return
-                        
-                        time.sleep(0.5)
-                        self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
-                        
-                        item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
-                        self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
-                        return
+                # for sequence, table_item in enumerate(table_items, start=1):
+                #     if table_item.id == item.id and sequence > max_sequence:
+                
+                time.sleep(0.5)
+                statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
+                try: 
+                    prem_status = [
+                        status for status in statuses 
+                        if status.type == PriorityTypes.PREMIUM
+                        or status.price > 0
+                    ][0]
+                except: 
+                    raise Exception("PREMIUM статус не найден")
+                
+                time.sleep(0.5)
+                self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
+                
+                sequence = getattr(item, "sequence") or "?"
+                item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
+                self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{item.name}»: {Fore.WHITE}{e}")
 
     def bump_items(self): 
+        self.latest_events_times["auto_bump_items"] = datetime.now().isoformat()
+        data.set("latest_events_times", self.latest_events_times)
+
         try:
             items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
             
@@ -509,6 +525,7 @@ class PlayerokBot:
                 if self.stats != get_stats(): set_stats(self.stats)
                 if data.get("initialized_users") != self.initialized_users: data.set("initialized_users", self.initialized_users)
                 if data.get("saved_items") != self.saved_items: data.set("saved_items", self.saved_items)
+                if data.get("latest_events_times") != self.latest_events_times: data.set("latest_events_times", self.latest_events_times)
                 if sett.get("config") != self.config: self.config = sett.get("config")
                 if sett.get("messages") != self.messages: self.messages = sett.get("messages")
                 if sett.get("custom_commands") != self.custom_commands: self.custom_commands = sett.get("custom_commands")
@@ -535,9 +552,12 @@ class PlayerokBot:
 
         def bump_items_loop():
             while True:
-                if self.config["playerok"]["auto_bump_items"]["enabled"]:
+                if (
+                    self.config["playerok"]["auto_bump_items"]["enabled"]
+                    and datetime.now() >= self._event_datetime("auto_bump_items")
+                ):
                     self.bump_items()
-                time.sleep(75)
+                time.sleep(3)
 
         Thread(target=endless_loop, daemon=True).start()
         Thread(target=refresh_account_loop, daemon=True).start()

@@ -48,9 +48,10 @@ CONFIG = SettingsFile(
             },
             "auto_bump_items": {
                 "enabled": False,
-                "all": False,
-                "day_max_sequence": 15,
-                "night_max_sequence": 30,
+                "interval": 3600,
+                "all": False
+                #"day_max_sequence": 15,
+                #"night_max_sequence": 30,
             },
             "auto_complete_deals": {
                 "enabled": True

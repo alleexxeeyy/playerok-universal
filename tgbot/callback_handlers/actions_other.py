@@ -207,6 +207,36 @@ async def callback_complete_deal(callback: CallbackQuery, state: FSMContext):
     )
 
 
+@router.callback_query(F.data == "bump_items")
+async def callback_bump_items(callback: CallbackQuery, state: FSMContext):
+    try:
+        from plbot.playerokbot import get_playerok_bot
+        await state.set_state(None)
+        
+        await throw_float_message(
+            state=state, 
+            message=callback.message, 
+            text=templ.events_float_text(f"⬆️ Идёт <b>поднятие предметов</b>, ожидайте (см. консоль)..."), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="events").pack())
+        )
+
+        get_playerok_bot().bump_items()
+        
+        await throw_float_message(
+            state=state, 
+            message=callback.message, 
+            text=templ.events_float_text(f"⬆️✅ <b>Предметы</b> были успешно подняты"), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="events").pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state, 
+            message=callback.message, 
+            text=templ.events_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="events").pack())
+        )
+
+
 @router.callback_query(F.data == "clean_proxy")
 async def callback_clean_proxy(callback: CallbackQuery, state: FSMContext):
     await state.set_state(None)

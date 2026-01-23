@@ -55,7 +55,7 @@ class RequestError(Exception):
 
     def __init__(self, response: requests.Response):
         self.response = response
-        self.json = response.json() or None
+        self.json = response.json()
         self.error_code = self.json["errors"][0]["extensions"]["code"]
         self.error_message = self.json["errors"][0]["message"]
 
@@ -65,7 +65,7 @@ class RequestError(Exception):
             f"\nКод ошибки: {self.error_code}"
             f"\nСообщение: {self.error_message}"
         )
-        return msg
+        return self.error_message or msg
 
 
 class UnauthorizedError(Exception):

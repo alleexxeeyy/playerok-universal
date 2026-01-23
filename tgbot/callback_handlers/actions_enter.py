@@ -105,26 +105,14 @@ async def callback_enter_new_excluded_restore_item_keyphrases(callback: Callback
     )
 
 
-@router.callback_query(F.data == "enter_auto_bump_items_day_max_sequence")
-async def callback_enter_auto_bump_items_day_max_sequence(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_auto_bump_items_interval")
+async def callback_enter_auto_bump_items_interval(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    await state.set_state(states.BumpItemsStates.waiting_for_day_max_sequence)
+    await state.set_state(states.BumpItemsStates.waiting_for_bump_items_interval)
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_bump_float_text(f"👥☀️ Введите <b>максимальную позицию товара днём</b> (с 06:00 до 22:00 по МСК)"), 
-        reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
-    )
-
-
-@router.callback_query(F.data == "enter_auto_bump_items_night_max_sequence")
-async def callback_enter_auto_bump_items_night_max_sequence(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    await state.set_state(states.BumpItemsStates.waiting_for_night_max_sequence)
-    await throw_float_message(
-        state=state, 
-        message=callback.message, 
-        text=templ.settings_bump_float_text(f"👥🌙 Введите <b>максимальную позицию товара ночью</b> (с 22:00 до 06:00 по МСК)"), 
+        text=templ.settings_bump_float_text(f"⏲️ Введите <b>интервал поднятия предметов</b> ↓"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
     )
 

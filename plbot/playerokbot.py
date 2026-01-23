@@ -405,8 +405,14 @@ class PlayerokBot:
                 and included
             ):
                 priority_statuses = self.account.get_item_priority_statuses(item.id, item.price)
-                try: priority_status = [status for status in priority_statuses if status.type == PriorityTypes.DEFAULT or status.price == 0][0]
-                except IndexError: priority_status = [status for status in priority_statuses][0]
+                try: 
+                    priority_status = [
+                        status for status in priority_statuses 
+                        if status.type == PriorityTypes.DEFAULT 
+                        or status.price == 0
+                    ][0]
+                except: 
+                    priority_status = [status for status in priority_statuses][0]
 
                 time.sleep(0.5)
                 new_item = self.account.publish_item(item.id, priority_status.id)

@@ -173,9 +173,14 @@ if __name__ == "__main__":
         
         set_title(f"Playerok Universal v{VERSION} by @alleexxeeyy")
         print(
-            f"\n\n   {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
-            f"\n    · {Fore.LIGHTWHITE_EX}https://t.me/alleexxeeyy"
-            f"\n    · {Fore.LIGHTWHITE_EX}https://t.me/alexeyproduction\n\n"
+            f"\n\n"
+            f"\n   {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
+            f"\n"
+            f"\n   {Fore.YELLOW}Наши ссылки:"
+            f"\n   {Fore.WHITE}· TG бот: {Fore.LIGHTWHITE_EX}https://t.me/alexey_production_bot"
+            f"\n   {Fore.WHITE}· TG канал: {Fore.LIGHTWHITE_EX}https://t.me/alexeyproduction"
+            f"\n   {Fore.WHITE}· GitHub: {Fore.LIGHTWHITE_EX}https://github.com/alleexxeeyy/playerok-universal"
+            f"\n\n\n"
         )
         
         check_for_updates()

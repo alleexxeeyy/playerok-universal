@@ -607,7 +607,8 @@ class PlayerokBot:
             not is_support_chat
             and event.message.text is not None
         ):
-            self.initialized_users.append(event.message.user.id)
+            if event.message.user.id not in self.initialized_users:
+                self.initialized_users.append(event.message.user.id)
         
             if str(event.message.text).lower() in ["!команды", "!commands"]:
                 self.send_message(event.chat.id, self.msg("cmd_commands"))

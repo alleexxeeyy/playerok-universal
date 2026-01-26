@@ -59,7 +59,7 @@ class EventListener:
             except: pass
     
     def _parse_message_events(
-        self, message: ChatMessage, chat: Chat
+        self, message: ChatMessage, chat: Chat, get_actual_msg=False
     ) -> list[
         NewMessageEvent
         | NewDealEvent
@@ -76,7 +76,7 @@ class EventListener:
         
         if message.text == "{{ITEM_PAID}}":
             actual_msg = message
-            if not actual_msg.deal:
+            if not actual_msg.deal or get_actual_msg:
                 actual_msg = self._get_actual_message(message.id, chat.id)
             if actual_msg and actual_msg.deal:
                 if actual_msg.deal.id not in self.review_check_deals:
@@ -92,14 +92,14 @@ class EventListener:
         
         elif message.text == "{{ITEM_SENT}}":
             actual_msg = message
-            if not actual_msg.deal:
+            if not actual_msg.deal or get_actual_msg:
                 actual_msg = self._get_actual_message(message.id, chat.id)
             if actual_msg and actual_msg.deal:
                 return [ItemSentEvent(actual_msg.deal, chat)]
         
         elif message.text == "{{DEAL_CONFIRMED}}":
             actual_msg = message
-            if not actual_msg.deal:
+            if not actual_msg.deal or get_actual_msg:
                 actual_msg = self._get_actual_message(message.id, chat.id)
             if actual_msg and actual_msg.deal:
                 return [
@@ -109,7 +109,7 @@ class EventListener:
         
         elif message.text == "{{DEAL_ROLLED_BACK}}":
             actual_msg = message
-            if not actual_msg.deal:
+            if not actual_msg.deal or get_actual_msg:
                 actual_msg = self._get_actual_message(message.id, chat.id)
             if actual_msg and actual_msg.deal:
                 return [
@@ -119,7 +119,7 @@ class EventListener:
         
         elif message.text == "{{DEAL_HAS_PROBLEM}}":
             actual_msg = message
-            if not actual_msg.deal:
+            if not actual_msg.deal or get_actual_msg:
                 actual_msg = self._get_actual_message(message.id, chat.id)
             if actual_msg and actual_msg.deal:
                 return [
@@ -129,7 +129,7 @@ class EventListener:
         
         elif message.text == "{{DEAL_PROBLEM_RESOLVED}}":
             actual_msg = message
-            if not actual_msg.deal:
+            if not actual_msg.deal or get_actual_msg:
                 actual_msg = self._get_actual_message(message.id, chat.id)
             if actual_msg and actual_msg.deal:
                 return [
@@ -239,7 +239,7 @@ class EventListener:
             self._subscribe_chat_message_created(chat.id)
             if is_new_chat:
                 events.append(ChatInitializedEvent(chat))
-            events.extend(self._parse_message_events(message, chat))
+            events.extend(self._parse_message_events(message, chat, True))
         # иначе, если уже подписаны на чат - сообщение будет получаться из chatMessageCreated
         
         return events

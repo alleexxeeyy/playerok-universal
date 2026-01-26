@@ -383,7 +383,7 @@ class Account:
                 "filter": {
                     "userId": self.id, 
                     "direction": str_direction, 
-                    "status": [str_statuses]
+                    "status": str_statuses
                 }, 
                 "showForbiddenImage": True
             }),
@@ -1087,16 +1087,17 @@ class Account:
                 "attachments": [None] * len(attachments)
             }
         }
+        
         map = {}
         files = {}
-        i=0
-        for att in attachments:
-            i+=1
+        
+        for i, att in enumerate(attachments, start=1):
             map[str(i)] = [f"variables.attachments.{i-1}"]
             files[str(i)] = open(att, "rb")
+        
         payload = {
-            "operations": operations,
-            "map": map
+            "operations": json.dumps(operations),
+            "map": json.dumps(map)
         }
 
         r = self.request("post", f"{self.base_url}/graphql", headers, payload, files).json()
@@ -1168,15 +1169,15 @@ class Account:
 
         map = {}
         files = {}
+        
         if add_attachments:
-            i=0
-            for att in add_attachments:
-                i+=1
+            for i, att in enumerate(add_attachments, start=1):
                 map[str(i)] = [f"variables.addedAttachments.{i-1}"]
                 files[str(i)] = open(att, "rb")
+        
         payload = {
-            "operations": operations,
-            "map": map
+            "operations": json.dumps(operations),
+            "map": json.dumps(map)
         }
         
         r = self.request("post", f"{self.base_url}/graphql", headers, payload if files else operations, files if files else None).json()

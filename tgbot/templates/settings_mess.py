@@ -33,7 +33,10 @@ def settings_mess_kb(page: int = 0):
     for mess_id, info in list(messages.items())[start_offset:end_offset]:
         enabled = "🟢" if info["enabled"] else "🔴"
         text_joined = "\n".join(info["text"])
-        rows.append([InlineKeyboardButton(text=f"{enabled} {mess_id} | {text_joined}", callback_data=calls.MessagePage(message_id=mess_id).pack())])
+        rows.append([InlineKeyboardButton(
+            text=f"{enabled} {mess_id} | {text_joined}", 
+            callback_data=calls.MessagePage(message_id=mess_id).pack())
+        ])
 
     if total_pages > 1:
         buttons_row = []

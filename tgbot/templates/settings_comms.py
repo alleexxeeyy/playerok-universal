@@ -47,7 +47,7 @@ def settings_comms_kb(page: int = 0):
         buttons_row.append(btn_next)
         rows.append(buttons_row)
 
-    rows.append([InlineKeyboardButton(text="➕⌨️ Добавить",callback_data="enter_new_custom_command")])
+    rows.append([InlineKeyboardButton(text="➕ Добавить",callback_data="enter_new_custom_command")])
     rows.append([
         InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack()),
     ])

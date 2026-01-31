@@ -24,12 +24,12 @@ def settings_logger_text():
         <b>💬 ID чата для логов:</b> {tg_logging_chat_id}
         
         <b>📢 Ивенты:</b>
-        <b>・ {event_new_user_message}  💬👤 Новое сообщение от пользователя</b>
-        <b>・ {event_new_system_message}  💬⚙️ Новое системное сообщение</b>
-        <b>・ {event_new_deal}  📋 Новая сделка</b>
-        <b>・ {event_new_review}  💬✨ Новый отзыв</b>
-        <b>・ {event_new_problem}  🤬 Новая жалоба в сделке</b>
-        <b>・ {event_deal_status_changed}  🔄️📋 Статус сделки изменился</b>
+        ・ {event_new_user_message}  👤 Новое сообщение от пользователя
+        ・ {event_new_system_message}  ⚙️ Новое системное сообщение
+        ・ {event_new_deal}  📋 Новая сделка
+        ・ {event_new_review}  ✨ Новый отзыв
+        ・ {event_new_problem}  🤬 Новая жалоба в сделке
+        ・ {event_deal_status_changed}  🔄️ Статус сделки изменился
         
         Выберите параметр для изменения ↓
     """)
@@ -51,16 +51,16 @@ def settings_logger_kb():
         [InlineKeyboardButton(text=f"👀 Логгирование ивентов Playerok в Telegram: {tg_logging_enabled}", callback_data="switch_tg_logging_enabled")],
         [InlineKeyboardButton(text=f"💬 ID чата для логов: {tg_logging_chat_id}", callback_data="enter_tg_logging_chat_id")],
         [
-        InlineKeyboardButton(text=f"{event_new_user_message}  💬👤 Новое сообщение от пользователя", callback_data="switch_tg_logging_event_new_user_message"),
-        InlineKeyboardButton(text=f"{event_new_system_message}  💬⚙️ Новое системное сообщение", callback_data="switch_tg_logging_event_new_system_message"),
+        InlineKeyboardButton(text=f"{event_new_user_message}  👤 Новое сообщение от пользователя", callback_data="switch_tg_logging_event_new_user_message"),
+        InlineKeyboardButton(text=f"{event_new_system_message}  ⚙️ Новое системное сообщение", callback_data="switch_tg_logging_event_new_system_message"),
         ],
         [
         InlineKeyboardButton(text=f"{event_new_deal}  📋 Новая сделка", callback_data="switch_tg_logging_event_new_deal"),
-        InlineKeyboardButton(text=f"{event_new_review}  💬✨ Новый отзыв", callback_data="switch_tg_logging_event_new_review"),
+        InlineKeyboardButton(text=f"{event_new_review}  ✨ Новый отзыв", callback_data="switch_tg_logging_event_new_review"),
         ],
         [
         InlineKeyboardButton(text=f"{event_new_problem}  🤬 Новая жалоба в сделке", callback_data="switch_tg_logging_event_new_problem"),
-        InlineKeyboardButton(text=f"{event_deal_status_changed}  🔄️📋 Статус сделки изменился", callback_data="switch_tg_logging_event_deal_status_changed")
+        InlineKeyboardButton(text=f"{event_deal_status_changed}  🔄️ Статус сделки изменился", callback_data="switch_tg_logging_event_deal_status_changed")
         ],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack())]
     ]

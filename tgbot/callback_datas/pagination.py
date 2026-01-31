@@ -27,3 +27,10 @@ class AutoDeliveriesPagination(CallbackData, prefix="audepag"):
 
 class MessagesPagination(CallbackData, prefix="messpag"):
     page: int
+
+
+class BankCardsPagination(CallbackData, prefix="bacapag"):
+    page: int
+
+class SbpBanksPagination(CallbackData, prefix="sbppag"):
+    page: int

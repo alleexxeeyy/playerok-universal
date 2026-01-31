@@ -22,3 +22,10 @@ class DeleteIncludedBumpItem(CallbackData, prefix="delinbu"):
 
 class DeleteExcludedBumpItem(CallbackData, prefix="delexbu"):
     index: int
+
+
+class SelectBankCard(CallbackData, prefix="sebaca"):
+    id: str
+
+class SelectSbpBank(CallbackData, prefix="sesbp"):
+    id: str

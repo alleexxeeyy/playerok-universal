@@ -19,7 +19,7 @@ def settings_other_text():
 
         <b>👀 Чтение чата перед отправкой сообщения:</b> {switch_read_chat_enabled}
         <b>☑️ Авто-подтверждение заказов:</b> {auto_complete_deals_enabled}
-        <b>⌨️ Пользовательские команды:</b> {custom_commands_enabled}
+        <b>❗ Команды:</b> {custom_commands_enabled}
         <b>🚀 Авто-выдача:</b> {auto_deliveries_enabled}
         
         <b>©️ Водяной знак под сообщениями:</b> {watermark_enabled}
@@ -39,7 +39,7 @@ def settings_other_kb():
     rows = [
         [InlineKeyboardButton(text=f"👀 Чтение чата перед отправкой сообщения: {switch_read_chat_enabled}", callback_data="switch_read_chat_enabled")],
         [InlineKeyboardButton(text=f"☑️ Авто-подтверждение заказов: {auto_complete_deals_enabled}", callback_data="switch_auto_complete_deals_enabled")],
-        [InlineKeyboardButton(text=f"⌨️ Пользовательские команды: {custom_commands_enabled}", callback_data="switch_custom_commands_enabled")],
+        [InlineKeyboardButton(text=f"❗ Команды: {custom_commands_enabled}", callback_data="switch_custom_commands_enabled")],
         [InlineKeyboardButton(text=f"🚀 Авто-выдача: {auto_deliveries_enabled}", callback_data="switch_auto_deliveries_enabled")],
         [InlineKeyboardButton(text=f"©️ Водяной знак под сообщениями: {watermark_enabled}", callback_data="switch_watermark_enabled")],
         [InlineKeyboardButton(text=f"✍️©️ Водяной знак: {watermark_value}", callback_data="enter_watermark_value")],

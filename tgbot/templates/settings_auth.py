@@ -14,7 +14,7 @@ def settings_auth_text():
         <b>🔑 Авторизация</b>
 
         <b>🔐 Токен:</b> {token}
-        <b>🎩 User-Agent:</b> {user_agent}
+        <b>🎩 User Agent:</b> {user_agent}
     """)
     return txt
 
@@ -25,7 +25,7 @@ def settings_auth_kb():
     user_agent = config["playerok"]["api"]["user_agent"] or "❌ Не задано"
     rows = [
         [InlineKeyboardButton(text=f"🔐 Токен: {token}", callback_data="enter_token")],
-        [InlineKeyboardButton(text=f"🎩 User-Agent: {user_agent}", callback_data="enter_user_agent")],
+        [InlineKeyboardButton(text=f"🎩 User Agent: {user_agent}", callback_data="enter_user_agent")],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack())]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)

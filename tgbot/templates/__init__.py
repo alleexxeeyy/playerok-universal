@@ -17,6 +17,10 @@ from .settings_deliv_page import *
 from .settings_restore import *
 from .settings_restore_included import *
 from .settings_restore_excluded import *
+from .settings_withdrawal import *
+from .settings_withdrawal_cards import *
+from .settings_withdrawal_sbp import *
+from .settings_withdrawal_usdt import *
 from .settings_bump import *
 from .settings_bump_included import *
 from .settings_bump_excluded import *

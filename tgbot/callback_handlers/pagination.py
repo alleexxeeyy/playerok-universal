@@ -72,3 +72,23 @@ async def callback_modules_pagination(callback: CallbackQuery, callback_data: ca
     page = callback_data.page
     await state.update_data(last_page=page)
     await throw_float_message(state, callback.message, templ.modules_text(), templ.modules_kb(page), callback)
+
+
+@router.callback_query(calls.BankCardsPagination.filter())
+async def callback_bank_cards_pagination(callback: CallbackQuery, callback_data: calls.BankCardsPagination, state: FSMContext):
+    await state.set_state(None)
+    page = callback_data.page
+    await state.update_data(last_page=page)
+    data = await state.get_data()
+    bank_cards = data.get("bank_cards", [])
+    await throw_float_message(state, callback.message, templ.settings_withdrawal_cards_text(bank_cards), templ.settings_withdrawal_cards_kb(bank_cards, page), callback)
+
+
+@router.callback_query(calls.SbpBanksPagination.filter())
+async def callback_sbp_banks_pagination(callback: CallbackQuery, callback_data: calls.BankCardsPagination, state: FSMContext):
+    await state.set_state(None)
+    page = callback_data.page
+    await state.update_data(last_page=page)
+    data = await state.get_data()
+    sbp_banks = data.get("sbp_banks", [])
+    await throw_float_message(state, callback.message, templ.settings_withdrawal_sbp_text(sbp_banks), templ.settings_withdrawal_sbp_kb(sbp_banks, page), callback)

@@ -228,9 +228,9 @@ def load_modules() -> list[Module]:
 
 def _format_string(count: int):
     last_num = int(str(count)[-1])
-    if last_num == 1: return f"Подключен {Fore.LIGHTCYAN_EX}{count} модуль"
-    elif 2 <= last_num <= 4: return f"Подключено {Fore.LIGHTCYAN_EX}{count} модуля"
-    elif 5 <= last_num <= 9 or last_num == 0: return f"Подключено {Fore.LIGHTCYAN_EX}{count} модулей"
+    if last_num == 1: return f"Подключен {Fore.LIGHTWHITE_EX}{count} модуль"
+    elif 2 <= last_num <= 4: return f"Подключено {Fore.LIGHTWHITE_EX}{count} модуля"
+    elif 5 <= last_num <= 9 or last_num == 0: return f"Подключено {Fore.LIGHTWHITE_EX}{count} модулей"
 
 
 async def connect_modules(modules: list[Module]):
@@ -251,4 +251,4 @@ async def connect_modules(modules: list[Module]):
     connected_modules = [module for module in loaded_modules if module.enabled]
     names = [f"{Fore.YELLOW}{module.meta.name} {Fore.LIGHTWHITE_EX}{module.meta.version}" for module in connected_modules]
     if names:
-        logger.info(f'{ACCENT_COLOR}{_format_string(len(connected_modules))}: {f"{Fore.WHITE}, ".join(names)}')
+        logger.info(f'{_format_string(len(connected_modules))}{Fore.WHITE}: {f"{Fore.WHITE}, ".join(names)}')

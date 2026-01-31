@@ -57,10 +57,11 @@ class TelegramBot:
     async def _set_short_description(self):
         try:
             short_description = textwrap.dedent(f"""
-                Playerok Universal — Современный бот-помощник для Playerok 🟦
+                Playerok Universal — бесплатный бот-помощник для playerok.com
                 
-                ・ Канал — @alexeyproduction
-                ・ Бот — @alexey_production_bot
+                📢 @alexeyproduction
+                🤖 @alexey_production_bot
+                🧑‍💻 @alleexxeeyy
             """)
             await self.bot.set_my_short_description(short_description=short_description)
         except:
@@ -72,18 +73,21 @@ class TelegramBot:
                 🟢 Вечный онлайн
                 ♻️ Авто-восстановление товаров
                 ⬆️ Авто-поднятие товаров
-                🚀 Авто-выдача
-                ❗ Команды
+                💸 Авто-вывод средств
+                🚀 Авто-выдача товаров
+                ❗ Кастомные команды
                 💬 Вызов продавца
                 👋 Приветственное сообщение
+                📊 Подробная статистика
+                📲 Уведомления в Telegram
                 🖌️ Кастомизация
                 🔌 Плагины
                                         
                 ⬇️ Скачать бота: https://github.com/alleexxeeyy/playerok-universal
                 
-                📣 Канал — @alexeyproduction
-                🤖 Бот — @alexey_production_bot
-                🧑‍💻 Автор — @alleexxeeyy
+                📢 Канал: @alexeyproduction
+                🤖 Бот: @alexey_production_bot
+                🧑‍💻 Автор: @alleexxeeyy
             """)
             await self.bot.set_my_description(description=description)
         except:
@@ -99,7 +103,7 @@ class TelegramBot:
         await call_bot_event("ON_TELEGRAM_BOT_INIT", [self])
         
         me = await self.bot.get_me()
-        logger.info(f"{ACCENT_COLOR}Telegram бот {Fore.LIGHTCYAN_EX}@{me.username} {ACCENT_COLOR}запущен и активен")
+        logger.info(f"{Fore.LIGHTBLUE_EX}Telegram бот {Fore.LIGHTWHITE_EX}@{me.username} {Fore.LIGHTBLUE_EX}запущен и активен")
         await self.dp.start_polling(self.bot, skip_updates=True, handle_signals=False)
 
     async def call_seller(self, calling_name: str, chat_id: int | str):
@@ -126,7 +130,7 @@ class TelegramBot:
         else:
             await self.bot.send_message(
                 chat_id=chat_id, 
-                text=f'{text}\n<span class="tg-spoiler">Переключите чат логов на чат с ботом, чтобы отображалась меню с действиями</span>', 
+                text=f'{text}\n<span class="tg-spoiler">Переключите чат логов на чат с ботом, чтобы отображалось меню с действиями</span>', 
                 reply_markup=None, 
                 parse_mode="HTML"
             )

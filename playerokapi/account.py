@@ -153,6 +153,8 @@ class Account:
         :return: Ответа запроса requests.
         :rtype: `requests.Response`
         """
+        try: x_gql_op = payload.get("operationName", "viewer")
+        except: x_gql_op = "viewer"
         _headers = {
             "accept": "*/*",
             "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -164,11 +166,11 @@ class Account:
             "origin": "https://playerok.com",
             "priority": "u=1, i",
             "referer": "https://playerok.com/",
-            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua": "\"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\", \"Not_A Brand\";v=\"99\"",
             "sec-ch-ua-arch": "\"x86\"",
             "sec-ch-ua-bitness": "\"64\"",
-            "sec-ch-ua-full-version": "\"142.0.7444.162\"",
-            "sec-ch-ua-full-version-list": "\"Chromium\";v=\"142.0.7444.162\", \"Google Chrome\";v=\"142.0.7444.162\", \"Not_A Brand\";v=\"99.0.0.0\"",
+            "sec-ch-ua-full-version": "\"144.0.7559.110\"",
+            "sec-ch-ua-full-version-list": "Not(A:Brand\";v=\"8.0.0.0\", \"Chromium\";v=\"144.0.7559.110\", \"Google Chrome\";v=\"144.0.7559.110\"",
             "sec-ch-ua-mobile": "?0",
             "sec-ch-ua-model": "\"\"",
             "sec-ch-ua-platform": "\"Windows\"",
@@ -177,7 +179,8 @@ class Account:
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "same-origin",
             "user-agent": self.user_agent,
-            "x-gql-op": "viewer",
+            "x-gql-op": x_gql_op,
+            "x-gql-path": "/",
             "x-timezone-offset": "-240"
         }
         headers = {k: v for k, v in _headers.items() if k not in headers.keys()}
@@ -1494,7 +1497,7 @@ class Account:
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "transactions",
-            "variables": json.dumps({
+            "variables": {
                 "pagination": {
                     "first": count, 
                     "after": after_cursor
@@ -1503,13 +1506,13 @@ class Account:
                     "userId": self.id
                 }, 
                 "hasSupportAccess": False
-            }),
-            "extensions": json.dumps({
+            },
+            "extensions": {
                 "persistedQuery": {
                     "version": 1, 
                     "sha256Hash": PERSISTED_QUERIES.get("transactions")
                 }
-            })
+            }
         }
         
         if operation: payload["variables"]["filter"]["operation"] = [operation.name]
@@ -1519,6 +1522,9 @@ class Account:
             if max_value: payload["variables"]["filter"]["value"]["max"] = str(max_value)
         if provider_id: payload["variables"]["filter"]["providerId"] = [provider_id.name]
         if status: payload["variables"]["filter"]["status"] = [status.name]
+
+        payload["variables"] = json.dumps(payload["variables"])
+        payload["extensions"] = json.dumps(payload["extensions"])
         
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         return transaction_list(r["data"]["transactions"])
@@ -1631,7 +1637,7 @@ class Account:
         :param provider: Провайдер транзакции.
         :type provider: `playerokapi.enums.TransactionProviderIds`
 
-        :param account: ID добавленной карты или номер телефона, если провайдер СБП, на которые нужно совершить вывод.
+        :param account: ID добавленной карты (или номер телефона, если провайдер СБП), на которую нужно совершить вывод.
         :type account: `str`
 
         :param value: Сумма вывода.

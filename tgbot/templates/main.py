@@ -14,9 +14,7 @@ def error_text(placeholder: str):
 
 
 def back_kb(cb: str):
-    rows = [
-        [InlineKeyboardButton(text="⬅️ Назад", callback_data=cb)]
-    ]
+    rows = [[InlineKeyboardButton(text="⬅️ Назад", callback_data=cb)]]
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -50,9 +48,7 @@ def log_text(title: str, text: str):
 
 
 def log_new_mess_kb(username: str):
-    rows = [
-        [InlineKeyboardButton(text="💬 Написать", callback_data=calls.RememberUsername(name=username, do="send_mess").pack())]
-    ]
+    rows = [[InlineKeyboardButton(text="💬 Написать", callback_data=calls.RememberUsername(name=username, do="send_mess").pack())]]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
 

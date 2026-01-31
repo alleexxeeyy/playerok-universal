@@ -376,7 +376,8 @@ class EventListener:
             known_chat_ids = [chat_.id for chat_ in self.chats]
             
             for _ in range(3):
-                chat_list = self.account.get_chats(count=5, type=ChatTypes.PM)
+                try: chat_list = self.account.get_chats(count=5, type=ChatTypes.PM)
+                except: time.sleep(4)
                 new_deal_exists = any(
                     chat_ for chat_ in chat_list.chats 
                     if chat_.last_message.text == "{{ITEM_PAID}}"

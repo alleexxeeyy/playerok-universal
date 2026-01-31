@@ -14,9 +14,9 @@ def menu_text():
         Бот-помощник для Playerok
 
         <b>🔗 Ссылки:</b>
-        <b>・ @alleexxeeyy</b> — главный и единственный разработчик
-        <b>・ @alexeyproduction</b> — канал, где публикуются новости
-        <b>・ @alexey_production_bot</b> — бот для покупки официальных модулей
+        ・ <b>@alleexxeeyy</b> — разработчик
+        ・ <b>@alexeyproduction</b> — канал с новостями
+        ・ <b>@alexey_production_bot</b> — бот для покупки плагинов
     """)
     return txt
 
@@ -26,8 +26,8 @@ def menu_kb():
         [
         InlineKeyboardButton(text="⚙️", callback_data=calls.SettingsNavigation(to="default").pack()), 
         InlineKeyboardButton(text="👤", callback_data=calls.MenuNavigation(to="profile").pack()), 
-        InlineKeyboardButton(text="🔌", callback_data=calls.ModulesPagination(page=0).pack()),
         InlineKeyboardButton(text="🚩", callback_data=calls.MenuNavigation(to="events").pack()),
+        InlineKeyboardButton(text="🔌", callback_data=calls.ModulesPagination(page=0).pack()),
         InlineKeyboardButton(text="📊", callback_data=calls.MenuNavigation(to="stats").pack())
         ],
         [InlineKeyboardButton(text="📖 Инструкция", callback_data=calls.InstructionNavigation(to="default").pack())], 

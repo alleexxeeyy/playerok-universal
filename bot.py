@@ -31,7 +31,7 @@ from core.handlers import call_bot_event
 from updater import check_for_updates
 
 
-logger = getLogger(f"universal")
+logger = getLogger("universal")
 
 try:
     main_loop = asyncio.get_running_loop()

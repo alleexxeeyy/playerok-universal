@@ -456,6 +456,36 @@ class PlayerokBot:
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении истёкших предметов: {Fore.WHITE}{e}")
 
+    def request_withdrawal(self) -> bool:
+        balance = "?"
+        try:
+            self.account = self.account.get()
+            balance = self.account.profile.balance.withdrawable
+            if balance <= 500:
+                raise Exception("Слишком маленький баланс. Транзакция должна быть на сумму от 500₽")
+            
+            if self.config["playerok"]["auto_withdrawal"]["credentials_type"] == "card":
+                provider = TransactionProviderIds.BANK_CARD_RU
+                account = self.config["playerok"]["auto_withdrawal"]["card_id"]
+                sbp_bank_member_id = None
+            elif self.config["playerok"]["auto_withdrawal"]["credentials_type"] == "sbp":
+                provider = TransactionProviderIds.SBP
+                account = self.config["playerok"]["auto_withdrawal"]["sbp_phone_number"]
+                sbp_bank_member_id = self.config["playerok"]["auto_withdrawal"]["sbp_bank_id"]
+            
+            self.account.request_withdrawal(
+                provider=provider,
+                account=account,
+                value=balance,
+                sbp_bank_member_id=sbp_bank_member_id
+            )
+            
+            self.logger.info(f"{Fore.LIGHTWHITE_EX}{balance}₽ {Fore.WHITE}— {Fore.YELLOW}транзакция на вывод создана")
+            return True
+        except Exception as e:
+            self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при создании транзакции на вывод {balance}₽: {Fore.WHITE}{e}")
+        return False
+
 
     def log_new_message(self, message: ChatMessage, chat: Chat):
         plbot = get_playerok_bot()
@@ -559,11 +589,21 @@ class PlayerokBot:
                     self.bump_items()
                 time.sleep(3)
 
+        def withdrawal_loop():
+            while True:
+                if (
+                    self.config["playerok"]["auto_withdrawal"]["enabled"]
+                    and datetime.now() >= self._event_datetime("auto_withdrawal")
+                ):
+                    self.request_withdrawal()
+                time.sleep(3)
+
         Thread(target=endless_loop, daemon=True).start()
         Thread(target=refresh_account_loop, daemon=True).start()
         Thread(target=check_banned_loop, daemon=True).start()
         Thread(target=restore_expired_items_loop, daemon=True).start()
         Thread(target=bump_items_loop, daemon=True).start()
+        Thread(target=withdrawal_loop, daemon=True).start()
 
     async def _on_new_message(self, event: NewMessageEvent):
         if event.message.user is None:
@@ -610,9 +650,9 @@ class PlayerokBot:
             if event.message.user.id not in self.initialized_users:
                 self.initialized_users.append(event.message.user.id)
         
-            if str(event.message.text).lower() in ["!команды", "!commands"]:
+            if str(event.message.text).lower() in ("!команды", "!commands"):
                 self.send_message(event.chat.id, self.msg("cmd_commands"))
-            elif str(event.message.text).lower() in ["!продавец", "!seller"]:
+            elif str(event.message.text).lower() in ("!продавец", "!seller"):
                 asyncio.run_coroutine_threadsafe(
                     get_telegram_bot().call_seller(event.message.user.username, event.chat.id), 
                     get_telegram_bot_loop()
@@ -710,13 +750,15 @@ class PlayerokBot:
         
         if self.config["playerok"]["auto_restore_items"]["sold"]:
             for _ in range(3):
-                items = self.get_my_items(count=6, statuses=[ItemStatuses.SOLD])
                 try: 
+                    items = self.get_my_items(count=6, statuses=[ItemStatuses.SOLD])
                     item = [it for it in items if it.name == event.deal.item.name][0]
-                    self.restore_item(item)
                     break
                 except: 
                     time.sleep(4)
+            else:
+                return
+            self.restore_item(item)
                 
         
 
@@ -762,7 +804,6 @@ class PlayerokBot:
 
 
     async def run_bot(self):
-        self.logger.info(f"{Fore.GREEN}Playerok бот запущен и активен")
         self.logger.info("")
         self.logger.info(f"{ACCENT_COLOR}───────────────────────────────────────")
         self.logger.info(f"{ACCENT_COLOR}Информация об аккаунте:")
@@ -806,6 +847,6 @@ class PlayerokBot:
                 await call_playerok_event(event.type, [self, event])
 
         run_async_in_thread(listener_loop)
-        self.logger.info("Слушатель событий запущен")
+        self.logger.info(f"{Fore.YELLOW}Playerok бот запущен и активен")
 
         await call_bot_event("ON_PLAYEROK_BOT_INIT", [self])

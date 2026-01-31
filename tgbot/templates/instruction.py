@@ -31,8 +31,6 @@ def instruction_comms_text():
 
 
 def instruction_comms_kb():
-    rows = [
-        [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.InstructionNavigation(to="default").pack())]
-    ]
+    rows = [[InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.InstructionNavigation(to="default").pack())]]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb

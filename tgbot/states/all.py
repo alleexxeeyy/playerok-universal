@@ -17,6 +17,10 @@ class SettingsStates(StatesGroup):
     waiting_for_listener_requests_delay = State()
     waiting_for_proxy = State()
 
+    waiting_for_auto_withdrawal_interval = State()
+    waiting_for_sbp_bank_phone_number = State()
+    waiting_for_usdt_address = State()
+
     waiting_for_tg_logging_chat_id = State()
     waiting_for_watermark_value = State()
 

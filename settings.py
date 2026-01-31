@@ -53,6 +53,15 @@ CONFIG = SettingsFile(
                 #"day_max_sequence": 15,
                 #"night_max_sequence": 30,
             },
+            "auto_withdrawal": {
+                "enabled": False,
+                "interval": 86400,
+                "credentials_type": "",
+                "card_id": "",
+                "sbp_bank_id": "",
+                "sbp_phone_number": "",
+                "usdt_address": ""
+            },
             "auto_complete_deals": {
                 "enabled": True
             },

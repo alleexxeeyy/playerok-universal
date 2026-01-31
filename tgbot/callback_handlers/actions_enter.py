@@ -35,7 +35,7 @@ async def callback_enter_user_agent(callback: CallbackQuery, state: FSMContext):
     await throw_float_message(
         state=state, 
         message=callback.message, 
-        text=templ.settings_auth_float_text(f"🎩 Введите новый <b>user_agent</b> вашего браузера ↓\n・ Текущее: <code>{user_agent}</code>"), 
+        text=templ.settings_auth_float_text(f"🎩 Введите новый <b>User Agent</b> вашего браузера ↓\n・ Текущее: <code>{user_agent}</code>"), 
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
     )
 
@@ -279,6 +279,40 @@ async def callback_enter_auto_delivery_message(callback: CallbackQuery, state: F
             text=templ.settings_deliv_page_float_text(e), 
             reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
         )
+
+
+@router.callback_query(F.data == "enter_auto_withdrawal_interval")
+async def callback_enter_auto_withdrawal_interval(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(None)
+
+    config = sett.get("config")
+    interval = config["playerok"]["auto_withdrawal"]["interval"]
+
+    await state.set_state(states.SettingsStates.waiting_for_auto_withdrawal_interval)
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.settings_withdrawal_float_text(
+            f"⏱️ Введите новый <b>интервал вывода средств</b> (в секундах) ↓"
+            f"\n・ Текущее: <code>{interval}</code>"
+        ), 
+        reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_usdt_address")
+async def callback_enter_usdt_address(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(None)
+
+    await state.set_state(states.SettingsStates.waiting_for_usdt_address)
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.settings_withdrawal_usdt_float_text(
+            f"💲 Введите <b>адрес кошелька</b> USDT (TRC20) ↓"
+        ), 
+        reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+    )
 
 
 @router.callback_query(F.data == "enter_messages_page")

@@ -58,7 +58,7 @@ async def handler_waiting_for_user_agent(message: types.Message, state: FSMConte
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>user_agent</b> был успешно изменён на <b>{message.text.strip()}</b>"),
+            text=templ.settings_auth_float_text(f"✅ <b>User Agent</b> был успешно изменён на <b>{message.text.strip()}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
         )
     except Exception as e:
@@ -182,6 +182,104 @@ async def handler_waiting_for_tg_logging_chat_id(message: types.Message, state: 
             message=message,
             text=templ.settings_logger_float_text(e), 
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="logger").pack())
+        )
+
+
+@router.message(states.SettingsStates.waiting_for_auto_withdrawal_interval, F.text)
+async def handler_waiting_for_auto_withdrawal_interval(message: types.Message, state: FSMContext):
+    try:
+        await state.set_state(None) 
+
+        intreval = message.text.strip()
+        if not intreval.isdigit():
+            raise Exception("❌ Вы должны ввести числовое значение")
+        if int(intreval) <= 1:
+            raise Exception("❌ Слишком низкое значение")
+        intreval = int(intreval)
+
+        config = sett.get("config")
+        config["playerok"]["auto_withdrawal"]["interval"] = intreval
+        sett.set("config", config)
+
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.settings_withdrawal_float_text(f"✅ <b>Интервал вывода</b> был успешно изменён на <b>{intreval}</b>"),
+            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.settings_withdrawal_float_text(e), 
+            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+        )
+
+
+@router.message(states.SettingsStates.waiting_for_sbp_bank_phone_number, F.text)
+async def handler_waiting_for_sbp_bank_phone_number(message: types.Message, state: FSMContext):
+    try:
+        await state.set_state(None) 
+
+        phone_number = message.text.strip()
+        if not phone_number.isdigit():
+            raise Exception("❌ Вы указали некорректный номер телефона")
+        if len(phone_number) < 4:
+            raise Exception("❌ Слишком короткое значение")
+        
+        if phone_number.startswith("8"):
+            phone_number = phone_number.replace("8", "+7", 1)
+        
+        data = await state.get_data()
+        sbp_bank_id = data.get("sbp_bank_id")
+
+        config = sett.get("config")
+        config["playerok"]["auto_withdrawal"]["credentials_type"] = "sbp"
+        config["playerok"]["auto_withdrawal"]["sbp_bank_id"] = sbp_bank_id
+        config["playerok"]["auto_withdrawal"]["sbp_phone_number"] = phone_number.strip()
+        sett.set("config", config)
+
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.settings_withdrawal_sbp_float_text(f"✅ <b>Данные вывода</b> были успешно изменены на <b>{phone_number} (СБП)</b>"),
+            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.settings_withdrawal_sbp_float_text(e), 
+            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+        )
+
+
+@router.message(states.SettingsStates.waiting_for_usdt_address, F.text)
+async def handler_waiting_for_usdt_address(message: types.Message, state: FSMContext):
+    try:
+        await state.set_state(None) 
+
+        address = message.text.strip()
+        if len(address) <= 10:
+            raise Exception("❌ Слишком короткое значение")
+
+        config = sett.get("config")
+        config["playerok"]["auto_withdrawal"]["credentials_type"] = "usdt"
+        config["playerok"]["auto_withdrawal"]["usdt_address"] = address
+        sett.set("config", config)
+
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.settings_withdrawal_float_text(f"✅ <b>Данные вывода</b> были успешно изменены на <b>{address} (USDT TRC20)</b>"),
+            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.settings_withdrawal_float_text(e), 
+            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
         )
             
 

@@ -88,6 +88,14 @@ async def callback_switch_auto_deliveries_enabled(callback: CallbackQuery, state
     return await callback_settings_navigation(callback, calls.SettingsNavigation(to="other"), state)
 
 
+@router.callback_query(F.data == "switch_auto_withdrawal_enabled")
+async def callback_switch_auto_withdrawal_enabled(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_withdrawal"]["enabled"] = not config["playerok"]["auto_withdrawal"]["enabled"]
+    sett.set("config", config)
+    return await callback_settings_navigation(callback, calls.SettingsNavigation(to="withdrawal"), state)
+
+
 @router.callback_query(F.data == "switch_watermark_enabled")
 async def callback_switch_watermark_enabled(callback: CallbackQuery, state: FSMContext):
     config = sett.get("config")

@@ -8,7 +8,7 @@ from .. import callback_datas as calls
 
 def settings_text():
     txt = textwrap.dedent(f"""
-        ⚙️ <b>Настройки</b>
+        <b>⚙️ Настройки</b>
                           
         Выберите подраздел:
     """)
@@ -28,13 +28,14 @@ def settings_kb():
         InlineKeyboardButton(text="♻️ Восстановление", callback_data=calls.SettingsNavigation(to="restore").pack()),
         ],
         [
+        InlineKeyboardButton(text="💸 Вывод", callback_data=calls.SettingsNavigation(to="withdrawal").pack()),
         InlineKeyboardButton(text="⬆️ Поднятие", callback_data=calls.SettingsNavigation(to="bump").pack()),
         InlineKeyboardButton(text="👀 Логгер", callback_data=calls.SettingsNavigation(to="logger").pack()),
-        InlineKeyboardButton(text="🔧 Прочее", callback_data=calls.SettingsNavigation(to="other").pack()),
         ],
         [
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="default").pack()),
-        ]
+        InlineKeyboardButton(text="🔧 Прочее", callback_data=calls.SettingsNavigation(to="other").pack())
+        ],
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="default").pack())]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb

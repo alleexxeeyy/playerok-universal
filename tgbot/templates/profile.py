@@ -17,10 +17,10 @@ def profile_text():
         <b>📪 Email:</b> {profile.email}
         <b>💬 Отзывы:</b> {profile.reviews_count} (<b>Рейтинг:</b> {profile.rating} ⭐)
         
-        <b>💰 Баланс:</b> {profile.balance.value}₽
-        <b>・ 👜 Доступно:</b> {profile.balance.available}₽
-        <b>・ ⌛ В процессе:</b> {profile.balance.pending_income}₽
-        <b>・ ❄️ Заморожено:</b> {profile.balance.frozen}₽
+        <b>💰 Баланс:</b> {profile.balance.value if profile.balance else 0}₽
+        <b>・ 👜 Доступно:</b> {profile.balance.available if profile.balance else 0}₽
+        <b>・ ⌛ В процессе:</b> {profile.balance.pending_income if profile.balance else 0}₽
+        <b>・ ❄️ Заморожено:</b> {profile.balance.frozen if profile.balance else 0}₽
         
         <b>📦 Предметы:</b>
         <b>・ ➕ Активные:</b> {profile.stats.items.total - profile.stats.items.finished}

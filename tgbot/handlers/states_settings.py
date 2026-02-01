@@ -287,7 +287,7 @@ async def handler_waiting_for_usdt_address(message: types.Message, state: FSMCon
 async def handler_waiting_for_watermark_value(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        data = await state.get_data()
+
         if len(message.text.strip()) <= 0 or len(message.text.strip()) >= 150:
             raise Exception("❌ Слишком короткое или длинное значение")
 
@@ -307,4 +307,35 @@ async def handler_waiting_for_watermark_value(message: types.Message, state: FSM
             message=message,
             text=templ.settings_other_float_text(e), 
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="other").pack())
+        )
+            
+
+@router.message(states.SettingsStates.waiting_for_logs_max_file_size, F.text)
+async def handler_waiting_for_logs_max_file_size(message: types.Message, state: FSMContext):
+    try:
+        await state.set_state(None)
+
+        max_size = message.text.strip()
+        if not message.text.strip().isdigit():
+            raise Exception("❌ Вы должны ввести числовое значение")
+        if int(message.text.strip()) <= 0:
+            raise Exception("❌ Слишком низкое значение")
+        max_size = int(max_size)
+
+        config = sett.get("config")
+        config["logs"]["max_file_size"] = max_size
+        sett.set("config", config)
+        
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.logs_float_text(f"✅ <b>Максимальный размер файла логов</b> был успешно изменён на <b>{max_size} MB</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="logs").pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.logs_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="logs").pack())
         )

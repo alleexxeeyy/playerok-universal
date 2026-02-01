@@ -48,7 +48,7 @@ def settings_logger_kb():
     event_new_problem = "🟢" if tg_logging_events["new_problem"] else "🔴"
     event_deal_status_changed = "🟢" if tg_logging_events["deal_status_changed"] else "🔴"
     rows = [
-        [InlineKeyboardButton(text=f"👀 Логгирование ивентов Playerok в Telegram: {tg_logging_enabled}", callback_data="switch_tg_logging_enabled")],
+        [InlineKeyboardButton(text=f"👀 Логгирование ивентов: {tg_logging_enabled}", callback_data="switch_tg_logging_enabled")],
         [InlineKeyboardButton(text=f"💬 ID чата для логов: {tg_logging_chat_id}", callback_data="enter_tg_logging_chat_id")],
         [
         InlineKeyboardButton(text=f"{event_new_user_message}  👤 Новое сообщение от пользователя", callback_data="switch_tg_logging_event_new_user_message"),

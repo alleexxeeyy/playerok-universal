@@ -24,6 +24,8 @@ async def callback_menu_navigation(callback: CallbackQuery, callback_data: calls
         await throw_float_message(state, callback.message, templ.profile_text(), templ.profile_kb(), callback)
     elif to == "events":
         await throw_float_message(state, callback.message, templ.events_text(), templ.events_kb(), callback)
+    elif to == "logs":
+        await throw_float_message(state, callback.message, templ.logs_text(), templ.logs_kb(), callback)
 
 
 @router.callback_query(calls.InstructionNavigation.filter())

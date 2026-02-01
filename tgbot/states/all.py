@@ -24,6 +24,8 @@ class SettingsStates(StatesGroup):
     waiting_for_tg_logging_chat_id = State()
     waiting_for_watermark_value = State()
 
+    waiting_for_logs_max_file_size = State()
+
 
 class MessagesStates(StatesGroup):
     waiting_for_page = State()

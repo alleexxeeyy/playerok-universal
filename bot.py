@@ -1,5 +1,6 @@
 import asyncio
 import traceback
+import os
 from colorama import Fore, init as init_colorama
 from logging import getLogger
 
@@ -41,6 +42,22 @@ except RuntimeError:
 
 init_colorama()
 init_main_loop(main_loop)
+
+
+async def clear_logs_task():
+    from settings import Settings as sett
+    
+    path = "logs/latest.log"
+    while True:
+        if os.path.exists(path):
+            file_size_bytes = os.path.getsize(path)
+            file_size_mb = file_size_bytes / (1024 * 1024)
+            
+            config = sett.get("config")
+            if file_size_mb > config["logs"]["max_file_size"]:
+                with open(path, 'w'):
+                    pass
+        await asyncio.sleep(30)
 
 
 async def start_telegram_bot():
@@ -192,6 +209,7 @@ if __name__ == "__main__":
 
         main_loop.run_until_complete(start_telegram_bot())
         main_loop.run_until_complete(start_playerok_bot())
+        main_loop.create_task(clear_logs_task())
 
         asyncio.run(call_bot_event("ON_INIT"))
         

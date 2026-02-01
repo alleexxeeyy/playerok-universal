@@ -5,6 +5,7 @@ from .modules import *
 from .module_page import *
 from .profile import *
 from .events import *
+from .logs import *
 from .stats import *
 
 from .settings import *

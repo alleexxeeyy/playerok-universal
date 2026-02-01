@@ -1,6 +1,10 @@
 from aiogram import F, Router
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
+from pathlib import Path
+from collections import deque
+import shutil
+import os
 
 from playerokapi.enums import ItemDealStatuses
 from settings import Settings as sett
@@ -582,3 +586,50 @@ async def callback_reload_module(callback: CallbackQuery, state: FSMContext):
             text=templ.module_page_float_text(e), 
             reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
         )
+
+
+@router.callback_query(F.data == "select_logs_file_lines")
+async def callback_select_logs_file_lines(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(None)
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.logs_float_text(f"Выберите объём файла:"), 
+        reply_markup=templ.logs_file_lines_kb()
+    )
+
+
+@router.callback_query(calls.SendLogsFile.filter())
+async def callback_send_logs_file(callback: CallbackQuery, callback_data: calls.SendLogsFile, state: FSMContext):
+    await state.set_state(None)
+    lines = callback_data.lines
+    
+    try:
+        src_dir = Path(__file__).resolve().parents[2]
+        logs_file = os.path.join(src_dir, "logs", "latest.log")
+        txt_file = os.path.join(src_dir, "logs", "Лог работы.txt")
+        
+        if lines > 0:
+            with open(logs_file, 'r', encoding='utf-8') as f:
+                last_lines = deque(f, lines)
+            with open(txt_file, 'w', encoding='utf-8') as f:
+                f.writelines(last_lines)
+        else:
+            shutil.copy(logs_file, txt_file)
+        
+        await callback.message.answer_document(
+            document=FSInputFile(txt_file),
+            reply_markup=templ.destroy_kb()
+        )
+        try: await callback.bot.answer_callback_query(callback.id, cache_time=0)
+        except: pass
+
+        await throw_float_message(
+            state=state, 
+            message=callback.message, 
+            text=templ.logs_text(), 
+            reply_markup=templ.logs_kb()
+        )
+    finally:
+        try: os.remove(txt_file)
+        except: pass

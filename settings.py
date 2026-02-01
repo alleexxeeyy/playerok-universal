@@ -50,8 +50,6 @@ CONFIG = SettingsFile(
                 "enabled": False,
                 "interval": 3600,
                 "all": False
-                #"day_max_sequence": 15,
-                #"night_max_sequence": 30,
             },
             "auto_withdrawal": {
                 "enabled": False,
@@ -86,6 +84,9 @@ CONFIG = SettingsFile(
                 "password": "",
                 "signed_users": []
             }
+        },
+        "logs": {
+            "max_file_size": 30
         }
     }
 )

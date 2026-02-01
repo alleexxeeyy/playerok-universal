@@ -29,3 +29,7 @@ class SelectBankCard(CallbackData, prefix="sebaca"):
 
 class SelectSbpBank(CallbackData, prefix="sesbp"):
     id: str
+
+
+class SendLogsFile(CallbackData, prefix="selogs"):
+    lines: int

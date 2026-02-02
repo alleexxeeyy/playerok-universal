@@ -212,7 +212,7 @@ class Account:
                     )
             return r
 
-        cloudflare_signatures = [
+        cf_sigs = [
             "<title>Just a moment...</title>",
             "window._cf_chl_opt",
             "Enable JavaScript and cookies to continue",
@@ -220,9 +220,10 @@ class Account:
             "cf-browser-verification",
             "Cloudflare Ray ID"
         ]
+        
         for attempt in range(30):
             resp = make_req()
-            if not any(sig in resp.text for sig in cloudflare_signatures):
+            if not any(sig in resp.text for sig in cf_sigs):
                 break
             self._refresh_clients()
             delay = min(120.0, 5.0 * (2 ** attempt)) 
@@ -230,21 +231,17 @@ class Account:
             time.sleep(delay)
         else:
             raise CloudflareDetectedException(resp)
-        try: json = resp.json()
-        except: json = {}
-        if "errors" in json:
-            for attempt in range(3):
-                resp = make_req()
-                exc = RequestError(resp)
-                if exc.error_code != 500:
-                    raise exc
-                delay = min(120.0, 2 ** attempt)
-                self.logger.warning(f"500 Error Code, пробую отправить запрос снова через {delay} секунд")
-                time.sleep(delay)
-            else:
-                raise exc
+        
+        try: 
+            json = resp.json()
+            if "errors" in json:
+                raise RequestError(resp)
+        except: 
+            pass
+
         if resp.status_code != 200:
            raise RequestFailedError(resp)
+        
         return resp
     
     def get(self) -> Account:

@@ -141,6 +141,7 @@ def patch_requests():
             text_head = (resp.text or "")[:1200]
             statuses = {
                 429: "Too Many Requests",
+                500: "Internal Server Error",
                 502: "Bad Gateway",
                 503: "Service Unavailable"
             }
@@ -161,7 +162,7 @@ def patch_requests():
             try: delay = float(retry_hdr) if retry_hdr else min(120.0, 5.0 * (2 ** attempt))
             except: delay = min(120.0, 5.0 * (2 ** attempt))
             
-            logger.warning(f"{Fore.LIGHTYELLOW_EX}{url} {Fore.WHITE}— {Fore.YELLOW}{err}. {Fore.WHITE}Пробую отправить запрос снова через {delay} сек.")
+            logger.debug(f"{url} — {err}. Пробую отправить запрос снова через {delay} сек.")
             delay += random.uniform(0.2, 0.8)  # небольшой джиттер
             time.sleep(delay)
         return resp

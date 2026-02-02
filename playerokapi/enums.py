@@ -159,7 +159,9 @@ class ItemDealStatuses(Enum):
     """Продавец подтвердил выполнение сделки."""
     CONFIRMED = 3
     """Сделка подтверждена."""
-    ROLLED_BACK = 4
+    CONFIRMED_AUTOMATICALLY = 4
+    """Сделка подтверждена автоматически."""
+    ROLLED_BACK = 5
     """Сделка возвращена."""
 
 

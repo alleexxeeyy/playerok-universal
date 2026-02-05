@@ -95,7 +95,10 @@ class EventListener:
             if not actual_msg.deal or get_actual_msg:
                 actual_msg = self._get_actual_message(message.id, chat.id)
             if actual_msg and actual_msg.deal:
-                return [ItemSentEvent(actual_msg.deal, chat)]
+                return [
+                    ItemSentEvent(actual_msg.deal, chat),
+                    DealStatusChangedEvent(actual_msg.deal, chat)
+                ]
         
         elif message.text == "{{DEAL_CONFIRMED}}":
             actual_msg = message

@@ -6,7 +6,7 @@ from aiogram.types import (
     InputMediaPhoto, 
     FSInputFile
 )
-from aiogram.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 
 from . import templates as templ
 
@@ -134,9 +134,12 @@ async def throw_float_message(
         )
 
         if message.from_user.id != bot.id: 
-            await bot.delete_message(message.chat.id, message.message_id)
+            try: 
+                await bot.delete_message(message.chat.id, message.message_id)
+            except TelegramBadRequest: 
+                pass
 
-        if mess in ["not_modified", "callback_expired"]:
+        if mess in ("not_modified", "callback_expired"):
             return None
 
     if not mess:

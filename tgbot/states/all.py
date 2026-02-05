@@ -6,7 +6,7 @@ class SystemStates(StatesGroup):
 
 
 class ActionsStates(StatesGroup):
-    waiting_for_message_text = State()
+    waiting_for_message_content = State()
 
 
 class SettingsStates(StatesGroup):

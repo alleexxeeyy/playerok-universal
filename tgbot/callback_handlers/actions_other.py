@@ -142,7 +142,7 @@ async def callback_remember_username(callback: CallbackQuery, callback_data: cal
     do = callback_data.do
     await state.update_data(username=username)
     if do == "send_mess":
-        await state.set_state(states.ActionsStates.waiting_for_message_text)
+        await state.set_state(states.ActionsStates.waiting_for_message_content)
         await throw_float_message(
             state=state, 
             message=callback.message, 

@@ -1019,7 +1019,7 @@ class Account:
         
         files = {"1": open(photo_file_path, "rb")} if photo_file_path else None
         map = {"1":["variables.file"]} if photo_file_path else None
-        payload = operations if not files else {"operations": operations, "map": map}
+        payload = operations if not files else {"operations": json.dumps(operations), "map": json.dumps(map)}
         
         r = self.request("post", f"{self.base_url}/graphql", headers, payload, files).json()
         return chat_message(r["data"]["createChatMessage"])

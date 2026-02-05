@@ -82,7 +82,6 @@ class PlayerokBot:
         ).get()
 
         self.__saved_chats: dict[str, Chat] = {}
-        """Словарь последних запомненных чатов. В формате: {`chat_id` _or_ `username`: `chat_obj`, ...}"""
 
     def get_chat_by_id(self, chat_id: str) -> Chat:
         if chat_id in self.__saved_chats:
@@ -178,11 +177,13 @@ class PlayerokBot:
                 mess = self.account.send_message(chat_id, text, photo_file_path, mark_chat_as_read)
                 return mess
             except Exception as e:
-                text = text.replace('\n', ' ').strip()
-                self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при отправке сообщения {Fore.LIGHTWHITE_EX}«{text}» {Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id} {Fore.LIGHTRED_EX}: {Fore.WHITE}{e}")
+                if text: msg = text.replace('\n', ' ').strip()
+                else: msg = photo_file_path
+                self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при отправке сообщения {Fore.LIGHTWHITE_EX}«{msg}» {Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id} {Fore.LIGHTRED_EX}: {Fore.WHITE}{e}")
                 return
-        text = text.replace('\n', ' ').strip()
-        self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось отправить сообщение {Fore.LIGHTWHITE_EX}«{text}» {Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id}")
+        if text: msg = text.replace('\n', ' ').strip()
+        else: msg = photo_file_path
+        self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось отправить сообщение {Fore.LIGHTWHITE_EX}«{msg}» {Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id}")
 
     def _serealize_item(self, item: ItemProfile) -> dict:
         return {
@@ -789,17 +790,37 @@ class PlayerokBot:
             )
 
         if event.deal.status is ItemDealStatuses.PENDING:
-            self.send_message(event.chat.id, self.msg("deal_pending", deal_id=event.deal.id, deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
+            self.send_message(event.chat.id, self.msg(
+                "deal_pending", 
+                deal_id=event.deal.id, 
+                deal_item_name=event.deal.item.name, 
+                deal_item_price=event.deal.item.price
+            ))
         if event.deal.status is ItemDealStatuses.SENT:
-            self.send_message(event.chat.id, self.msg("deal_sent", deal_id=event.deal.id, deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
+            self.send_message(event.chat.id, self.msg(
+                "deal_sent", 
+                deal_id=event.deal.id, 
+                deal_item_name=event.deal.item.name, 
+                deal_item_price=event.deal.item.price
+            ))
         if event.deal.status is ItemDealStatuses.CONFIRMED:
-            self.send_message(event.chat.id, self.msg("deal_confirmed", deal_id=event.deal.id, deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
+            self.send_message(event.chat.id, self.msg(
+                "deal_confirmed", 
+                deal_id=event.deal.id, 
+                deal_item_name=event.deal.item.name, 
+                deal_item_price=event.deal.item.price
+            ))
             self.stats.deals_completed += 1
             if not event.deal.transaction:
                 event.deal = self.account.get_deal(event.deal.id)
             self.stats.earned_money += round(getattr(event.deal.transaction, "value") or 0, 2)
         elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
-            self.send_message(event.chat.id, self.msg("deal_refunded", deal_id=event.deal.id, deal_item_name=event.deal.item.name, deal_item_price=event.deal.item.price))
+            self.send_message(event.chat.id, self.msg(
+                "deal_refunded", 
+                deal_id=event.deal.id, 
+                deal_item_name=event.deal.item.name, 
+                deal_item_price=event.deal.item.price
+            ))
             self.stats.deals_refunded += 1
 
 

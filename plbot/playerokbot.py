@@ -92,7 +92,13 @@ class PlayerokBot:
     def get_chat_by_username(self, username: str) -> Chat:
         if username in self.__saved_chats:
             return self.__saved_chats[username]
-        self.__saved_chats[username] = self.account.get_chat_by_username(username)
+        if username.lower() == "поддержка":
+            chat = self.account.get_chat(self.account.support_chat_id)
+        elif username.lower() == "уведомления":
+            chat = self.account.get_chat(self.account.system_chat_id)
+        else:
+            chat = self.account.get_chat_by_username(username)
+        self.__saved_chats[username] = chat
         return self.get_chat_by_username(username)
     
     def refresh_account(self):

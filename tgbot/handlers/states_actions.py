@@ -30,29 +30,22 @@ async def handler_waiting_for_message_content(message: types.Message, state: FSM
         if message.text:
             if len(message.text.strip()) <= 0:
                 raise Exception("❌ Слишком короткий текст")
-            
-            plbot.send_message(
-                chat_id=chat.id, 
-                text=message.text.strip()
-            )
+            plbot.send_message(chat_id=chat.id, text=message.text.strip())
             sent_msg += message.text.strip()
+        
         elif message.photo:
-            if message.text:
-                await asyncio.sleep(1)
-            
             photo = message.photo[-1]
             with NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                 await message.bot.download(photo, destination=tmp.name)
                 tmp_path = tmp.name
 
             if message.caption:
-                plbot.send_message(chat_id=chat.id, text=message.caption)
-                sent_msg += f"{message.caption}, "
+                plbot.send_message(chat_id=chat.id, text=message.caption.strip())
+                sent_msg += f"{message.caption.strip()}, "
                 await asyncio.sleep(1)
 
             plbot.send_message(chat_id=chat.id, photo_file_path=tmp_path)
             os.remove(tmp_path)
-
             sent_msg += f"<b>Изображение</b>"
 
         await throw_float_message(

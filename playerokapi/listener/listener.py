@@ -35,7 +35,6 @@ class EventListener:
 
     def __init__(self, account: Account):
         self.account: Account = account
-        """ Объект аккаунта. """
 
         self.chat_subscriptions = {}
         self.review_check_deals = []

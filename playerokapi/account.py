@@ -186,31 +186,37 @@ class Account:
         headers = {k: v for k, v in _headers.items() if k not in headers.keys()}
                 
         def make_req():
-            if method == "get":
-                r = self.__curl_session.get(
-                    url=url, 
-                    params=payload, 
-                    headers=headers, 
-                    timeout=self.requests_timeout
-                )
-            elif method == "post":
-                if files:
-                    r = self.__tls_requests.post(
-                        url=url, 
-                        json=payload if not files else None, 
-                        data=payload if files else None, 
-                        headers=headers, 
-                        files=files, 
-                        timeout=self.requests_timeout
-                    )
-                else:
-                    r = self.__curl_session.post(
-                        url=url, 
-                        json=payload,
-                        headers=headers, 
-                        timeout=self.requests_timeout
-                    )
-            return r
+            for _ in range(3):
+                try:
+                    if method == "get":
+                        r = self.__curl_session.get(
+                            url=url, 
+                            params=payload, 
+                            headers=headers, 
+                            timeout=self.requests_timeout
+                        )
+                    elif method == "post":
+                        if files:
+                            r = self.__tls_requests.post(
+                                url=url, 
+                                json=payload if not files else None, 
+                                data=payload if files else None, 
+                                headers=headers, 
+                                files=files, 
+                                timeout=self.requests_timeout
+                            )
+                        else:
+                            r = self.__curl_session.post(
+                                url=url, 
+                                json=payload,
+                                headers=headers, 
+                                timeout=self.requests_timeout
+                            )
+                    return r
+                except Exception as e:
+                    self.logger.debug(f"Ошибка при отправке запроса: {e}")
+                    self.logger.debug(f"Отправляю запрос повторно...")
+                
 
         cf_sigs = [
             "<title>Just a moment...</title>",

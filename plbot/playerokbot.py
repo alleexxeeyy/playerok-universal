@@ -690,6 +690,14 @@ class PlayerokBot:
                 get_telegram_bot_loop()
             )
 
+        self.send_message(event.chat.id, self.msg(
+            "new_review", 
+            deal_id=event.deal.id, 
+            deal_item_name=event.deal.item.name, 
+            deal_item_price=event.deal.item.price,
+            review_stars=event.deal.review.rating
+        ))
+
     async def _on_new_problem(self, event: ItemPaidEvent):
         if event.deal.user.id == self.account.id:
             return

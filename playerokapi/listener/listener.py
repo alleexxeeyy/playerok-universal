@@ -1,7 +1,7 @@
 import json
 import uuid
 import time
-import certifi
+import traceback
 from logging import getLogger
 from typing import Generator
 from threading import Thread
@@ -9,7 +9,6 @@ from queue import Queue
 from threading import Event as ThreadingEvent
 
 import websocket
-import ssl
 
 from ..account import Account
 from ..types import (
@@ -42,6 +41,7 @@ class EventListener:
         self.chats = []
         self.processed_deals = []
         self.ws = None
+        self.q = None
 
         self._possible_new_chat = ThreadingEvent()
         self._last_chat_check = 0
@@ -53,7 +53,8 @@ class EventListener:
     ):
         for _ in range(3):
             time.sleep(4)
-            msg_list = self.account.get_chat_messages(chat_id, count=12)
+            try: msg_list = self.account.get_chat_messages(chat_id, count=12)
+            except: return
             try: return [msg for msg in msg_list.messages if msg.id == message_id][0]
             except: pass
     
@@ -233,6 +234,45 @@ class EventListener:
         # иначе, если уже подписаны на чат - сообщение будет получаться из chatMessageCreated
         
         return events
+    
+    def proccess_ws_message(self, msg):
+        try:
+            try: msg_data = json.loads(msg)
+            except json.JSONDecodeError: return
+            
+            self.logger.debug(f"Получено WS сообщение: {msg_data}")
+            
+            if msg_data["type"] == "connection_ack":
+                self._subscribe_chat_updated()
+                self._subscribe_user_updated()
+                
+                for chat_ in self.chats:
+                    self._subscribe_chat_message_created(chat_.id)
+            else:
+                if "userUpdated" in msg_data["payload"]["data"]:
+                    self._possible_new_chat.set()
+
+                if "chatUpdated" in msg_data["payload"]["data"]:
+                    _chat = chat(msg_data["payload"]["data"]["chatUpdated"])
+                    _message = chat_message(msg_data["payload"]["data"]["chatUpdated"]["lastMessage"])
+
+                    events = self._proccess_new_chat_message(_chat, _message)
+                    for event in events:
+                        #yield event
+                        self.q.put(event)
+
+                if "chatMessageCreated" in msg_data["payload"]["data"]:
+                    chat_id = self.chat_subscriptions.get(msg_data["id"])
+                    try: _chat = [chat_ for chat_ in self.chats if chat_.id == chat_id][0]
+                    except: return
+                    _message = chat_message(msg_data["payload"]["data"]["chatMessageCreated"])
+
+                    events = self._parse_message_events(_message, _chat)
+                    for event in events:
+                        #yield event
+                        self.q.put(event)
+        except Exception:
+            self.logger.debug(f"Ошибка обработки сообщения в WebSocket`е: {traceback.format_exc()}")
         
     def listen_new_messages(self):
         headers = {
@@ -257,8 +297,9 @@ class EventListener:
         # except:
         #     ssl_context = None
 
-        chat_list = self.account.get_chats(count=24) # инициализация первых 24 чатов
-        self.chats = [chat for chat in chat_list.chats]
+        try: self.chats = self.account.get_chats(count=24).chats # инициализация первых 24 чатов
+        except: self.chats = []
+        
         for chat_ in self.chats:
             yield ChatInitializedEvent(chat_)
 
@@ -272,46 +313,14 @@ class EventListener:
                     header=[f"{k}: {v}" for k, v in headers.items()],
                     subprotocols=["graphql-transport-ws"]
                 )
-
                 self._send_connection_init()          
 
                 while True:
                     msg = self.ws.recv()
-                    try: msg_data = json.loads(msg)
-                    except json.JSONDecodeError: continue
-                    self.logger.debug(f"WS msg received: {msg_data}")
-                    
-                    if msg_data["type"] == "connection_ack":
-                        self._subscribe_chat_updated()
-                        self._subscribe_user_updated()
-                        for chat_ in self.chats:
-                            self._subscribe_chat_message_created(chat_.id)
-
-                    else:
-                        if "userUpdated" in msg_data["payload"]["data"]:
-                            self._possible_new_chat.set()
-
-                        if "chatUpdated" in msg_data["payload"]["data"]:
-                            _chat = chat(msg_data["payload"]["data"]["chatUpdated"])
-                            _message = chat_message(msg_data["payload"]["data"]["chatUpdated"]["lastMessage"])
-
-                            events = self._proccess_new_chat_message(_chat, _message)
-                            for event in events:
-                                yield event
-
-                        if "chatMessageCreated" in msg_data["payload"]["data"]:
-                            chat_id = self.chat_subscriptions.get(msg_data["id"])
-                            try: _chat = [chat_ for chat_ in self.chats if chat_.id == chat_id][0]
-                            except: continue
-                            _message = chat_message(msg_data["payload"]["data"]["chatMessageCreated"])
-
-                            events = self._parse_message_events(_message, _chat)
-                            for event in events:
-                                yield event
-            except Exception as e:
-                self.logger.debug(f"WS error: {e}")
-                self.logger.debug("reconnecting to WS...")
+                    Thread(target=self.proccess_ws_message, args=(msg,), daemon=True).start()
+            except websocket._exceptions.WebSocketException:
                 time.sleep(3)
+                pass
 
     def _should_check_deal(self, deal_id, delay=30, max_tries=30) -> bool:
         now = time.time()
@@ -335,20 +344,25 @@ class EventListener:
     def listen_new_reviews(self):
         while True:
             for deal_id in list(self.review_check_deals):
-                if not self._should_check_deal(deal_id):
-                    continue
-                deal = self.account.get_deal(deal_id)
-                
-                if deal.review is not None:
-                    if deal_id in self.review_check_deals:
-                        self.review_check_deals.remove(deal_id)
+                try:
+                    if not self._should_check_deal(deal_id):
+                        continue
                     
-                    try: deal.chat = [chat_ for chat_ in self.chats if chat_.id == getattr(getattr(deal, "chat"), "id")][0]
-                    except: 
-                        try: deal.chat = self.account.get_chat(deal.chat.id)
-                        except: pass
+                    try: deal = self.account.get_deal(deal_id)
+                    except: continue
                     
-                    yield NewReviewEvent(deal, deal.chat)
+                    if deal.review:
+                        if deal_id in self.review_check_deals:
+                            self.review_check_deals.remove(deal_id)
+                        
+                        try: deal.chat = [chat_ for chat_ in self.chats if chat_.id == getattr(getattr(deal, "chat"), "id")][0]
+                        except: 
+                            try: deal.chat = self.account.get_chat(deal.chat.id)
+                            except: pass
+                        
+                        yield NewReviewEvent(deal, deal.chat)
+                except:
+                    self.logger.debug(f"Ошибка проверки новых отзывов в сделке {deal_id}: {traceback.format_exc()}")
             time.sleep(1)
 
     def _wait_for_check_new_chats(self, delay=10):
@@ -357,31 +371,38 @@ class EventListener:
     
     def listen_new_deals(self): # слушает новые сделки в новосозданных чатах
         while True:
-            self._possible_new_chat.wait()
-            self._wait_for_check_new_chats()
+            try:
+                self._possible_new_chat.wait()
+                self._wait_for_check_new_chats()
 
-            self._last_chat_check = time.time()
-            self._possible_new_chat.clear()
-            
-            known_chat_ids = [chat_.id for chat_ in self.chats]
-            
-            for _ in range(3):
-                try: chat_list = self.account.get_chats(count=5, type=ChatTypes.PM)
-                except: time.sleep(4)
-                new_deal_exists = any(
-                    chat_ for chat_ in chat_list.chats 
-                    if chat_.last_message.text == "{{ITEM_PAID}}"
-                )
-                if new_deal_exists: break
-                else: time.sleep(4)
-            
-            for chat_ in chat_list.chats:
-                if chat_.id in known_chat_ids:
-                    continue
-                if chat_.last_message.text == "{{ITEM_PAID}}":
-                    events = self._proccess_new_chat_message(chat_, chat_.last_message)
-                    for event in events:
-                        yield event
+                self._last_chat_check = time.time()
+                self._possible_new_chat.clear()
+                
+                known_chat_ids = [chat_.id for chat_ in self.chats]
+                
+                for _ in range(3):
+                    try: chat_list = self.account.get_chats(count=5, type=ChatTypes.PM)
+                    except: time.sleep(4)
+                    
+                    new_deal_exists = any(
+                        chat_ for chat_ in chat_list.chats 
+                        if chat_.last_message.text == "{{ITEM_PAID}}"
+                    )
+                    
+                    if new_deal_exists: break
+                    else: time.sleep(4)
+                
+                for chat_ in chat_list.chats:
+                    if chat_.id in known_chat_ids:
+                        continue
+                    if chat_.last_message.text == "{{ITEM_PAID}}":
+                        events = self._proccess_new_chat_message(chat_, chat_.last_message)
+                        for event in events:
+                            yield event
+            except websocket._exceptions.WebSocketException:
+                pass
+            except:
+                self.logger.debug(f"Ошибка проверки новых сделок: {traceback.format_exc()}")
 
     def listen(
         self, 
@@ -405,11 +426,11 @@ class EventListener:
         if not any([get_new_review_events, get_new_message_events]):
             return
         
-        q = Queue()
+        self.q = Queue()
 
         def run(gen):
             for event in gen:
-                q.put(event)
+                self.q.put(event)
 
         if get_new_message_events:
             Thread(target=run, args=(self.listen_new_messages(),), daemon=True).start()
@@ -418,4 +439,4 @@ class EventListener:
             Thread(target=run, args=(self.listen_new_reviews(),), daemon=True).start()
 
         while True:
-            yield q.get()
+            yield self.q.get()

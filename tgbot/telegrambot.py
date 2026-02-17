@@ -35,8 +35,9 @@ class TelegramBot:
         return getattr(cls, "instance")
 
     def __init__(self):
-        logging.getLogger("aiogram").setLevel(logging.ERROR)
-        logging.getLogger("aiogram.event").setLevel(logging.ERROR)
+        logging.getLogger("aiogram").setLevel(logging.CRITICAL)
+        logging.getLogger("aiogram.event").setLevel(logging.CRITICAL)
+        logging.getLogger("aiogram.dispatcher").setLevel(logging.CRITICAL)
         
         config = sett.get("config")
         self.bot = Bot(token=config["telegram"]["api"]["token"])

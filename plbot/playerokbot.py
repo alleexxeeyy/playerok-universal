@@ -368,21 +368,31 @@ class PlayerokBot:
                 # for sequence, table_item in enumerate(table_items, start=1):
                 #     if table_item.id == item.id and sequence > max_sequence:
                 
-                time.sleep(0.5)
-                statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.price)
-                try: 
-                    prem_status = [
-                        status for status in statuses 
-                        if status.type == PriorityTypes.PREMIUM
-                        or status.price > 0
-                    ][0]
-                except: 
-                    raise Exception("PREMIUM статус не найден")
-                
-                time.sleep(0.5)
-                self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
-                
-                sequence = getattr(item, "sequence") or "?"
+                for _ in range(2):
+                    time.sleep(0.5)
+                    
+                    item_price = getattr(item, "raw_price") if hasattr(item, "raw_price") else item.price
+                    statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item_price)
+                    
+                    try: 
+                        prem_status = [
+                            status for status in statuses 
+                            if status.type == PriorityTypes.PREMIUM
+                            or status.price > 0
+                        ][0]
+                    except: 
+                        raise Exception("PREMIUM статус не найден")
+                    
+                    try:
+                        time.sleep(0.5)
+                        self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
+                        break
+                    except Exception as e:
+                        if "В запросе указаны один или более некорректных бустеров" in str(e):
+                            time.sleep(0.5)
+                            item = self.account.get_item(item.id)
+                    
+                sequence = getattr(item, "sequence") if hasattr(item, "sequence") else "?"
                 item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
                 self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
         except Exception as e:

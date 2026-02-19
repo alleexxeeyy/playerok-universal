@@ -340,61 +340,31 @@ class PlayerokBot:
                 not self.config["playerok"]["auto_bump_items"]["all"]
                 and included
             ):
-                # current_time = datetime.now(pytz.timezone("Europe/Moscow"))
-                # if 22 <= current_time.hour or current_time.hour < 6: 
-                #     max_sequence = self.config["playerok"]["auto_bump_items"]["night_max_sequence"]
-                # else: 
-                #     max_sequence = self.config["playerok"]["auto_bump_items"]["day_max_sequence"]
-                
                 if not isinstance(item, MyItem):
                     try: item = self.account.get_item(item.id)
                     except: return
-
-                # table_items = []
-                # crsr = None
-                # while True:
-                #     itms_list = self.account.get_items(
-                #         category_id=item.category.id,
-                #         after_cursor=crsr
-                #     )
-                #     table_items.extend([itm for itm in itms_list.items])
-                #     if len(table_items) > max_sequence:
-                #         break
-                #     if not itms_list.page_info.has_next_page:
-                #         break
-                #     crsr = itms_list.page_info.end_cursor
-                #     time.sleep(0.5)
-
-                # for sequence, table_item in enumerate(table_items, start=1):
-                #     if table_item.id == item.id and sequence > max_sequence:
+                    
+                time.sleep(1)
                 
-                for _ in range(2):
-                    time.sleep(0.5)
+                statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item.raw_price)
+                try: 
+                    prem_status = [
+                        status for status in statuses 
+                        if status.type == PriorityTypes.PREMIUM
+                        or status.price > 0
+                    ][0]
+                except: 
+                    raise Exception("PREMIUM статус не найден")
+                
+                time.sleep(1)
+                self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
                     
-                    item_price = getattr(item, "raw_price") if hasattr(item, "raw_price") else item.price
-                    statuses: list[ItemPriorityStatus] = self.playerok_account.get_item_priority_statuses(item.id, item_price)
-                    
-                    try: 
-                        prem_status = [
-                            status for status in statuses 
-                            if status.type == PriorityTypes.PREMIUM
-                            or status.price > 0
-                        ][0]
-                    except: 
-                        raise Exception("PREMIUM статус не найден")
-                    
-                    try:
-                        time.sleep(0.5)
-                        self.playerok_account.increase_item_priority_status(item.id, prem_status.id)
-                        break
-                    except Exception as e:
-                        if "В запросе указаны один или более некорректных бустеров" in str(e):
-                            time.sleep(0.5)
-                            item = self.account.get_item(item.id)
-                    
-                sequence = getattr(item, "sequence") if hasattr(item, "sequence") else "?"
+                sequence = item.sequence
                 item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
-                self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. {Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{sequence} {Fore.WHITE}→ {Fore.YELLOW}1")
+                self.logger.info(
+                    f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. "
+                    f"{Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{sequence} {Fore.WHITE}→ {Fore.YELLOW}1"
+                )
         except Exception as e:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{item.name}»: {Fore.WHITE}{e}")
 
@@ -437,7 +407,13 @@ class PlayerokBot:
                 not self.config["playerok"]["auto_restore_items"]["all"]
                 and included
             ):
-                priority_statuses = self.account.get_item_priority_statuses(item.id, item.price)
+                if not isinstance(item, MyItem):
+                    try: item = self.account.get_item(item.id)
+                    except: return
+                    
+                time.sleep(1)
+
+                priority_statuses = self.account.get_item_priority_statuses(item.id, item.raw_price)
                 try: 
                     priority_status = [
                         status for status in priority_statuses 
@@ -447,11 +423,12 @@ class PlayerokBot:
                 except: 
                     priority_status = [status for status in priority_statuses][0]
 
-                time.sleep(0.5)
+                time.sleep(1)
                 new_item = self.account.publish_item(item.id, priority_status.id)
+                
                 item_name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
                 
-                if new_item.status in [ItemStatuses.PENDING_APPROVAL, ItemStatuses.APPROVED]:
+                if new_item.status in (ItemStatuses.PENDING_APPROVAL, ItemStatuses.APPROVED):
                     self.logger.info(f"{Fore.LIGHTWHITE_EX}«{item_name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}товар восстановлен")
                 else:
                     self.logger.error(f"{Fore.LIGHTRED_EX}Не удалось восстановить предмет «{item_name_frmtd}». Его статус: {Fore.WHITE}{new_item.status.name}")
@@ -774,6 +751,9 @@ class PlayerokBot:
             return
         
         if self.config["playerok"]["auto_restore_items"]["sold"]:
+            if not event.deal.item.name:
+                event.deal.item = self.account.get_item(event.deal.item.id)
+                time.sleep(1)
             for _ in range(3):
                 try: 
                     items = self.get_my_items(count=6, statuses=[ItemStatuses.SOLD])

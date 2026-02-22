@@ -682,7 +682,7 @@ class PlayerokBot:
             deal_id=event.deal.id, 
             deal_item_name=event.deal.item.name, 
             deal_item_price=event.deal.item.price,
-            review_stars=event.deal.review.rating
+            review_rating=event.deal.review.rating
         ))
 
     async def _on_new_problem(self, event: ItemPaidEvent):

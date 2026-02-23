@@ -249,23 +249,27 @@ class EventListener:
                 for chat_ in self.chats:
                     self._subscribe_chat_message_created(chat_.id)
             else:
-                if "userUpdated" in msg_data["payload"]["data"]:
-                    self._possible_new_chat.set()
+                payload_data = msg_data.get("payload", {}).get("data", {})
+                
+                if "userUpdated" in payload_data:
+                    unread_chats = payload_data["userUpdated"].get("unreadChatsCounter", 0)
+                    if unread_chats > 0:
+                        self._possible_new_chat.set()
 
-                if "chatUpdated" in msg_data["payload"]["data"]:
-                    _chat = chat(msg_data["payload"]["data"]["chatUpdated"])
-                    _message = chat_message(msg_data["payload"]["data"]["chatUpdated"]["lastMessage"])
+                if "chatUpdated" in payload_data:
+                    _chat = chat(payload_data["chatUpdated"])
+                    _message = chat_message(payload_data["chatUpdated"]["lastMessage"])
 
                     events = self._proccess_new_chat_message(_chat, _message)
                     for event in events:
                         #yield event
                         self.q.put(event)
 
-                if "chatMessageCreated" in msg_data["payload"]["data"]:
+                if "chatMessageCreated" in payload_data:
                     chat_id = self.chat_subscriptions.get(msg_data["id"])
                     try: _chat = [chat_ for chat_ in self.chats if chat_.id == chat_id][0]
                     except: return
-                    _message = chat_message(msg_data["payload"]["data"]["chatMessageCreated"])
+                    _message = chat_message(payload_data["chatMessageCreated"])
 
                     events = self._parse_message_events(_message, _chat)
                     for event in events:
@@ -355,7 +359,7 @@ class EventListener:
                         if deal_id in self.review_check_deals:
                             self.review_check_deals.remove(deal_id)
                         
-                        try: deal.chat = [chat_ for chat_ in self.chats if chat_.id == getattr(getattr(deal, "chat"), "id")][0]
+                        try: deal.chat = [chat_ for chat_ in self.chats if chat_.id == deal.chat.id][0]
                         except: 
                             try: deal.chat = self.account.get_chat(deal.chat.id)
                             except: pass
@@ -378,27 +382,23 @@ class EventListener:
                 self._last_chat_check = time.time()
                 self._possible_new_chat.clear()
                 
-                known_chat_ids = [chat_.id for chat_ in self.chats]
-                
+                new_deals = {} # chat: deal_msg
+                chats = []
                 for _ in range(3):
-                    try: chat_list = self.account.get_chats(count=5, type=ChatTypes.PM)
+                    try: chats = self.account.get_chats(count=5, type=ChatTypes.PM).chats
                     except: time.sleep(4)
+
+                    for chat in chats:
+                        if chat.last_message.text == "{{ITEM_PAID}}":
+                            new_deals[chat] = chat.last_message
                     
-                    new_deal_exists = any(
-                        chat_ for chat_ in chat_list.chats 
-                        if chat_.last_message.text == "{{ITEM_PAID}}"
-                    )
-                    
-                    if new_deal_exists: break
+                    if new_deals: break
                     else: time.sleep(4)
                 
-                for chat_ in chat_list.chats:
-                    if chat_.id in known_chat_ids:
-                        continue
-                    if chat_.last_message.text == "{{ITEM_PAID}}":
-                        events = self._proccess_new_chat_message(chat_, chat_.last_message)
-                        for event in events:
-                            yield event
+                for chat, msg in new_deals.items():
+                    events = self._proccess_new_chat_message(chat, msg)
+                    for event in events:
+                        yield event
             except websocket._exceptions.WebSocketException:
                 pass
             except:

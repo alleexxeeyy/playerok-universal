@@ -451,6 +451,9 @@ class PlayerokBot:
             self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении истёкших предметов: {Fore.WHITE}{e}")
 
     def request_withdrawal(self) -> bool:
+        self.latest_events_times["auto_withdrawal"] = datetime.now().isoformat()
+        data.set("latest_events_times", self.latest_events_times)
+        
         balance = "?"
         try:
             self.account = self.account.get()

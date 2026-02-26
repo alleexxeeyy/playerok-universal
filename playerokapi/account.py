@@ -186,6 +186,8 @@ class Account:
         headers = {k: v for k, v in _headers.items() if k not in headers.keys()}
                 
         def make_req():
+            err = ""
+
             for _ in range(3):
                 try:
                     if method == "get":
@@ -214,9 +216,11 @@ class Account:
                             )
                     return r
                 except Exception as e:
+                    err = str(e)
                     self.logger.debug(f"Ошибка при отправке запроса: {e}")
                     self.logger.debug(f"Отправляю запрос повторно...")
-                raise RequestSendingError(url, str(e))
+                
+            raise RequestSendingError(url, err)
 
         cf_sigs = [
             "<title>Just a moment...</title>",

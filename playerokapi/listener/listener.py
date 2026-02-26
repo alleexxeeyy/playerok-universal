@@ -427,18 +427,18 @@ class EventListener:
                     if chats: break
                     else: time.sleep(4)
 
-                for chat in chats:
-                    time.sleep(2)
-                    try: msgs = self.account.get_chat_messages(chat.id, count=12).messages
-                    except: continue
+                for _ in range(3):
+                    for chat in chats:
+                        time.sleep(2)
+                        try: msgs = self.account.get_chat_messages(chat.id, count=12).messages
+                        except: continue
 
-                    for msg in msgs:
-                        is_new_deal = msg.deal.id not in self.processed_deals
-                        if msg.text == "{{ITEM_PAID}}" and is_new_deal:
-                            new_deals[chat] = msg
-
-                if not new_deals:
-                    continue
+                        for msg in msgs:
+                            is_new_deal = msg.deal.id not in self.processed_deals
+                            if msg.text == "{{ITEM_PAID}}" and is_new_deal:
+                                new_deals[chat] = msg
+                    if new_deals:
+                        break
                 
                 for chat, msg in new_deals.items():
                     events = self._proccess_new_chat_message(chat, msg)

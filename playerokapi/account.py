@@ -216,7 +216,7 @@ class Account:
                 except Exception as e:
                     self.logger.debug(f"Ошибка при отправке запроса: {e}")
                     self.logger.debug(f"Отправляю запрос повторно...")
-                
+                raise RequestSendingError(url, str(e))
 
         cf_sigs = [
             "<title>Just a moment...</title>",
@@ -241,7 +241,7 @@ class Account:
         try: 
             json = resp.json()
             if "errors" in json:
-                raise RequestError(resp)
+                raise RequestPlayerokError(resp)
         except: 
             pass
 
@@ -363,7 +363,7 @@ class Account:
         :param count: Кол-во сделок, которые нужно получить (не более 24 за один запрос).
         :type count: `int`
 
-        :param statuses: Статусы заявок, которые нужно получать, _опционально_.
+        :param statuses: Статусы сделок, которые нужно получать, _опционально_.
         :type statuses: `list[playerokapi.enums.ItemDealsStatuses]` or `None`
 
         :param direction: Направление сделок, _опционально_.

@@ -25,7 +25,7 @@ class CloudflareDetectedException(Exception):
 
 class RequestFailedError(Exception):
     """
-    Ошибка, которая возбуждается, если код ответа не равен 200.
+    Исключение, которое возбуждается, если код ответа не равен 200.
 
     :param response: Объект ответа.
     :type response: `requests.Response`
@@ -45,9 +45,9 @@ class RequestFailedError(Exception):
         return msg
 
 
-class RequestError(Exception):
+class RequestPlayerokError(Exception):
     """
-    Ошибка, которая возбуждается, если возникла ошибка при отправке запроса.
+    Исключение, которое возбуждается, если возникла ошибка запроса на стороне Playerok.
 
     :param response: Объект ответа.
     :type response: `requests.Response`
@@ -68,8 +68,31 @@ class RequestError(Exception):
         return self.error_message or msg
 
 
+class RequestSendingError(Exception):
+    """
+    Исключение, которое возбуждается, если не удалось отправить запрос за несколько попыток.
+
+    :param url: URL запроса.
+    :type url: `str`
+
+    :param error: Текст ошибки.
+    :type error: `str`
+    """
+
+    def __init__(self, url: str, error: str):
+        self.url = url
+        self.error = error
+
+    def __str__(self):
+        msg = (
+            f"Ошибка при попытке отправить запрос к {self.response.url}"
+            f"\nТекст ошибки: {self.error}"
+        )
+        return msg
+
+
 class UnauthorizedError(Exception):
-    """Ошибка, которая возбуждается, если не удалось авторизоваться в аккаунте Playerok."""
+    """Исключение, которое возбуждается, если не удалось авторизоваться в аккаунте Playerok."""
 
     def __str__(self):
         return "Не удалось подключиться к аккаунту Playerok. Может вы указали неверный token?"

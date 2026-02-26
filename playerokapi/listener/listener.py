@@ -2,6 +2,7 @@ import json
 import uuid
 import time
 import traceback
+from datetime import datetime
 from logging import getLogger
 from typing import Generator
 from threading import Thread
@@ -13,7 +14,8 @@ import websocket
 from ..account import Account
 from ..types import (
     ChatMessage, 
-    Chat
+    Chat,
+    ItemDeal
 )
 from ..enums import ChatTypes
 from ..parser import (
@@ -37,9 +39,11 @@ class EventListener:
 
         self.chat_subscriptions = {}
         self.review_check_deals = []
-        self.deal_checks = {}
+        self.review_deal_times = {}
         self.chats = []
         self.processed_deals = []
+        self.active_deals = {} # chat_id: [(deal_id, last_status, status_date), ...]
+        self.last_st_deal_times = {}
         self.ws = None
         self.q = None
 
@@ -57,6 +61,21 @@ class EventListener:
             except: return
             try: return [msg for msg in msg_list.messages if msg.id == message_id][0]
             except: pass
+
+    """def _set_active_deal(
+        self, chat: Chat, deal: ItemDeal, status_date: datetime
+    ):
+        if chat.id not in self.active_deals:
+            self.active_deals[chat.id] = []
+        
+        try: deal_tuple = [tuple for tuple in self.active_deals[chat.id] if deal.id in tuple][0]
+        except: deal_tuple = ()
+        
+        if not deal_tuple:
+            self.active_deals[chat.id].append((deal.id, deal.status, status_date))
+        else:
+            indx = self.active_deals[chat.id].index(deal_tuple)
+            self.active_deals[chat.id][indx] = (deal.id, deal.status, status_date)"""
     
     def _parse_message_events(
         self, message: ChatMessage, chat: Chat
@@ -77,10 +96,13 @@ class EventListener:
         if message.text == "{{ITEM_PAID}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
-                if actual_msg.deal.id not in self.review_check_deals:
-                    self.review_check_deals.append(actual_msg.deal.id)
-                if actual_msg.deal.id not in self.processed_deals:
-                    self.processed_deals.append(actual_msg.deal.id)
+                deal_id = actual_msg.deal.id
+                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #self._set_active_deal(chat, actual_msg.deal, status_date)
+                if deal_id not in self.review_check_deals:
+                    self.review_check_deals.append(deal_id)
+                if deal_id not in self.processed_deals:
+                    self.processed_deals.append(deal_id)
                 else:
                     return []
                 return [
@@ -91,6 +113,8 @@ class EventListener:
         elif message.text == "{{ITEM_SENT}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
+                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     ItemSentEvent(actual_msg.deal, chat),
                     DealStatusChangedEvent(actual_msg.deal, chat)
@@ -99,6 +123,8 @@ class EventListener:
         elif message.text == "{{DEAL_CONFIRMED}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
+                status_date = datetime.fromisoformat(actual_msg.created_at)
+                ##self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealConfirmedEvent(actual_msg.deal, chat),
                     DealStatusChangedEvent(actual_msg.deal, chat),
@@ -107,6 +133,8 @@ class EventListener:
         elif message.text == "{{DEAL_ROLLED_BACK}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
+                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealRolledBackEvent(actual_msg.deal, chat),
                     DealStatusChangedEvent(actual_msg.deal, chat),
@@ -115,6 +143,8 @@ class EventListener:
         elif message.text == "{{DEAL_HAS_PROBLEM}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
+                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealHasProblemEvent(actual_msg.deal, chat),
                     DealStatusChangedEvent(actual_msg.deal, chat),
@@ -123,6 +153,8 @@ class EventListener:
         elif message.text == "{{DEAL_PROBLEM_RESOLVED}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
+                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealProblemResolvedEvent(actual_msg.deal, chat),
                     DealStatusChangedEvent(actual_msg.deal, chat),
@@ -240,7 +272,7 @@ class EventListener:
             try: msg_data = json.loads(msg)
             except json.JSONDecodeError: return
             
-            self.logger.debug(f"Получено WS сообщение: {msg_data}")
+            self.logger.debug(f"WS -> {msg_data}")
             
             if msg_data["type"] == "connection_ack":
                 self._subscribe_chat_updated()
@@ -326,14 +358,14 @@ class EventListener:
                 time.sleep(3)
                 pass
 
-    def _should_check_deal(self, deal_id, delay=30, max_tries=30) -> bool:
+    def _should_check_review_deal(self, deal_id, delay=30, max_tries=30) -> bool:
         now = time.time()
-        info = self.deal_checks.get(deal_id, {"last": 0, "tries": 0})
+        info = self.review_deal_times.get(deal_id, {"last": 0, "tries": 0})
         last_time = info["last"]
         tries = info["tries"]
         
         if now - last_time > delay:
-            self.deal_checks[deal_id] = {
+            self.review_deal_times[deal_id] = {
                 "last": now,
                 "tries": tries+1
             }
@@ -341,7 +373,7 @@ class EventListener:
         elif tries >= max_tries:
             if deal_id in self.review_check_deals:
                 self.review_check_deals.remove(deal_id)
-            del self.deal_checks[deal_id]
+            del self.review_deal_times[deal_id]
 
         return False
     
@@ -349,7 +381,7 @@ class EventListener:
         while True:
             for deal_id in list(self.review_check_deals):
                 try:
-                    if not self._should_check_deal(deal_id):
+                    if not self._should_check_review_deal(deal_id):
                         continue
                     
                     try: deal = self.account.get_deal(deal_id)
@@ -404,6 +436,44 @@ class EventListener:
             except:
                 self.logger.debug(f"Ошибка проверки новых сделок: {traceback.format_exc()}")
 
+    '''def listen_deal_statuses(self): # слушает изменения статусов во всех активных сделках
+        while True: # TODO: Доработать, проверить ещё раз на баги 
+            for chat_id, deals in list(self.active_deals.items()):
+                for _ in range(3):
+                    try: 
+                        msg_list = self.account.get_chat_messages(chat_id, 24)
+                        messages = sorted(
+                            msg_list.messages, 
+                            key=lambda x: datetime.fromisoformat(x.created_at)
+                        )
+                        break
+                    except: 
+                        time.sleep(4)
+                
+                for deal_id, last_status, status_date in deals:
+                    try:
+                        status_msgs = [
+                            msg for msg in messages 
+                            if datetime.fromisoformat(msg.created_at) 
+                            >= status_date and msg.deal.status
+                        ]
+
+                        for msg in status_msgs:
+                            msg_date = datetime.fromisoformat(msg.created_at)
+                            if msg.deal.status == last_status and msg_date == status_date:
+                                continue
+                            
+                            try: chat = self.account.get_chat(chat_id)
+                            except: chat = None
+                            
+                            events = self._parse_message_events(msg, chat)
+                            for event in events:
+                                yield event
+                    except:
+                        self.logger.debug(f"Ошибка проверки статусов в сделке {deal_id}: {traceback.format_exc()}")
+                    time.sleep(8)
+            time.sleep(1)'''
+
     def listen(
         self, 
         get_new_message_events: bool = True,
@@ -423,7 +493,7 @@ class EventListener:
         None,
         None
     ]:
-        if not any([get_new_review_events, get_new_message_events]):
+        if not any((get_new_review_events, get_new_message_events)):
             return
         
         self.q = Queue()
@@ -435,6 +505,8 @@ class EventListener:
         if get_new_message_events:
             Thread(target=run, args=(self.listen_new_messages(),), daemon=True).start()
             Thread(target=run, args=(self.listen_new_deals(),), daemon=True).start()
+            #Thread(target=run, args=(self.listen_deal_statuses(),), daemon=True).start()
+        
         if get_new_review_events:
             Thread(target=run, args=(self.listen_new_reviews(),), daemon=True).start()
 

@@ -299,7 +299,7 @@ class PlayerokBot:
                 time.sleep(0.5)
             
             self.saved_items = svd_items
-        except (RequestError, RequestFailedError):
+        except (RequestPlayerokError, RequestFailedError):
             for itm_dict in list(self.saved_items):
                 itm = self._deserealize_item(itm_dict)
                 

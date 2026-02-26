@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import *
 import json
 
-from .account import Account, get_account
 from . import parser
 from .enums import *
 from .misc import PERSISTED_QUERIES
@@ -326,9 +325,6 @@ class UserProfile:
         self.created_at: str = created_at
         """ Дата создания аккаунта пользователя. """
 
-        self.__account: Account | None = get_account()
-        """ Объект аккаунта (для методов). """
-
 
     def get_items(
         self, 
@@ -359,10 +355,13 @@ class UserProfile:
         :return: Страница профилей предметов.
         :rtype: `PlayerokAPI.types.ItemProfileList`
         """
+        from .account import get_account
+        account = get_account()
+        
         headers = {
             "Accept": "*/*",
             "Content-Type": "application/json",
-            "Origin": self.__account.base_url
+            "Origin": account.base_url
         }
         filter = {
             "userId": self.id, 
@@ -389,7 +388,7 @@ class UserProfile:
             })
         }
 
-        r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
+        r = account.request("get", f"{account.base_url}/graphql", headers, payload).json()
         return parser.item_profile_list(r["data"]["items"])
 
     def get_reviews(
@@ -445,10 +444,13 @@ class UserProfile:
         :return: Страница отзывов.
         :rtype: `PlayerokAPI.types.ReviewList`
         """
+        from .account import get_account
+        account = get_account()
+        
         headers = {
             "Accept": "*/*",
             "Content-Type": "application/json",
-            "Origin": self.__account.base_url,
+            "Origin": account.base_url,
         }
 
         filters = {"userId": self.id, "status": [status.name] if status else None}
@@ -488,7 +490,7 @@ class UserProfile:
             })
         }
         
-        r = self.__account.request("get", f"{self.__account.base_url}/graphql", headers, payload).json()
+        r = account.request("get", f"{account.base_url}/graphql", headers, payload).json()
         return parser.review_list(r["data"]["testimonials"])
 
 

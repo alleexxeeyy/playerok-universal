@@ -56,7 +56,7 @@ class EventListener:
         self, message_id: str, chat_id: str
     ):
         for _ in range(3):
-            time.sleep(4)
+            time.sleep(6)
             try: msg_list = self.account.get_chat_messages(chat_id, count=12)
             except: return
             try: return [msg for msg in msg_list.messages if msg.id == message_id][0]
@@ -424,9 +424,9 @@ class EventListener:
                                 new_deals[chat] = chat.last_message
                     
                         if new_deals: break
-                        else: raise
+                        else: time.sleep(6)
                     except: 
-                        time.sleep(4)
+                        time.sleep(6)
                 
                 for chat, msg in new_deals.items():
                     events = self._proccess_new_chat_message(chat, msg)
@@ -449,7 +449,7 @@ class EventListener:
                         )
                         break
                     except: 
-                        time.sleep(4)
+                        time.sleep(6)
                 
                 for deal_id, last_status, status_date in deals:
                     try:

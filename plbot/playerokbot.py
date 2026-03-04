@@ -730,7 +730,11 @@ class PlayerokBot:
                 get_telegram_bot_loop()
             )
 
-        self.send_message(event.chat.id, self.msg("new_deal", deal_item_name=(event.deal.item.name or "-"), deal_item_price=event.deal.item.price))
+        self.send_message(event.chat.id, self.msg(
+            "new_deal", 
+            deal_item_name=(event.deal.item.name or "-"), 
+            deal_item_price=event.deal.item.price
+        ))
         
         is_support_chat = event.chat.id in (self.account.system_chat_id, self.account.support_chat_id)
         if (

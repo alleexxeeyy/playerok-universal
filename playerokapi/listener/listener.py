@@ -123,8 +123,8 @@ class EventListener:
         elif message.text == "{{DEAL_CONFIRMED}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
-                status_date = datetime.fromisoformat(actual_msg.created_at)
-                ##self._set_active_deal(chat, actual_msg.deal, status_date)
+                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealConfirmedEvent(actual_msg.deal, chat),
                     DealStatusChangedEvent(actual_msg.deal, chat),
@@ -404,8 +404,59 @@ class EventListener:
     def _wait_for_check_new_chats(self, delay=10):
         sleep_time = delay - (time.time() - self._last_chat_check)
         if sleep_time > 0: time.sleep(sleep_time)
+
+    def listen_new_deals(self):
+        while True:
+            try:
+                self._possible_new_chat.wait()
+                self._wait_for_check_new_chats()
+
+                self._last_chat_check = time.time()
+                self._possible_new_chat.clear()
+
+                known_chat_ids = [chat_.id for chat_ in self.chats]
+
+                for _ in range(3):
+                    try:
+                        time.sleep(6) # плеерок может не сразу отобразить актуальные данные в чатах
+                        chats = self.account.get_chats(count=5, type=ChatTypes.PM).chats
+                        break
+                    except:
+                        chats = []
+
+                for chat in chats:
+                    # пропускаем уже известные чаты — там сделки идут через WS
+                    if chat.id in known_chat_ids:
+                        continue
+
+                    # Новый чат — смотрим last_message сначала (быстрый путь)
+                    if chat.last_message and chat.last_message.text == "{{ITEM_PAID}}":
+                        events = self._proccess_new_chat_message(chat, chat.last_message)
+                        for event in events:
+                            yield event
+                        continue
+
+                    # медленный путь: last_message перебит новым сообщением от покупателя.
+                    # запрашиваем историю и ищем {{ITEM_PAID}} среди первых сообщений.
+                    try:
+                        msg_list = self.account.get_chat_messages(chat.id, count=12)
+                        paid_msg = next(
+                            (msg for msg in msg_list.messages if msg.text == "{{ITEM_PAID}}"),
+                            None
+                        )
+                        if paid_msg:
+                            events = self._proccess_new_chat_message(chat, paid_msg)
+                            for event in events:
+                                yield event
+                    except:
+                        self.logger.debug(f"Ошибка получения истории для нового чата {chat.id}: {traceback.format_exc()}")
+
+            except websocket._exceptions.WebSocketException:
+                pass
+            except:
+                self.logger.debug(f"Ошибка проверки новых сделок: {traceback.format_exc()}")
     
-    def listen_new_deals(self): # слушает новые сделки в новосозданных чатах
+    '''def listen_new_deals(self): # слушает новые сделки в новосозданных чатах
         while True:
             try:
                 self._possible_new_chat.wait()
@@ -435,7 +486,7 @@ class EventListener:
             except websocket._exceptions.WebSocketException:
                 pass
             except:
-                self.logger.debug(f"Ошибка проверки новых сделок: {traceback.format_exc()}")
+                self.logger.debug(f"Ошибка проверки новых сделок: {traceback.format_exc()}")'''
 
     '''def listen_deal_statuses(self): # слушает изменения статусов во всех активных сделках
         while True: # TODO: Доработать, проверить ещё раз на баги 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import traceback
 import time
 from datetime import datetime, timedelta
 import pytz
@@ -564,17 +565,26 @@ class PlayerokBot:
         def refresh_account_loop():
             while True:
                 time.sleep(1800)
-                self.refresh_account()
+                try:
+                    self.refresh_account()
+                except:
+                    self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обновлении данных об аккаунте: {Fore.WHITE}{traceback.format_exc()}")
 
         def check_banned_loop():
             while True:
-                self.check_banned()
+                try:
+                    self.check_banned()
+                except:
+                    self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при проверки бана на аккаунте: {Fore.WHITE}{traceback.format_exc()}")
                 time.sleep(900)
 
         def restore_expired_items_loop():
             while True:
                 if self.config["playerok"]["auto_restore_items"]["expired"]:
-                    self.restore_expired_items()
+                    try:
+                        self.restore_expired_items()
+                    except:
+                        self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при авто-восстановлении истёкших предметов: {Fore.WHITE}{traceback.format_exc()}")
                 time.sleep(45)
 
         def bump_items_loop():
@@ -583,7 +593,10 @@ class PlayerokBot:
                     self.config["playerok"]["auto_bump_items"]["enabled"]
                     and datetime.now() >= self._event_datetime("auto_bump_items")
                 ):
-                    self.bump_items()
+                    try:
+                        self.bump_items()
+                    except:
+                        self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при авто-поднятии предметов: {Fore.WHITE}{traceback.format_exc()}")
                 time.sleep(3)
 
         def withdrawal_loop():
@@ -592,7 +605,10 @@ class PlayerokBot:
                     self.config["playerok"]["auto_withdrawal"]["enabled"]
                     and datetime.now() >= self._event_datetime("auto_withdrawal")
                 ):
-                    self.request_withdrawal()
+                    try:
+                        self.request_withdrawal()
+                    except:
+                        self.logger.error(f"{Fore.LIGHTRED_EX}Ошибка при авто-выводе средств: {Fore.WHITE}{traceback.format_exc()}")
                 time.sleep(3)
 
         Thread(target=endless_loop, daemon=True).start()

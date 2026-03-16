@@ -85,7 +85,7 @@ class RequestSendingError(Exception):
 
     def __str__(self):
         msg = (
-            f"Ошибка при попытке отправить запрос к {self.response.url}"
+            f"Ошибка при попытке отправить запрос к {self.url}"
             f"\nТекст ошибки: {self.error}"
         )
         return msg

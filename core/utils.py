@@ -7,6 +7,7 @@ import logging
 import requests
 import pkg_resources
 import subprocess
+import shlex
 import curl_cffi
 import random
 import time
@@ -106,30 +107,58 @@ def setup_logger(log_file: str = "logs/latest.log"):
     
 
 def is_package_installed(requirement_string: str) -> bool:
+    """
+    Проверяет, установлена ли библиотека.
+
+    :param requirement_string: Строка пакета из файла зависимостей.
+    :type requirement_string: str
+    """
     try:
-        pkg_resources.require(requirement_string)
+        parts = shlex.split(requirement_string)
+        if not parts:
+            return True
+
+        requirement = parts[0]
+        pkg_resources.require(requirement)
+
         return True
-    except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
+    except:
         return False
 
 
 def install_requirements(requirements_path: str):
+    """
+    Устанавливает зависимости из файла.
+
+    :param requirements_path: Путь к файлу зависимостей.
+    :type requirements_path: str
+    """
     try:
         if not os.path.exists(requirements_path):
             return
+
         with open(requirements_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
-        missing_packages = []
+
         for line in lines:
-            pkg = line.strip()
-            if not pkg or pkg.startswith("#"):
+            line = line.strip()
+            if not line or line.startswith("#"):
                 continue
-            if not is_package_installed(pkg):
-                missing_packages.append(pkg)
-        if missing_packages:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", *missing_packages])
-    except:
-        logger.error(f"{Fore.LIGHTRED_EX}Не удалось установить зависимости из файла \"{requirements_path}\"")
+
+            parts = shlex.split(line)
+            if not parts:
+                continue
+
+            pkg_name = parts[0]
+            extra_args = parts[1:]
+
+            if not is_package_installed(pkg_name):
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install", "-r", requirements_path
+                ])
+                return
+    except Exception as e:
+        logger.error(f"Не удалось установить зависимости из файла \"{requirements_path}\": {e}")
 
 
 def patch_requests():
@@ -262,15 +291,14 @@ def is_proxy_valid(proxy: str) -> bool:
     return False
 
 
-def is_proxy_working(proxy: str, timeout: int = 10) -> bool:
+def is_proxy_working(proxy: str, test_url="https://playerok.com", timeout=10) -> bool:
     proxies = {
         "http": f"http://{proxy}",
         "https": f"http://{proxy}"
     }
-    test_url = "https://playerok.com"
     try:
         response = requests.get(test_url, proxies=proxies, timeout=timeout)
-        return response.status_code in [200, 403]
+        return response.status_code < 404
     except Exception:
         return False
 
@@ -283,10 +311,23 @@ def is_tg_token_valid(token: str) -> bool:
 def is_tg_bot_exists() -> bool:
     try:
         config = sett.get("config")
+        token = config["telegram"]["api"]["token"]
+        proxy = config["telegram"]["api"]["proxy"]
+        
+        if proxy:
+            proxies = {
+                "http": f"http://{proxy}",
+                "https": f"http://{proxy}",
+            }
+        else:
+            proxies = None
+        
         response = requests.get(
-            f"https://api.telegram.org/bot{config['telegram']['api']['token']}/getMe", 
+            f"https://api.telegram.org/bot{token}/getMe", 
+            proxies=proxies,
             timeout=5
         )
+        
         data = response.json()
         return data.get("ok", False) is True and data.get("result", {}).get("is_bot", False) is True
     except Exception:

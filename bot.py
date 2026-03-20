@@ -76,7 +76,8 @@ def check_and_configure_config():
     while not config["playerok"]["api"]["token"]:
         while not config["playerok"]["api"]["token"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}токен {Fore.WHITE}вашего Playerok аккаунта. Его можно узнать из Cookie-данных, воспользуйтесь расширением Cookie-Editor."
+                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}токен {Fore.WHITE}вашего Playerok аккаунта. "
+                f"Его можно узнать из Cookie-данных, воспользуйтесь расширением Cookie-Editor."
                 f"\n  {Fore.WHITE}· Пример: eyJhbGciOiJIUzI1NiIsInR5cCI1IkpXVCJ9.eyJzdWIiOiIxZWUxMzg0Ni..."
             )
             token = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
@@ -85,11 +86,16 @@ def check_and_configure_config():
                 sett.set("config", config)
                 print(f"\n{Fore.GREEN}Токен успешно сохранён в конфиг.")
             else:
-                print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. Убедитесь, что он соответствует формату и попробуйте ещё раз.")
+                print(
+                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
+                    f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
+                )
 
         while not config["playerok"]["api"]["user_agent"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.LIGHTMAGENTA_EX}User Agent {Fore.WHITE}вашего браузера. Его можно скопировать на сайте {Fore.LIGHTWHITE_EX}https://whatmyuseragent.com. Или вы можете пропустить этот параметр, нажав Enter."
+                f"\n{Fore.WHITE}Введите {Fore.LIGHTMAGENTA_EX}User Agent {Fore.WHITE}вашего браузера. "
+                f"Его можно скопировать на сайте {Fore.LIGHTWHITE_EX}https://whatmyuseragent.com. "
+                f"Или вы можете пропустить этот параметр, нажав Enter."
                 f"\n  {Fore.WHITE}· Пример: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
             )
             user_agent = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
@@ -101,11 +107,16 @@ def check_and_configure_config():
                 sett.set("config", config)
                 print(f"\n{Fore.GREEN}User Agent успешно сохранён в конфиг.")
             else:
-                print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный User Agent. Убедитесь, что в нём нет русских символов и попробуйте ещё раз.")
+                print(
+                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный User Agent. "
+                    f"Убедитесь, что в нём нет русских символов и попробуйте ещё раз."
+                )
         
         while not config["playerok"]["api"]["proxy"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 Прокси {Fore.WHITE}в формате user:password@ip:port или ip:port, если он без авторизации. Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
+                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 HTTP Прокси {Fore.WHITE}для FunPay аккаунта. "
+                f"Формат: user:password@ip:port или ip:port, если он без авторизации. "
+                f"Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
                 f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
             )
             proxy = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
@@ -117,7 +128,10 @@ def check_and_configure_config():
                 sett.set("config", config)
                 print(f"\n{Fore.GREEN}Прокси успешно сохранён в конфиг.")
             else:
-                print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный Прокси. Убедитесь, что он соответствует формату и попробуйте ещё раз.")
+                print(
+                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный Прокси. "
+                    f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
+                )
 
     while not config["telegram"]["api"]["token"]:
         print(
@@ -130,11 +144,36 @@ def check_and_configure_config():
             sett.set("config", config)
             print(f"\n{Fore.GREEN}Токен Telegram бота успешно сохранён в конфиг.")
         else:
-            print(f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. Убедитесь, что он соответствует формату и попробуйте ещё раз.")
+            print(
+                f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
+                f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
+            )
+
+        while not config["telegram"]["api"]["proxy"]:
+            print(
+                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 HTTP Прокси {Fore.WHITE}для Telegram бота. "
+                f"Формат: user:password@ip:port или ip:port, если он без авторизации. "
+                f"Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
+                f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
+            )
+            proxy = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            if not proxy:
+                print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
+                break
+            if is_proxy_valid(proxy):
+                config["telegram"]["api"]["proxy"] = proxy
+                sett.set("config", config)
+                print(f"\n{Fore.GREEN}Прокси успешно сохранён в конфиг.")
+            else:
+                print(
+                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный прокси. "
+                    f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
+                )
 
     while not config["telegram"]["bot"]["password"]:
         print(
-            f"\n{Fore.WHITE}Придумайте и введите {Fore.YELLOW}пароль для вашего Telegram бота{Fore.WHITE}. Бот будет запрашивать этот пароль при каждой новой попытке взаимодействия чужого пользователя с вашим Telegram ботом."
+            f"\n{Fore.WHITE}Придумайте и введите {Fore.YELLOW}пароль для вашего Telegram бота{Fore.WHITE}. "
+            f"Бот будет запрашивать этот пароль при каждой новой попытке взаимодействия чужого пользователя с вашим Telegram ботом."
             f"\n  {Fore.WHITE}· Пароль должен быть сложным, длиной не менее 6 и не более 64 символов."
         )
         password = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
@@ -146,17 +185,23 @@ def check_and_configure_config():
             print(f"\n{Fore.LIGHTRED_EX}Ваш пароль не подходит. Убедитесь, что он соответствует формату и не является лёгким и попробуйте ещё раз.")
 
     if config["playerok"]["api"]["proxy"] and not is_proxy_working(config["playerok"]["api"]["proxy"]):
-        print(f"\n{Fore.LIGHTRED_EX}Похоже, что указанный вами прокси не работает. Пожалуйста, проверьте его и введите снова.")
+        print(
+            f"\n{Fore.LIGHTRED_EX}Похоже, что прокси для Playerok аккаунта не работает. "
+            f"Пожалуйста, проверьте его и введите снова."
+        )
         config["playerok"]["api"]["token"] = ""
         config["playerok"]["api"]["user_agent"] = ""
         config["playerok"]["api"]["proxy"] = ""
         sett.set("config", config)
         return check_and_configure_config()
     elif config["playerok"]["api"]["proxy"]:
-        logger.info(f"{Fore.WHITE}Прокси успешно работает.")
+        logger.info(f"{Fore.WHITE}Playerok прокси успешно работает.")
 
     if not is_pl_account_working():
-        print(f"\n{Fore.LIGHTRED_EX}Не удалось подключиться к вашему Playerok аккаунту. Пожалуйста, убедитесь, что у вас указан верный токен и введите его снова.")
+        print(
+            f"\n{Fore.LIGHTRED_EX}Не удалось подключиться к вашему Playerok аккаунту. "
+            f"Пожалуйста, убедитесь, что у вас указан верный токен и введите его снова."
+        )
         config["playerok"]["api"]["token"] = ""
         config["playerok"]["api"]["user_agent"] = ""
         config["playerok"]["api"]["proxy"] = ""
@@ -166,16 +211,38 @@ def check_and_configure_config():
         logger.info(f"{Fore.WHITE}Playerok аккаунт успешно авторизован.")
 
     if is_pl_account_banned():
-        print(f"{Fore.LIGHTRED_EX}\nВаш Playerok аккаунт забанен! Увы, я не могу запустить бота на заблокированном аккаунте...")
+        print(
+            f"{Fore.LIGHTRED_EX}\nВаш Playerok аккаунт забанен! "
+            f"Увы, я не могу запустить бота на заблокированном аккаунте..."
+        )
         config["playerok"]["api"]["token"] = ""
         config["playerok"]["api"]["user_agent"] = ""
         config["playerok"]["api"]["proxy"] = ""
         sett.set("config", config)
         return check_and_configure_config()
 
-    if not is_tg_bot_exists():
-        print(f"\n{Fore.LIGHTRED_EX}Не удалось подключиться к вашему Telegram боту. Пожалуйста, убедитесь, что у вас указан верный токен и введите его снова.")
+    if config["telegram"]["api"]["proxy"] and not is_proxy_working(
+        config["telegram"]["api"]["proxy"], 
+        "http://api.telegram.org/"
+    ):
+        print(
+            f"{Fore.LIGHTRED_EX}\nПохоже, что прокси для Telegram бота не работает. "
+            f"Пожалуйста, проверьте его и введите снова."
+        )
         config["telegram"]["api"]["token"] = ""
+        config["telegram"]["api"]["proxy"] = ""
+        sett.set("config", config)
+        return check_and_configure_config()
+    elif config["telegram"]["api"]["proxy"]:
+        logger.info(f"{Fore.WHITE}Telegram прокси успешно работает.")
+
+    if not is_tg_bot_exists():
+        print(
+            f"{Fore.LIGHTRED_EX}\nНе удалось подключиться к вашему Telegram боту. "
+            f"Если вы находитесь на территории России, вам нужно подключить прокси к Telegram боту или использовать VPN, в виду блокировок со стороны РКН."
+        )
+        config["telegram"]["api"]["token"] = ""
+        config["telegram"]["api"]["proxy"] = ""
         sett.set("config", config)
         return check_and_configure_config()
     else:

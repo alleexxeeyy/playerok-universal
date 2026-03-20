@@ -15,7 +15,8 @@ class SettingsStates(StatesGroup):
 
     waiting_for_requests_timeout = State()
     waiting_for_listener_requests_delay = State()
-    waiting_for_proxy = State()
+    waiting_for_pl_proxy = State()
+    waiting_for_tg_proxy = State()
 
     waiting_for_auto_withdrawal_interval = State()
     waiting_for_sbp_bank_phone_number = State()

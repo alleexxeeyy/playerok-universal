@@ -24,12 +24,16 @@ def menu_text():
 def menu_kb():
     rows = [
         [
-        InlineKeyboardButton(text="⚙️", callback_data=calls.SettingsNavigation(to="default").pack()), 
-        InlineKeyboardButton(text="👤", callback_data=calls.MenuNavigation(to="profile").pack()), 
-        InlineKeyboardButton(text="🚩", callback_data=calls.MenuNavigation(to="events").pack()),
-        InlineKeyboardButton(text="🗒️", callback_data=calls.MenuNavigation(to="logs").pack()),
-        InlineKeyboardButton(text="📊", callback_data=calls.MenuNavigation(to="stats").pack()),
-        InlineKeyboardButton(text="🔌", callback_data=calls.ModulesPagination(page=0).pack())
+        InlineKeyboardButton(text="⚙️ Настройки", callback_data=calls.SettingsNavigation(to="default").pack()), 
+        InlineKeyboardButton(text="👤 Профиль", callback_data=calls.MenuNavigation(to="profile").pack())
+        ],
+        [
+        InlineKeyboardButton(text="🚩 Ивенты", callback_data=calls.MenuNavigation(to="events").pack()),
+        InlineKeyboardButton(text="🗒️ Логи", callback_data=calls.MenuNavigation(to="logs").pack())
+        ],
+        [
+        InlineKeyboardButton(text="📊 Статистика", callback_data=calls.MenuNavigation(to="stats").pack()),
+        InlineKeyboardButton(text="🔌 Модули", callback_data=calls.ModulesPagination(page=0).pack())
         ],
         [InlineKeyboardButton(text="📖 Инструкция", callback_data=calls.InstructionNavigation(to="default").pack())], 
         [

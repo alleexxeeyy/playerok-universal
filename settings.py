@@ -78,7 +78,8 @@ CONFIG = SettingsFile(
         },
         "telegram": {
             "api": {
-                "token": ""
+                "token": "",
+                "proxy": ""
             },
             "bot": {
                 "password": "",
@@ -86,7 +87,7 @@ CONFIG = SettingsFile(
             }
         },
         "logs": {
-            "max_file_size": 30
+            "max_file_size": 50
         }
     }
 )

@@ -114,7 +114,7 @@ def check_and_configure_config():
         
         while not config["playerok"]["api"]["proxy"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 HTTP Прокси {Fore.WHITE}для FunPay аккаунта. "
+                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 HTTP Прокси {Fore.WHITE}для Playerok аккаунта. "
                 f"Формат: user:password@ip:port или ip:port, если он без авторизации. "
                 f"Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
                 f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"

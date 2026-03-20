@@ -134,20 +134,21 @@ def check_and_configure_config():
                 )
 
     while not config["telegram"]["api"]["token"]:
-        print(
-            f"\n{Fore.WHITE}Введите {Fore.CYAN}токен вашего Telegram бота{Fore.WHITE}. Бота нужно создать у @BotFather."
-            f"\n  {Fore.WHITE}· Пример: 7257913369:AAG2KjLL3-zvvfSQFSVhaTb4w7tR2iXsJXM"
-        )
-        token = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
-        if is_tg_token_valid(token):
-            config["telegram"]["api"]["token"] = token
-            sett.set("config", config)
-            print(f"\n{Fore.GREEN}Токен Telegram бота успешно сохранён в конфиг.")
-        else:
+        while not config["telegram"]["api"]["token"]:
             print(
-                f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
-                f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
+                f"\n{Fore.WHITE}Введите {Fore.CYAN}токен вашего Telegram бота{Fore.WHITE}. Бота нужно создать у @BotFather."
+                f"\n  {Fore.WHITE}· Пример: 7257913369:AAG2KjLL3-zvvfSQFSVhaTb4w7tR2iXsJXM"
             )
+            token = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            if is_tg_token_valid(token):
+                config["telegram"]["api"]["token"] = token
+                sett.set("config", config)
+                print(f"\n{Fore.GREEN}Токен Telegram бота успешно сохранён в конфиг.")
+            else:
+                print(
+                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
+                    f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
+                )
 
         while not config["telegram"]["api"]["proxy"]:
             print(
@@ -223,7 +224,7 @@ def check_and_configure_config():
 
     if config["telegram"]["api"]["proxy"] and not is_proxy_working(
         config["telegram"]["api"]["proxy"], 
-        "http://api.telegram.org/"
+        "https://api.telegram.org/"
     ):
         print(
             f"{Fore.LIGHTRED_EX}\nПохоже, что прокси для Telegram бота не работает. "

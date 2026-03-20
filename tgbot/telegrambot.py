@@ -136,7 +136,9 @@ class TelegramBot:
             logger.info(f" · Пароль: {Fore.LIGHTWHITE_EX}{password}")
             logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
 
-        await self.dp.start_polling(self.bot, skip_updates=True, handle_signals=False)
+        while True:
+            try: await self.dp.start_polling(self.bot, skip_updates=True, handle_signals=False)
+            except: pass
 
     async def call_seller(self, calling_name: str, chat_id: int | str):
         config = sett.get("config")

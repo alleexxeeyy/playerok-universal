@@ -115,7 +115,7 @@ async def handler_waiting_for_tg_proxy(message: types.Message, state: FSMContext
             raise Exception("❌ Слишком короткое значение")
         if not is_proxy_valid(message.text.strip()):
             raise Exception("❌ Неверный формат прокси. Правильный формат: user:pass@ip:port или ip:port")
-        if not is_proxy_working(message.text.strip(), "http://api.telegram.org/"):
+        if not is_proxy_working(message.text.strip(), "https://api.telegram.org/"):
             raise Exception("❌ Указанный вами прокси не работает. Нет подключения к api.telegram.org")
 
         config = sett.get("config")

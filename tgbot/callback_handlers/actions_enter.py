@@ -193,20 +193,24 @@ async def callback_enter_new_excluded_complete_deal_keyphrases(callback: Callbac
 
 @router.callback_query(F.data == "enter_auto_bump_items_interval")
 async def callback_enter_auto_bump_items_interval(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(states.BumpItemsStates.waiting_for_bump_items_interval)
-    
-    config = sett.get("config")
-    interval = config["playerok"]["auto_bump_items"]["interval"]
-    
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.settings_bump_float_text(
-            f"⏲️ Введите <b>интервал поднятия предметов</b>:",
-            f"\n・ Текущее: <code>{interval}</code> сек."
-        ),
-        reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
-    )
+    try:
+        await state.set_state(states.BumpItemsStates.waiting_for_bump_items_interval)
+        
+        config = sett.get("config")
+        interval = config["playerok"]["auto_bump_items"]["interval"]
+        
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.settings_bump_float_text(
+                f"⏲️ Введите <b>интервал поднятия предметов</b>:"
+                f"\n・ Текущее: <code>{interval}</code> сек."
+            ),
+            reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
+        )
+    except:
+        import traceback
+        traceback.print_exc()
 
 
 @router.callback_query(F.data == "enter_new_included_bump_item_keyphrases")

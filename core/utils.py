@@ -142,7 +142,7 @@ def install_requirements(requirements_path: str):
 
         for line in lines:
             line = line.strip()
-            if not line or line.startswith("#"):
+            if not line or line.startswith("#") or line.startswith("-"):
                 continue
 
             parts = shlex.split(line)

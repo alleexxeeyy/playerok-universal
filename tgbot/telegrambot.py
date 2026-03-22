@@ -114,7 +114,6 @@ class TelegramBot:
         me = await self.bot.get_me()
         logger.info("")
         logger.info(f"{Fore.LIGHTBLUE_EX}Telegram бот {Fore.LIGHTWHITE_EX}@{me.username} {Fore.LIGHTBLUE_EX}запущен и активен")
-        logger.info("")
         
         if self.proxy:
             if "@" in self.proxy:
@@ -129,6 +128,7 @@ class TelegramBot:
             user = f"{user[:3]}*****" if user else "-"
             password = f"{password[:3]}*****" if password else "-"
 
+            logger.info("")
             logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
             logger.info(f"{Fore.LIGHTBLUE_EX}Информация о прокси:")
             logger.info(f" · IP: {Fore.LIGHTWHITE_EX}{ip}:{port}")

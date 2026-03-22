@@ -15,7 +15,9 @@ router = Router()
 @router.callback_query(calls.MenuNavigation.filter())
 async def callback_menu_navigation(callback: CallbackQuery, callback_data: calls.MenuNavigation, state: FSMContext):
     await state.set_state(None)
+    
     to = callback_data.to
+    
     if to == "default":
         await throw_float_message(state, callback.message, templ.menu_text(), templ.menu_kb(), callback)
     elif to == "stats":
@@ -31,7 +33,9 @@ async def callback_menu_navigation(callback: CallbackQuery, callback_data: calls
 @router.callback_query(calls.InstructionNavigation.filter())
 async def callback_instruction_navgiation(callback: CallbackQuery, callback_data: calls.InstructionNavigation, state: FSMContext):
     await state.set_state(None)
+    
     to = callback_data.to
+    
     if to == "default":
         await throw_float_message(state, callback.message, templ.instruction_text(), templ.instruction_kb(), callback)
     elif to == "commands":
@@ -41,7 +45,9 @@ async def callback_instruction_navgiation(callback: CallbackQuery, callback_data
 @router.callback_query(calls.SettingsNavigation.filter())
 async def callback_settings_navigation(callback: CallbackQuery, callback_data: calls.SettingsNavigation, state: FSMContext):
     await state.set_state(None)
+    
     to = callback_data.to
+    
     if to == "default":
         await throw_float_message(state, callback.message, templ.settings_text(), templ.settings_kb(), callback)
     elif to == "auth":
@@ -50,6 +56,8 @@ async def callback_settings_navigation(callback: CallbackQuery, callback_data: c
         await throw_float_message(state, callback.message, templ.settings_conn_text(), templ.settings_conn_kb(), callback)
     elif to == "restore":
         await throw_float_message(state, callback.message, templ.settings_restore_text(), templ.settings_restore_kb(), callback)
+    elif to == "complete":
+        await throw_float_message(state, callback.message, templ.settings_complete_text(), templ.settings_complete_kb(), callback)
     elif to == "withdrawal":
         from plbot.playerokbot import get_playerok_bot
         acc = get_playerok_bot().account

@@ -8,14 +8,16 @@ from .. import callback_datas as calls
 
 def settings_restore_text():
     config = sett.get("config")
+    
     auto_restore_items_sold = "🟢 Включено" if config["playerok"]["auto_restore_items"]["sold"] else "🔴 Выключено"
     auto_restore_items_expired = "🟢 Включено" if config["playerok"]["auto_restore_items"]["expired"] else "🔴 Выключено"
     auto_restore_items_all = "Все предметы" if config["playerok"]["auto_restore_items"]["all"] else "Указанные предметы"
     auto_restore_items = sett.get("auto_restore_items")
     auto_restore_items_included = len(auto_restore_items["included"])
     auto_restore_items_excluded = len(auto_restore_items["excluded"])
+    
     txt = textwrap.dedent(f"""
-        <b>♻️ Восстановление</b>
+        <b>♻️ Авто-восстановление</b>
 
         <b>♻️ Авто-восстановление предметов:</b>
         <b>・ Проданные:</b> {auto_restore_items_sold}
@@ -26,7 +28,7 @@ def settings_restore_text():
         <b>➕ Включенные:</b> {auto_restore_items_included}
         <b>➖ Исключенные:</b> {auto_restore_items_excluded}
 
-        <b>Что такое автоматическое восстановление предметов?</b>
+        <b>Что за авто-восстановление предметов?</b>
         Эта функция позволит автоматически восстанавливать (заново выставлять) предмет, который только что купили или который истёк, чтобы он снова был на продаже. Предмет будет выставлен с тем же статусом приоритета, что и был раньше.
 
         <b>Примечание:</b>
@@ -37,12 +39,14 @@ def settings_restore_text():
 
 def settings_restore_kb():
     config = sett.get("config")
+    
     auto_restore_items_sold = "🟢 Включено" if config["playerok"]["auto_restore_items"]["sold"] else "🔴 Выключено"
     auto_restore_items_expired = "🟢 Включено" if config["playerok"]["auto_restore_items"]["expired"] else "🔴 Выключено"
     auto_restore_items_all = "Все предметы" if config["playerok"]["auto_restore_items"]["all"] else "Указанные предметы"
     auto_restore_items = sett.get("auto_restore_items")
     auto_restore_items_included = len(auto_restore_items["included"])
     auto_restore_items_excluded = len(auto_restore_items["excluded"])
+    
     rows = [
         [InlineKeyboardButton(text=f"🛒 Проданные: {auto_restore_items_sold}", callback_data="switch_auto_restore_items_sold")],
         [InlineKeyboardButton(text=f"⏰ Истёкшие: {auto_restore_items_expired}", callback_data="switch_auto_restore_items_expired")],
@@ -59,7 +63,7 @@ def settings_restore_kb():
 
 def settings_restore_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>♻️ Восстановление</b>
+        <b>♻️ Автор-восстановление</b>
         \n{placeholder}
     """)
     return txt

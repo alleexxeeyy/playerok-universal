@@ -17,8 +17,9 @@ def settings_bump_excluded_text():
     return txt
 
 
-def settings_bump_excluded_kb(page: int = 0):
+def settings_bump_excluded_kb(page=0):
     excluded_bump_items: list[list] = sett.get("auto_bump_items").get("excluded")
+    
     rows = []
     items_per_page = 7
     total_pages = math.ceil(len(excluded_bump_items) / items_per_page)

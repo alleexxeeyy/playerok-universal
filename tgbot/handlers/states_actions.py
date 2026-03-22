@@ -28,10 +28,10 @@ async def handler_waiting_for_message_content(message: types.Message, state: FSM
         sent_msg = ""
 
         if message.text:
-            if len(message.text.strip()) <= 0:
+            if len(message.text) <= 0:
                 raise Exception("❌ Слишком короткий текст")
-            plbot.account.send_message(chat_id=chat.id, text=message.text.strip())
-            sent_msg += message.text.strip()
+            plbot.account.send_message(chat_id=chat.id, text=message.text)
+            sent_msg += message.text
         
         elif message.photo:
             photo = message.photo[-1]

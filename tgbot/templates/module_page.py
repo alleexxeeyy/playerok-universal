@@ -9,7 +9,9 @@ from .. import callback_datas as calls
 
 def module_page_text(module_uuid: UUID):
     module: Module = get_module_by_uuid(module_uuid)
-    if not module: raise Exception("Не удалось найти модуль")
+    if not module: 
+        raise Exception("Не удалось найти модуль")
+    
     txt = textwrap.dedent(f"""
         <b>📄🔌 Страница модуля</b>
 
@@ -27,7 +29,9 @@ def module_page_text(module_uuid: UUID):
 
 def module_page_kb(module_uuid: UUID, page: int = 0):
     module: Module = get_module_by_uuid(module_uuid)
-    if not module: raise Exception("Не удалось найти модуль")
+    if not module: 
+        raise Exception("Не удалось найти модуль")
+    
     rows = [
         [InlineKeyboardButton(text="🔴 Выключить модуль" if module.enabled else "🟢 Включить модуль", callback_data="switch_module_enabled")],
         [InlineKeyboardButton(text="♻️ Перезагрузить", callback_data="reload_module")],

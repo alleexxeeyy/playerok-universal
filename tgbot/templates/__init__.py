@@ -10,22 +10,33 @@ from .stats import *
 
 from .settings import *
 from .settings_auth import *
+from .settings_conn import *
+from .settings_logger import *
+from .settings_other import *
+
 from .settings_comms import *
 from .settings_comm_page import *
-from .settings_conn import *
+
 from .settings_delivs import *
 from .settings_deliv_page import *
+from .settings_deliv_goods import *
+
 from .settings_restore import *
 from .settings_restore_included import *
 from .settings_restore_excluded import *
+
+from .settings_complete import *
+from .settings_complete_included import *
+from .settings_complete_excluded import *
+
+from .settings_bump import *
+from .settings_bump_included import *
+from .settings_bump_excluded import *
+
 from .settings_withdrawal import *
 from .settings_withdrawal_cards import *
 from .settings_withdrawal_sbp import *
 from .settings_withdrawal_usdt import *
-from .settings_bump import *
-from .settings_bump_included import *
-from .settings_bump_excluded import *
-from .settings_logger import *
+
 from .settings_mess import *
 from .settings_mess_page import *
-from .settings_other import *

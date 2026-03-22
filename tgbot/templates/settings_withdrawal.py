@@ -26,10 +26,10 @@ def settings_withdrawal_text(card: UserBankCard = None, sbp_bank: SBPBankMember 
         details = "Не указано"
     
     txt = textwrap.dedent(f"""
-        <b>💸 Вывод</b>
+        <b>💸 Авто-вывод</b>
 
         <b>🔃 Авто-вывод средств:</b> {enabled}
-        <b>⏱️ Интервал:</b> {interval}
+        <b>⏱️ Интервал:</b> {interval} сек.
 
         <b>💳 Реквизиты:</b> {details}
 
@@ -59,7 +59,7 @@ def settings_withdrawal_kb(card: UserBankCard = None, sbp_bank: SBPBankMember = 
 
     rows = [
         [InlineKeyboardButton(text=f"🔃 Авто-вывод средств: {enabled}", callback_data="switch_auto_withdrawal_enabled")],
-        [InlineKeyboardButton(text=f"⏱️ Интервал: {interval}", callback_data="enter_auto_withdrawal_interval")],
+        [InlineKeyboardButton(text=f"⏱️ Интервал: {interval} сек.", callback_data="enter_auto_withdrawal_interval")],
         [InlineKeyboardButton(text=f"💳 Реквизиты: {details}", callback_data=calls.BankCardsPagination(page=0).pack())],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack())]
     ]
@@ -69,7 +69,7 @@ def settings_withdrawal_kb(card: UserBankCard = None, sbp_bank: SBPBankMember = 
 
 def settings_withdrawal_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>💸 Вывод</b>
+        <b>💸 Авто-вывод</b>
         \n{placeholder}
     """)
     return txt

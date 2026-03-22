@@ -36,28 +36,46 @@ class MessagesStates(StatesGroup):
 class RestoreItemsStates(StatesGroup):
     waiting_for_new_included_restore_item_keyphrases = State()
     waiting_for_new_included_restore_items_keyphrases_file = State()
+    
     waiting_for_new_excluded_restore_item_keyphrases = State()
     waiting_for_new_excluded_restore_items_keyphrases_file = State()
 
 
+class CompleteDealsStates(StatesGroup):
+    waiting_for_new_included_complete_deal_keyphrases = State()
+    waiting_for_new_included_complete_deals_keyphrases_file = State()
+    
+    waiting_for_new_excluded_complete_deal_keyphrases = State()
+    waiting_for_new_excluded_complete_deals_keyphrases_file = State()
+
+
 class BumpItemsStates(StatesGroup):
     waiting_for_bump_items_interval = State()
+    
     waiting_for_new_included_bump_item_keyphrases = State()
     waiting_for_new_included_bump_items_keyphrases_file = State()
+    
     waiting_for_new_excluded_bump_item_keyphrases = State()
     waiting_for_new_excluded_bump_items_keyphrases_file = State()
 
 
 class CustomCommandsStates(StatesGroup):
-    waiting_for_page = State()
     waiting_for_new_custom_command = State()
     waiting_for_new_custom_command_answer = State()
+    
+    waiting_for_page = State()
     waiting_for_custom_command_answer = State()
 
 
 class AutoDeliveriesStates(StatesGroup):
     waiting_for_page = State()
+    
     waiting_for_new_auto_delivery_keyphrases = State()
+    waiting_for_new_auto_delivery_piece = State()
     waiting_for_new_auto_delivery_message = State()
+    waiting_for_new_auto_delivery_goods = State()
+    
     waiting_for_auto_delivery_keyphrases = State()
+    waiting_for_auto_delivery_piece = State()
     waiting_for_auto_delivery_message = State()
+    waiting_for_auto_delivery_goods_add = State()

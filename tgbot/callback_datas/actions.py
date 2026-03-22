@@ -17,6 +17,13 @@ class DeleteExcludedRestoreItem(CallbackData, prefix="delexre"):
     index: int
 
 
+class DeleteIncludedCompleteDeal(CallbackData, prefix="delinco"):
+    index: int
+
+class DeleteExcludedCompleteDeal(CallbackData, prefix="delexco"):
+    index: int
+
+
 class DeleteIncludedBumpItem(CallbackData, prefix="delinbu"):
     index: int
 
@@ -33,3 +40,10 @@ class SelectSbpBank(CallbackData, prefix="sesbp"):
 
 class SendLogsFile(CallbackData, prefix="selogs"):
     lines: int
+
+
+class SetNewDelivPiece(CallbackData, prefix="sepiece"):
+    val: bool
+
+class DeleteDelivGood(CallbackData, prefix="delgod"):
+    index: int

@@ -29,17 +29,20 @@ def is_eng_str(str: str):
 async def handler_waiting_for_token(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
+        
+        token = message.text
+        
         if not is_token_valid():
             raise Exception("❌ Неверный формат токена. Пример: eyJhbGciOiJIUzI1NiIsInR5cCI1IkpXVCJ9")
 
         config = sett.get("config")
-        config["playerok"]["api"]["token"] = message.text.strip()
+        config["playerok"]["api"]["token"] = token
         sett.set("config", config)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>Токен</b> был успешно изменён на <b>{message.text.strip()}</b>"),
+            text=templ.settings_auth_float_text(f"✅ <b>Токен</b> был успешно изменён на <b>{token}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
         )
     except Exception as e:
@@ -55,17 +58,20 @@ async def handler_waiting_for_token(message: types.Message, state: FSMContext):
 async def handler_waiting_for_user_agent(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        if not is_user_agent_valid(message.text.strip()):
+        
+        user_agent = message.text
+        
+        if not is_user_agent_valid(user_agent):
             raise Exception("❌ Неверный формат User Agent. Пример: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36")
 
         config = sett.get("config")
-        config["playerok"]["api"]["user_agent"] = message.text.strip()
+        config["playerok"]["api"]["user_agent"] = user_agent
         sett.set("config", config)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>User Agent</b> был успешно изменён на <b>{message.text.strip()}</b>"),
+            text=templ.settings_auth_float_text(f"✅ <b>User Agent</b> был успешно изменён на <b>{user_agent}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
         )
     except Exception as e:
@@ -81,21 +87,24 @@ async def handler_waiting_for_user_agent(message: types.Message, state: FSMConte
 async def handler_waiting_for_pl_proxy(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        if len(message.text.strip()) <= 3:
+        
+        proxy = message.text
+        
+        if len(proxy) <= 3:
             raise Exception("❌ Слишком короткое значение")
-        if not is_proxy_valid(message.text.strip()):
+        if not is_proxy_valid(proxy):
             raise Exception("❌ Неверный формат прокси. Правильный формат: user:pass@ip:port или ip:port")
-        if not is_proxy_working(message.text.strip()):
+        if not is_proxy_working(proxy):
             raise Exception("❌ Указанный вами прокси не работает. Нет подключения к playerok.com")
 
         config = sett.get("config")
-        config["playerok"]["api"]["proxy"] = message.text.strip()
+        config["playerok"]["api"]["proxy"] = proxy
         sett.set("config", config)
         
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>Прокси для Playerok</b> был успешно изменён на <b>{message.text.strip()}</b>"),
+            text=templ.settings_auth_float_text(f"✅ <b>Прокси для Playerok</b> был успешно изменён на <b>{proxy}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
         )
     except Exception as e:
@@ -111,21 +120,24 @@ async def handler_waiting_for_pl_proxy(message: types.Message, state: FSMContext
 async def handler_waiting_for_tg_proxy(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        if len(message.text.strip()) <= 3:
+        
+        proxy = message.text
+        
+        if len(proxy) <= 3:
             raise Exception("❌ Слишком короткое значение")
-        if not is_proxy_valid(message.text.strip()):
+        if not is_proxy_valid(proxy):
             raise Exception("❌ Неверный формат прокси. Правильный формат: user:pass@ip:port или ip:port")
-        if not is_proxy_working(message.text.strip(), "https://api.telegram.org/"):
+        if not is_proxy_working(proxy, "https://api.telegram.org/"):
             raise Exception("❌ Указанный вами прокси не работает. Нет подключения к api.telegram.org")
 
         config = sett.get("config")
-        config["telegram"]["api"]["proxy"] = message.text.strip()
+        config["telegram"]["api"]["proxy"] = proxy
         sett.set("config", config)
         
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>Прокси для Telegram</b> был успешно изменён на <b>{message.text.strip()}</b>"),
+            text=templ.settings_auth_float_text(f"✅ <b>Прокси для Telegram</b> был успешно изменён на <b>{proxy}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
         )
     except Exception as e:
@@ -141,19 +153,22 @@ async def handler_waiting_for_tg_proxy(message: types.Message, state: FSMContext
 async def handler_waiting_for_requests_timeout(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        if not message.text.strip().isdigit():
+        
+        timeout = message.text
+        
+        if not timeout.isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")       
-        if int(message.text.strip()) < 0:
+        if int(timeout) < 0:
             raise Exception("❌ Слишком низкое значение")
 
         config = sett.get("config")
-        config["playerok"]["api"]["requests_timeout"] = int(message.text.strip())
+        config["playerok"]["api"]["requests_timeout"] = int(timeout)
         sett.set("config", config)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_conn_float_text(f"✅ <b>Таймаут запросов</b> был успешно изменён на <b>{message.text.strip()}</b>"),
+            text=templ.settings_conn_float_text(f"✅ <b>Таймаут запросов</b> был успешно изменён на <b>{timeout}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
         )
     except Exception as e:
@@ -169,19 +184,22 @@ async def handler_waiting_for_requests_timeout(message: types.Message, state: FS
 async def handler_waiting_for_listener_requests_delay(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-        if not message.text.strip().isdigit():
+        
+        delay = message.text
+        
+        if not delay.isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
-        if int(message.text.strip()) < 0:
+        if int(delay) < 0:
             raise Exception("❌ Слишком низкое значение")
 
         config = sett.get("config")
-        config["playerok"]["api"]["listener_requests_delay"] = int(message.text.strip())
+        config["playerok"]["api"]["listener_requests_delay"] = int(delay)
         sett.set("config", config)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_conn_float_text(f"✅ <b>Периодичность запросов</b> была успешна изменена на <b>{message.text.strip()}</b>"),
+            text=templ.settings_conn_float_text(f"✅ <b>Периодичность запросов</b> была успешна изменена на <b>{delay}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
         )
     except Exception as e:
@@ -196,14 +214,17 @@ async def handler_waiting_for_listener_requests_delay(message: types.Message, st
 @router.message(states.SettingsStates.waiting_for_tg_logging_chat_id, F.text)
 async def handler_waiting_for_tg_logging_chat_id(message: types.Message, state: FSMContext):
     try:
-        await state.set_state(None) 
-        if len(message.text.strip()) < 0:
+        await state.set_state(None)
+        
+        chat_input = message.text
+        
+        if len(chat_input) < 0:
             raise Exception("❌ Слишком низкое значение")
         
-        if message.text.strip().isdigit(): 
-            chat_id = "-100" + str(message.text.strip()).replace("-100", "")
+        if chat_input.isdigit(): 
+            chat_id = "-100" + str(chat_input).replace("-100", "")
         else: 
-            chat_id = "@" + str(message.text.strip()).replace("@", "")
+            chat_id = "@" + str(chat_input).replace("@", "")
         
         config = sett.get("config")
         config["playerok"]["tg_logging"]["chat_id"] = chat_id
@@ -227,23 +248,25 @@ async def handler_waiting_for_tg_logging_chat_id(message: types.Message, state: 
 @router.message(states.SettingsStates.waiting_for_auto_withdrawal_interval, F.text)
 async def handler_waiting_for_auto_withdrawal_interval(message: types.Message, state: FSMContext):
     try:
-        await state.set_state(None) 
-
-        intreval = message.text.strip()
-        if not intreval.isdigit():
+        await state.set_state(None)
+        
+        interval = message.text
+        
+        if not interval.isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
-        if int(intreval) <= 1:
+        if int(interval) <= 1:
             raise Exception("❌ Слишком низкое значение")
-        intreval = int(intreval)
+        
+        interval_int = int(interval)
 
         config = sett.get("config")
-        config["playerok"]["auto_withdrawal"]["interval"] = intreval
+        config["playerok"]["auto_withdrawal"]["interval"] = interval_int
         sett.set("config", config)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_withdrawal_float_text(f"✅ <b>Интервал вывода</b> был успешно изменён на <b>{intreval}</b>"),
+            text=templ.settings_withdrawal_float_text(f"✅ <b>Интервал вывода</b> был успешно изменён на <b>{interval_int}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
         )
     except Exception as e:
@@ -258,9 +281,13 @@ async def handler_waiting_for_auto_withdrawal_interval(message: types.Message, s
 @router.message(states.SettingsStates.waiting_for_sbp_bank_phone_number, F.text)
 async def handler_waiting_for_sbp_bank_phone_number(message: types.Message, state: FSMContext):
     try:
-        await state.set_state(None) 
-
-        phone_number = message.text.strip()
+        await state.set_state(None)
+        
+        data = await state.get_data()
+        sbp_bank_id = data.get("sbp_bank_id")
+        
+        phone_number = message.text
+        
         if not phone_number.isdigit():
             raise Exception("❌ Вы указали некорректный номер телефона")
         if len(phone_number) < 4:
@@ -268,9 +295,6 @@ async def handler_waiting_for_sbp_bank_phone_number(message: types.Message, stat
         
         if phone_number.startswith("8"):
             phone_number = phone_number.replace("8", "+7", 1)
-        
-        data = await state.get_data()
-        sbp_bank_id = data.get("sbp_bank_id")
 
         config = sett.get("config")
         config["playerok"]["auto_withdrawal"]["credentials_type"] = "sbp"
@@ -296,9 +320,10 @@ async def handler_waiting_for_sbp_bank_phone_number(message: types.Message, stat
 @router.message(states.SettingsStates.waiting_for_usdt_address, F.text)
 async def handler_waiting_for_usdt_address(message: types.Message, state: FSMContext):
     try:
-        await state.set_state(None) 
-
-        address = message.text.strip()
+        await state.set_state(None)
+        
+        address = message.text
+        
         if len(address) <= 10:
             raise Exception("❌ Слишком короткое значение")
 
@@ -326,18 +351,20 @@ async def handler_waiting_for_usdt_address(message: types.Message, state: FSMCon
 async def handler_waiting_for_watermark_value(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
+        
+        watermark = message.text
 
-        if len(message.text.strip()) <= 0 or len(message.text.strip()) >= 150:
+        if len(watermark) <= 0 or len(watermark) >= 150:
             raise Exception("❌ Слишком короткое или длинное значение")
 
         config = sett.get("config")
-        config["playerok"]["watermark"]["value"] = message.text.strip()
+        config["playerok"]["watermark"]["value"] = watermark
         sett.set("config", config)
         
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_other_float_text(f"✅ <b>Водяной знак сообщений</b> был успешно изменён на <b>{message.text.strip()}</b>"),
+            text=templ.settings_other_float_text(f"✅ <b>Водяной знак сообщений</b> был успешно изменён на <b>{watermark}</b>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="other").pack())
         )
     except Exception as e:
@@ -353,22 +380,24 @@ async def handler_waiting_for_watermark_value(message: types.Message, state: FSM
 async def handler_waiting_for_logs_max_file_size(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
-
-        max_size = message.text.strip()
-        if not message.text.strip().isdigit():
+        
+        max_size = message.text
+        
+        if not max_size.isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
-        if int(message.text.strip()) <= 0:
+        if int(max_size) <= 0:
             raise Exception("❌ Слишком низкое значение")
-        max_size = int(max_size)
+        
+        max_size_int = int(max_size)
 
         config = sett.get("config")
-        config["logs"]["max_file_size"] = max_size
+        config["logs"]["max_file_size"] = max_size_int
         sett.set("config", config)
         
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.logs_float_text(f"✅ <b>Максимальный размер файла логов</b> был успешно изменён на <b>{max_size} MB</b>"),
+            text=templ.logs_float_text(f"✅ <b>Максимальный размер файла логов</b> был успешно изменён на <b>{max_size_int} MB</b>"),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="logs").pack())
         )
     except Exception as e:

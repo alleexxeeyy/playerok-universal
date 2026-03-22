@@ -17,8 +17,9 @@ def settings_comms_text():
     return txt
 
 
-def settings_comms_kb(page: int = 0):
+def settings_comms_kb(page=0):
     custom_commands = sett.get("custom_commands")
+    
     rows = []
     items_per_page = 7
     total_pages = math.ceil(len(custom_commands.keys())/items_per_page)

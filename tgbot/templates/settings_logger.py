@@ -8,6 +8,7 @@ from .. import callback_datas as calls
 
 def settings_logger_text():
     config = sett.get("config")
+    
     tg_logging_enabled = "🟢 Включено" if config["playerok"]["tg_logging"]["enabled"] else "🔴 Выключено"
     tg_logging_chat_id = config["playerok"]["tg_logging"]["chat_id"] or "✔️ Ваш чат с ботом"
     tg_logging_events = config["playerok"]["tg_logging"]["events"] or {}
@@ -17,6 +18,7 @@ def settings_logger_text():
     event_new_review = "🟢" if tg_logging_events["new_review"] else "🔴"
     event_new_problem = "🟢" if tg_logging_events["new_problem"] else "🔴"
     event_deal_status_changed = "🟢" if tg_logging_events["deal_status_changed"] else "🔴"
+    
     txt = textwrap.dedent(f"""
         <b>👀 Логгер</b>
 
@@ -30,14 +32,13 @@ def settings_logger_text():
         ・ {event_new_review}  ✨ Новый отзыв
         ・ {event_new_problem}  🤬 Новая жалоба в сделке
         ・ {event_deal_status_changed}  🔄️ Статус сделки изменился
-        
-        Выберите параметр для изменения ↓
     """)
     return txt
 
 
 def settings_logger_kb():
     config = sett.get("config")
+    
     tg_logging_enabled = "🟢 Включено" if config["playerok"]["tg_logging"]["enabled"] else "🔴 Выключено"
     tg_logging_chat_id = config["playerok"]["tg_logging"]["chat_id"] or "✔️ Ваш чат с ботом"
     tg_logging_events = config["playerok"]["tg_logging"]["events"] or {}
@@ -47,6 +48,7 @@ def settings_logger_kb():
     event_new_review = "🟢" if tg_logging_events["new_review"] else "🔴"
     event_new_problem = "🟢" if tg_logging_events["new_problem"] else "🔴"
     event_deal_status_changed = "🟢" if tg_logging_events["deal_status_changed"] else "🔴"
+    
     rows = [
         [InlineKeyboardButton(text=f"👀 Логгирование ивентов: {tg_logging_enabled}", callback_data="switch_tg_logging_enabled")],
         [InlineKeyboardButton(text=f"💬 ID чата для логов: {tg_logging_chat_id}", callback_data="enter_tg_logging_chat_id")],

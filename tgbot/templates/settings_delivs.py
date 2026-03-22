@@ -17,8 +17,9 @@ def settings_delivs_text():
     return txt
 
 
-def settings_delivs_kb(page: int = 0):
+def settings_delivs_kb(page=0):
     auto_deliveries: list = sett.get("auto_deliveries")
+    
     rows = []
     items_per_page = 7
     total_pages = math.ceil(len(auto_deliveries) / items_per_page)
@@ -31,11 +32,20 @@ def settings_delivs_kb(page: int = 0):
     end_offset = start_offset + items_per_page
 
     for deliv in list(auto_deliveries)[start_offset:end_offset]:
+        piece = deliv.get("piece")
+        sym = "📦" if piece else "💬"
         keyphrases = ", ".join(deliv.get("keyphrases")) or "❌ Не задано"
         keyphrases_frmtd = keyphrases[:32] + ("..." if len(keyphrases) > 32 else "")
-        message = "\n".join(deliv.get("message")) or "❌ Не задано"
+        
+        if piece:
+            goods = deliv.get("goods", [])
+            part = f"{len(goods)} товаров"
+        else:
+            message = deliv.get("message", [])
+            part = "\n".join(message) or "❌ Не задано"
+        
         rows.append([InlineKeyboardButton(
-            text=f"{keyphrases_frmtd} → {message}", 
+            text=f"{sym} {keyphrases_frmtd} → {part}", 
             callback_data=calls.AutoDeliveryPage(index=auto_deliveries.index(deliv)).pack()
         )])
 
@@ -52,9 +62,7 @@ def settings_delivs_kb(page: int = 0):
         rows.append(buttons_row)
 
     rows.append([InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_auto_delivery_keyphrases")])
-    rows.append([
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack()),
-    ])
+    rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.SettingsNavigation(to="default").pack())])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
@@ -74,3 +82,13 @@ def settings_new_deliv_float_text(placeholder: str):
         \n{placeholder}
     """)
     return txt
+
+
+def settings_new_deliv_piece_kb(last_page=0):
+    rows = [
+        [InlineKeyboardButton(text="📦 Несколько товаров", callback_data=calls.SetNewDelivPiece(val=True).pack())],
+        [InlineKeyboardButton(text="💬 Одно сообщение", callback_data=calls.SetNewDelivPiece(val=False).pack())],
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.AutoDeliveriesPagination(page=last_page).pack())]
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    return kb

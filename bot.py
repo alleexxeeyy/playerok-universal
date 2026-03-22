@@ -196,7 +196,7 @@ def check_and_configure_config():
         sett.set("config", config)
         return check_and_configure_config()
     elif config["playerok"]["api"]["proxy"]:
-        logger.info(f"{Fore.WHITE}Playerok прокси успешно работает.")
+        logger.info(f"{Fore.LIGHTYELLOW_EX}Playerok прокси успешно работает.")
 
     if not is_pl_account_working():
         print(
@@ -209,7 +209,7 @@ def check_and_configure_config():
         sett.set("config", config)
         return check_and_configure_config()
     else:
-        logger.info(f"{Fore.WHITE}Playerok аккаунт успешно авторизован.")
+        logger.info(f"{Fore.LIGHTYELLOW_EX}Playerok аккаунт успешно авторизован.")
 
     if is_pl_account_banned():
         print(
@@ -235,7 +235,7 @@ def check_and_configure_config():
         sett.set("config", config)
         return check_and_configure_config()
     elif config["telegram"]["api"]["proxy"]:
-        logger.info(f"{Fore.WHITE}Telegram прокси успешно работает.")
+        logger.info(f"{Fore.LIGHTYELLOW_EX}Telegram прокси успешно работает.")
 
     if not is_tg_bot_exists():
         print(
@@ -247,7 +247,7 @@ def check_and_configure_config():
         sett.set("config", config)
         return check_and_configure_config()
     else:
-        logger.info(f"{Fore.WHITE}Telegram бот успешно работает.")
+        logger.info(f"{Fore.LIGHTYELLOW_EX}Telegram бот успешно работает.")
 
 
 if __name__ == "__main__":

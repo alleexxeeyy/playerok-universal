@@ -19,6 +19,7 @@ def modules_text():
 
 def modules_kb(page: int = 0):
     modules = get_modules()
+    
     rows = []
     items_per_page = 7
     total_pages = math.ceil(len(modules) / items_per_page)

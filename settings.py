@@ -46,6 +46,10 @@ CONFIG = SettingsFile(
                 "expired": False,
                 "all": True
             },
+            "auto_complete_deals": {
+                "enabled": False,
+                "all": True
+            },
             "auto_bump_items": {
                 "enabled": False,
                 "interval": 3600,
@@ -59,9 +63,6 @@ CONFIG = SettingsFile(
                 "sbp_bank_id": "",
                 "sbp_phone_number": "",
                 "usdt_address": ""
-            },
-            "auto_complete_deals": {
-                "enabled": True
             },
             "tg_logging": {
                 "enabled": True,
@@ -87,7 +88,7 @@ CONFIG = SettingsFile(
             }
         },
         "logs": {
-            "max_file_size": 50
+            "max_file_size": 300
         }
     }
 )
@@ -186,6 +187,15 @@ AUTO_RESTORE_ITEMS = SettingsFile(
         "excluded": []
     }
 )
+AUTO_COMPLETE_DEALS = SettingsFile(
+    name="auto_complete_deals",
+    path="bot_settings/auto_complete_deals.json",
+    need_restore=False,
+    default={
+        "included": [],
+        "excluded": []
+    }
+)
 AUTO_BUMP_ITEMS = SettingsFile(
     name="auto_bump_items",
     path="bot_settings/auto_bump_items.json",
@@ -195,7 +205,7 @@ AUTO_BUMP_ITEMS = SettingsFile(
         "excluded": []
     }
 )
-DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_BUMP_ITEMS]
+DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_COMPLETE_DEALS, AUTO_BUMP_ITEMS]
 
 
 def validate_config(config, default):

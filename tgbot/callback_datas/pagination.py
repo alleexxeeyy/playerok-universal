@@ -12,6 +12,13 @@ class ExcludedRestoreItemsPagination(CallbackData, prefix="exrepag"):
     page: int
 
 
+class IncludedCompleteDealsPagination(CallbackData, prefix="incopag"):
+    page: int
+
+class ExcludedCompleteDealsPagination(CallbackData, prefix="excopag"):
+    page: int
+
+
 class IncludedBumpItemsPagination(CallbackData, prefix="inbupag"):
     page: int
 
@@ -23,6 +30,9 @@ class CustomCommandsPagination(CallbackData, prefix="cucopag"):
     page: int
 
 class AutoDeliveriesPagination(CallbackData, prefix="audepag"):
+    page: int
+
+class DelivGoodsPagination(CallbackData, prefix="godspag"):
     page: int
 
 class MessagesPagination(CallbackData, prefix="messpag"):

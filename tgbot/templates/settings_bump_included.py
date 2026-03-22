@@ -17,8 +17,9 @@ def settings_bump_included_text():
     return txt
 
 
-def settings_bump_included_kb(page: int = 0):
+def settings_bump_included_kb(page=0):
     included_bump_items: list[list] = sett.get("auto_bump_items").get("included")
+    
     rows = []
     items_per_page = 7
     total_pages = math.ceil(len(included_bump_items) / items_per_page)

@@ -16,7 +16,8 @@ async def handler_waiting_for_password(message: types.Message, state: FSMContext
     try: 
         await state.set_state(None)
         config = sett.get("config")
-        if message.text.strip() != config["telegram"]["bot"]["password"]:
+        
+        if message.text != config["telegram"]["bot"]["password"]:
             raise Exception("❌ Неверный ключ-пароль.")
         
         config["telegram"]["bot"]["signed_users"].append(message.from_user.id)

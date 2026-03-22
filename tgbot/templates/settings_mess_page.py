@@ -8,8 +8,10 @@ from .. import callback_datas as calls
 
 def settings_mess_page_text(message_id: int):
     messages = sett.get("messages")
+    
     enabled = "🟢 Включено" if messages[message_id]["enabled"] else "🔴 Выключено"
     message_text = "\n".join(messages[message_id]["text"]) or "❌ Не задано"
+    
     txt = textwrap.dedent(f"""
         <b>📄💬 Страница сообщения</b>
 
@@ -22,8 +24,10 @@ def settings_mess_page_text(message_id: int):
 
 def settings_mess_page_kb(message_id: int, page: int = 0):
     messages = sett.get("messages")
+    
     enabled = "🟢 Включено" if messages[message_id]["enabled"] else "🔴 Выключено"
     message_text = "\n".join(messages[message_id]["text"]) or "❌ Не задано"
+    
     rows = [
         [InlineKeyboardButton(text=f"💡 Состояние: {enabled}", callback_data="switch_message_enabled")],
         [InlineKeyboardButton(text=f"💬 Текст сообщения: {message_text}", callback_data="enter_message_text")],

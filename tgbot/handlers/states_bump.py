@@ -16,12 +16,14 @@ router = Router()
 async def handler_waiting_for_bump_items_interval(message: types.Message, state: FSMContext):
     try: 
         await state.set_state(None)
-        if not message.text.strip().isdigit():
+        
+        if not message.text.isdigit():
             raise Exception("❌ Вы должны ввести числовое значение")
-        if int(message.text.strip()) <= 0:
+        if int(message.text) <= 0:
             raise Exception("❌ Слишком низкое значение")
 
-        interval = int(message.text.strip())
+        interval = int(message.text)
+        
         config = sett.get("config")
         config["playerok"]["auto_bump_items"]["interval"] = interval
         sett.set("config", config)
@@ -45,16 +47,19 @@ async def handler_waiting_for_bump_items_interval(message: types.Message, state:
 async def handler_waiting_for_new_included_bump_item_keyphrases(message: types.Message, state: FSMContext):
     try: 
         await state.set_state(None)
-        if len(message.text.strip()) <= 0:
+        
+        if len(message.text) <= 0:
             raise Exception("❌ Слишком короткое значение")
         
-        keyphrases = [phrase.strip() for phrase in message.text.strip().split(",") if len(phrase.strip()) > 0]
+        keyphrases = [phrase.strip() for phrase in message.text.split(",") if phrase.strip()]
+        
         auto_bump_items = sett.get("auto_bump_items")
         auto_bump_items["included"].append(keyphrases)
         sett.set("auto_bump_items", auto_bump_items)
 
         data = await state.get_data()
         last_page = data.get("last_page", 0)
+        
         await throw_float_message(
             state=state,
             message=message,
@@ -79,6 +84,7 @@ async def handler_waiting_for_new_included_bump_item_keyphrases(message: types.M
 async def handler_waiting_for_new_included_bump_items_keyphrases_file(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
+        
         file = await message.bot.get_file(message.document.file_id)
         downloaded_file = await message.bot.download_file(file.file_path)
         file_content = downloaded_file.read().decode('utf-8')
@@ -87,7 +93,7 @@ async def handler_waiting_for_new_included_bump_items_keyphrases_file(message: t
         for line in file_content.splitlines():
             line = line.strip()
             if len(line) > 0:
-                keyphrases = [phrase.strip() for phrase in line.split(",") if len(phrase.strip()) > 0]
+                keyphrases = [phrase.strip() for phrase in line.split(",") if phrase.strip()]
                 if len(keyphrases) > 0:
                     keyphrases_list.append(keyphrases)
 
@@ -100,6 +106,7 @@ async def handler_waiting_for_new_included_bump_items_keyphrases_file(message: t
 
         data = await state.get_data()
         last_page = data.get("last_page", 0)
+        
         await throw_float_message(
             state=state,
             message=message,
@@ -121,16 +128,19 @@ async def handler_waiting_for_new_included_bump_items_keyphrases_file(message: t
 async def handler_waiting_for_new_excluded_bump_item_keyphrases(message: types.Message, state: FSMContext):
     try: 
         await state.set_state(None)
-        if len(message.text.strip()) <= 0:
+        
+        if len(message.text) <= 0:
             raise Exception("❌ Слишком короткое значение")
         
-        keyphrases = [phrase.strip() for phrase in message.text.strip().split(",") if len(phrase.strip()) > 0]
+        keyphrases = [phrase.strip() for phrase in message.text.split(",") if phrase.strip()]
+        
         auto_bump_items = sett.get("auto_bump_items")
         auto_bump_items["excluded"].append(keyphrases)
         sett.set("auto_bump_items", auto_bump_items)
 
         data = await state.get_data()
         last_page = data.get("last_page", 0)
+        
         await throw_float_message(
             state=state,
             message=message,
@@ -155,6 +165,7 @@ async def handler_waiting_for_new_excluded_bump_item_keyphrases(message: types.M
 async def handler_waiting_for_new_excluded_bump_items_keyphrases_file(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
+        
         file = await message.bot.get_file(message.document.file_id)
         downloaded_file = await message.bot.download_file(file.file_path)
         file_content = downloaded_file.read().decode('utf-8')
@@ -163,7 +174,7 @@ async def handler_waiting_for_new_excluded_bump_items_keyphrases_file(message: t
         for line in file_content.splitlines():
             line = line.strip()
             if len(line) > 0:
-                keyphrases = [phrase.strip() for phrase in line.split(",") if len(phrase.strip()) > 0]
+                keyphrases = [phrase.strip() for phrase in line.split(",") if phrase.strip()]
                 if len(keyphrases) > 0:
                     keyphrases_list.append(keyphrases)
 
@@ -176,6 +187,7 @@ async def handler_waiting_for_new_excluded_bump_items_keyphrases_file(message: t
 
         data = await state.get_data()
         last_page = data.get("last_page", 0)
+        
         await throw_float_message(
             state=state,
             message=message,

@@ -17,8 +17,9 @@ def settings_restore_included_text():
     return txt
 
 
-def settings_restore_included_kb(page: int = 0):
+def settings_restore_included_kb(page=0):
     included_restore_items: list[list] = sett.get("auto_restore_items").get("included")
+    
     rows = []
     items_per_page = 7
     total_pages = math.ceil(len(included_restore_items) / items_per_page)

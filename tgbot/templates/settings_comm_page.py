@@ -9,6 +9,7 @@ from .. import callback_datas as calls
 def settings_comm_page_text(command: str):
     custom_commands = sett.get("custom_commands")
     command_text = "\n".join(custom_commands[command]) or "❌ Не задано"
+    
     txt = textwrap.dedent(f"""
         <b>📄❗ Страница команды</b>
 
@@ -21,6 +22,7 @@ def settings_comm_page_text(command: str):
 def settings_comm_page_kb(command: str, page: int = 0):
     custom_commands = sett.get("custom_commands")
     command_text = "\n".join(custom_commands[command]) or "❌ Не задано"
+    
     rows = [
         [InlineKeyboardButton(text=f"💬 Ответ: {command_text}", callback_data="enter_custom_command_answer")],
         [InlineKeyboardButton(text="🗑️ Удалить", callback_data="confirm_deleting_custom_command")],

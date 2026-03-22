@@ -17,8 +17,9 @@ def settings_mess_text():
     return txt
 
 
-def settings_mess_kb(page: int = 0):
+def settings_mess_kb(page=0):
     messages = sett.get("messages")
+    
     rows = []
     items_per_page = 8
     total_pages = math.ceil(len(messages.keys()) / items_per_page)

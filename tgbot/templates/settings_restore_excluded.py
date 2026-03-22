@@ -17,8 +17,9 @@ def settings_restore_excluded_text():
     return txt
 
 
-def settings_restore_excluded_kb(page: int = 0):
+def settings_restore_excluded_kb(page=0):
     excluded_restore_items: list[list] = sett.get("auto_restore_items").get("excluded")
+    
     rows = []
     items_per_page = 7
     total_pages = math.ceil(len(excluded_restore_items) / items_per_page)

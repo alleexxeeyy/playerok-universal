@@ -242,12 +242,12 @@ class Account:
         else:
             raise CloudflareDetectedException(resp)
         
-        try: 
-            json = resp.json()
-            if "errors" in json:
-                raise RequestPlayerokError(resp)
-        except: 
-            pass
+        json = {}
+        try: json = resp.json()
+        except: pass
+        
+        if "errors" in json:
+            raise RequestPlayerokError(resp)
 
         if resp.status_code != 200:
            raise RequestFailedError(resp)

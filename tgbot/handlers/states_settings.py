@@ -20,11 +20,6 @@ from core.utils import (
 router = Router()
 
 
-def is_eng_str(str: str):
-    pattern = r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:\'",.<>/?\\|`~ ]+$'
-    return bool(re.match(pattern, str))
-
-
 @router.message(states.SettingsStates.waiting_for_token, F.text)
 async def handler_waiting_for_token(message: types.Message, state: FSMContext):
     try:
@@ -32,7 +27,7 @@ async def handler_waiting_for_token(message: types.Message, state: FSMContext):
         
         token = message.text
         
-        if not is_token_valid():
+        if not is_token_valid(token):
             raise Exception("❌ Неверный формат токена. Пример: eyJhbGciOiJIUzI1NiIsInR5cCI1IkpXVCJ9")
 
         config = sett.get("config")

@@ -2,7 +2,7 @@ import json
 import uuid
 import time
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from logging import getLogger
 from typing import Generator
 from threading import Thread
@@ -444,7 +444,7 @@ class EventListener:
                             (
                             msg for msg in msg_list.messages 
                             if msg.text == "{{ITEM_PAID}}"
-                            and (datetime.now() - datetime.fromisoformat(msg.created_at)).total_seconds() <= 120 
+                            and (datetime.now(timezone.utc) - datetime.fromisoformat(msg.created_at).astimezone(timezone.utc)).total_seconds() <= 120 
                             # ^ проверка на то, что эта сделка была совершена недавно
                             ),
                             None

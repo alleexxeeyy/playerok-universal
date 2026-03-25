@@ -2,7 +2,7 @@ import json
 import uuid
 import time
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 from typing import Generator
 from threading import Thread
@@ -440,12 +440,17 @@ class EventListener:
                     # запрашиваем историю и ищем {{ITEM_PAID}} среди первых сообщений.
                     try:
                         msg_list = self.account.get_chat_messages(chat.id, count=12)
-                        paid_msg = next(
-                            (msg for msg in msg_list.messages if msg.text == "{{ITEM_PAID}}"),
+                        new_paid_msg = next(
+                            (
+                            msg for msg in msg_list.messages 
+                            if msg.text == "{{ITEM_PAID}}"
+                            and (datetime.now() - datetime.fromisoformat(msg.created_at)).total_seconds() <= 120 
+                            # ^ проверка на то, что эта сделка была совершена недавно
+                            ),
                             None
                         )
-                        if paid_msg:
-                            events = self._proccess_new_chat_message(chat, paid_msg)
+                        if new_paid_msg:
+                            events = self._proccess_new_chat_message(chat, new_paid_msg)
                             for event in events:
                                 yield event
                     except:
@@ -480,7 +485,7 @@ class EventListener:
                         time.sleep(6)
                 
                 for chat, msg in new_deals.items():
-                    events = self._proccess_new_chat_message(chat, msg)
+                    event = self._proccess_new_chat_message(chat, msg)
                     for event in events:
                         yield event
             except websocket._exceptions.WebSocketException:

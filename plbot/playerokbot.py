@@ -634,7 +634,7 @@ class PlayerokBot:
                     self.config["playerok"]["auto_bump_items"]["enabled"]
                     and datetime.now() >= self._event_datetime(
                         self.latest_events_times["auto_bump_items"],
-                        self.config["notify_orders"]["interval"]
+                        self.config["auto_bump_items"]["interval"]
                     )
                 ):
                     try:

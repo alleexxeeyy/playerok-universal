@@ -135,12 +135,12 @@ class PlayerokBot:
         except:
             pass
         return f"Не удалось получить сообщение {message_name}"
-    
-    def _event_datetime(self, event: str):
-        if self.latest_events_times[event]:
+        
+    def _event_datetime(self, latest_event_time, event_interval):
+        if latest_event_time:
             return (
-                datetime.fromisoformat(self.latest_events_times[event]) 
-                + timedelta(seconds=self.config["playerok"][event]["interval"])
+                datetime.fromisoformat(latest_event_time) 
+                + timedelta(seconds=event_interval)
             )
         else:
             return datetime.now()
@@ -632,7 +632,10 @@ class PlayerokBot:
             while True:
                 if (
                     self.config["playerok"]["auto_bump_items"]["enabled"]
-                    and datetime.now() >= self._event_datetime("auto_bump_items")
+                    and datetime.now() >= self._event_datetime(
+                        self.latest_events_times["auto_bump_items"],
+                        self.config["notify_orders"]["interval"]
+                    )
                 ):
                     try:
                         self.bump_items()
@@ -644,7 +647,10 @@ class PlayerokBot:
             while True:
                 if (
                     self.config["playerok"]["auto_withdrawal"]["enabled"]
-                    and datetime.now() >= self._event_datetime("auto_withdrawal")
+                    and datetime.now() >= self._event_datetime(
+                        self.latest_events_times["auto_withdrawal"],
+                        self.config["auto_withdrawal"]["interval"]
+                    )
                 ):
                     try:
                         self.request_withdrawal()

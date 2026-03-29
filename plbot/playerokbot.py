@@ -634,7 +634,7 @@ class PlayerokBot:
                     self.config["playerok"]["auto_bump_items"]["enabled"]
                     and datetime.now() >= self._event_datetime(
                         self.latest_events_times["auto_bump_items"],
-                        self.config["auto_bump_items"]["interval"]
+                        self.config["playerok"]["auto_bump_items"]["interval"]
                     )
                 ):
                     try:
@@ -649,7 +649,7 @@ class PlayerokBot:
                     self.config["playerok"]["auto_withdrawal"]["enabled"]
                     and datetime.now() >= self._event_datetime(
                         self.latest_events_times["auto_withdrawal"],
-                        self.config["auto_withdrawal"]["interval"]
+                        self.config["playerok"]["auto_withdrawal"]["interval"]
                     )
                 ):
                     try:

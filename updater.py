@@ -16,7 +16,7 @@ logger = getLogger("universal.updater")
 
 
 def get_releases():
-    response = requests.get(f"https://api.github.com/repos/{REPO}/releases")
+    response = requests.get(f"https://api.github.com/repos/{REPO}/releases", timeout=5)
     response.raise_for_status()
     if response.status_code != 200:
         raise Exception(f"Ошибка запроса к GitHub API: {response.status_code}")

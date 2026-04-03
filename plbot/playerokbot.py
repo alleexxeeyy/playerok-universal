@@ -779,6 +779,7 @@ class PlayerokBot:
     async def _on_new_deal(self, event: NewDealEvent):
         if event.deal.user.id == self.account.id:
             return
+            
         try: event.deal.item = self.account.get_item(event.deal.item.id)
         except: pass
         

@@ -289,3 +289,8 @@ if __name__ == "__main__":
             f"\n\n{Fore.WHITE}Пожалуйста, попробуйте найти свою проблему в нашей статье, в которой собраны все самые частые ошибки.",
             f"\nСтатья: {Fore.LIGHTWHITE_EX}https://telegra.ph/FunPay-Universal--chastye-oshibki-i-ih-resheniya-08-26 {Fore.WHITE}(CTRL + Клик ЛКМ)\n"
         )
+    except KeyboardInterrupt:
+        print(
+            f"\n{Fore.YELLOW}Работа бота остановлена "
+            f"\n{Fore.WHITE}(вы нажали Ctrl + C)\n"
+        )

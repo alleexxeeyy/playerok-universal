@@ -147,7 +147,7 @@ class PlayerokBot:
 
 
     def send_message(self, chat_id: str, text: str | None = None, photo_file_path: str | None = None,
-                     mark_chat_as_read: bool = None, exclude_watermark: bool = False, max_attempts: int = 3) -> ChatMessage:
+                     mark_chat_as_read: bool = None, exclude_watermark: bool = False, max_attempts: int = 3) -> ChatMessage | None:
         """
         Кастомный метод отправки сообщения в чат Playerok.
         Пытается отправить за 3 попытки, если не удалось - выдаёт ошибку в консоль.\n
@@ -838,7 +838,7 @@ class PlayerokBot:
                         else:
                             msg = auto_delivery.get("message", "")
                             if msg:
-                                mess = self.send_message(event.chat.id, "\n".join(mess))
+                                mess = self.send_message(event.chat.id, "\n".join(msg))
                                 if mess:
                                     logger.info(
                                         f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "

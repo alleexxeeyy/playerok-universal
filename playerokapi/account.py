@@ -21,6 +21,9 @@ from .misc import (
 )
 
 
+logger = getLogger("playerokapi")
+
+
 def get_account() -> Account | None:
     if hasattr(Account, "instance"):
         return getattr(Account, "instance")
@@ -111,7 +114,6 @@ class Account:
         shutil.copyfile(self._cert_path, self._tmp_cert_path)
 
         self._refresh_clients()
-        self.logger = getLogger("playerokapi")
 
     def _refresh_clients(self):
         self.__tls_requests = tls_requests.Client(
@@ -181,7 +183,8 @@ class Account:
             "user-agent": self.user_agent,
             "x-gql-op": x_gql_op,
             "x-gql-path": "/",
-            "x-timezone-offset": "-240"
+            "x-timezone-offset": "-240",
+            "x-apollo-operation-name": x_gql_op
         }
         headers = {k: v for k, v in _headers.items() if k not in headers.keys()}
                 
@@ -217,8 +220,8 @@ class Account:
                     return r
                 except Exception as e:
                     err = str(e)
-                    self.logger.debug(f"Ошибка при отправке запроса: {e}")
-                    self.logger.debug(f"Отправляю запрос повторно...")
+                    logger.debug(f"Ошибка при отправке запроса: {e}")
+                    logger.debug(f"Отправляю запрос повторно...")
                 
             raise RequestSendingError(url, err)
 
@@ -237,7 +240,7 @@ class Account:
                 break
             self._refresh_clients()
             delay = min(120.0, 5.0 * (2 ** attempt)) 
-            self.logger.warning(f"Cloudflare Detected, пробую отправить запрос снова через {delay} секунд")
+            logger.warning(f"Cloudflare Detected, пробую отправить запрос снова через {delay} секунд")
             time.sleep(delay)
         else:
             raise CloudflareDetectedException(resp)

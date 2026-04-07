@@ -54,7 +54,7 @@ class EventListener:
         self.processed_msgs = deque(maxlen=300)
 
         self._possible_new_chat = ThreadingEvent()
-        self._last_chat_check = 0
+        self._last_chats_check = 0
 
     def _get_actual_message(
         self, message_id: str, chat_id: str
@@ -86,10 +86,10 @@ class EventListener:
     def _is_msg_processed(
         self, message_id: str
     ):
-        return True if any((
+        return any((
             msg for msg, _ in self.processed_msgs
             if msg.id == message_id
-        )) else False
+        ))
 
     def _get_chat_processed_msgs(
         self, chat_id: str
@@ -285,6 +285,18 @@ class EventListener:
         events.extend(self._parse_message_events(message, chat))
         return events
     
+    def _process_chats_last_messages(self, chats):
+        now = datetime.now(timezone.utc)
+        
+        for chat in chats:
+            msg = chat.last_message
+            if (
+                msg
+                and (now - datetime.fromisoformat(msg.created_at).astimezone(timezone.utc)).total_seconds() > 90
+                and not self._is_msg_processed(msg.id)
+            ):
+                self.processed_msgs.append((msg, chat.id))
+    
     def proccess_ws_message(self, msg):
         try:
             try: msg_data = json.loads(msg)
@@ -367,6 +379,8 @@ class EventListener:
 
         try: self.chats = self.account.get_chats(count=24).chats # инициализация первых 24 чатов
         except: self.chats = []
+
+        self._process_chats_last_messages(self.chats)
         
         for chat_ in self.chats:
             yield ChatInitializedEvent(chat_)
@@ -439,53 +453,59 @@ class EventListener:
             time.sleep(1)
 
     def _wait_for_check_new_chats(self, delay=10):
-        sleep_time = delay - (time.time() - self._last_chat_check)
-        if sleep_time > 0: time.sleep(sleep_time)
+        sleep_time = delay - (time.time() - self._last_chats_check)
+        if sleep_time > 0: 
+            time.sleep(sleep_time)
 
     def listen_new_deals(self):
         while True:
             try:
-                self._possible_new_chat.wait()
-                self._wait_for_check_new_chats()
-                
-                self._last_chat_check = time.time()
-                self._possible_new_chat.clear()
+                by_event = self._possible_new_chat.wait(timeout=15)
+                if by_event:
+                    self._possible_new_chat.clear()
+                    self._wait_for_check_new_chats()
 
+                possible_chats = []
                 now = datetime.now(timezone.utc)
 
                 for _ in range(3):
                     try:
-                        time.sleep(8) # плеерок может не сразу отобразить актуальные чаты
+                        if by_event:
+                            time.sleep(8) # плеерок может не сразу отобразить актуальные чаты
                         
-                        maybe_paid_msg = False
                         chats = self.account.get_chats(count=5, type=ChatTypes.PM).chats
-                        
                         for chat in chats:
                             last_msg = chat.last_message
-
-                            if (now - datetime.fromisoformat(chat.started_at).astimezone(timezone.utc)).total_seconds() <= 90:
-                                maybe_paid_msg = True
-                                break
-                            else:
-                                is_msg_processed = self._is_msg_processed(last_msg.id)
-                                if not is_msg_processed or (
+                            is_msg_processed = self._is_msg_processed(last_msg.id)
+                            is_chat_processed = any((_chat for _chat in self.chats if _chat.id == chat.id))
+                            
+                            if (
+                                not is_chat_processed
+                                or not is_msg_processed or (
                                     is_msg_processed
                                     and (now - datetime.fromisoformat(last_msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90
-                                ):
-                                    maybe_paid_msg = True
-                                    break
+                                )
+                            ):
+                                possible_chats.append(chat)
+                                break
                                     
-                        if not maybe_paid_msg:
-                            continue # если не найдено чатов с возможными новыми сделками - ищем эти чаты заново
+                        if possible_chats:
+                            break # если найдены чаты с возможными новыми сделками - останавливаем цикл
 
-                        break
+                        if not by_event:
+                            time.sleep(8)
                     except:
-                        chats = []
+                        pass
 
-                for chat in chats:
+                for chat in possible_chats:
+                    last_msg = chat.last_message
+                    
                     # Новый чат — смотрим last_message сначала (быстрый путь)
-                    if chat.last_message and chat.last_message.text == "{{ITEM_PAID}}":
-                        events = self._proccess_new_chat_message(chat, chat.last_message)
+                    if (
+                        last_msg and last_msg.text == "{{ITEM_PAID}}"
+                        and (now - datetime.fromisoformat(last_msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90
+                    ):
+                        events = self._proccess_new_chat_message(chat, last_msg)
                         for event in events:
                             yield event
                         continue
@@ -493,6 +513,7 @@ class EventListener:
                     # медленный путь: last_message перебит новым сообщением от покупателя.
                     # запрашиваем историю и ищем {{ITEM_PAID}} среди первых сообщений.
                     try:
+                        time.sleep(1)
                         messages = self.account.get_chat_messages(chat.id, count=12).messages
                         new_paid_msg = next(
                             (
@@ -514,6 +535,8 @@ class EventListener:
                 pass
             except:
                 logger.debug(f"Ошибка проверки новых сделок: {traceback.format_exc()}")
+            
+            self._last_chats_check = time.time()
 
     def listen_deal_statuses(self): # слушает изменения статусов во всех активных сделках
         while True: # TODO: Доработать, проверить ещё раз на баги 

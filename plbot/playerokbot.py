@@ -986,6 +986,7 @@ class PlayerokBot:
         logger.info(f" · Активные продажи: {Fore.LIGHTWHITE_EX}{self.account.profile.stats.deals.outgoing.total - self.account.profile.stats.deals.outgoing.finished}")
         logger.info(f" · Активные покупки: {Fore.LIGHTWHITE_EX}{self.account.profile.stats.deals.incoming.total - self.account.profile.stats.deals.incoming.finished}")
         logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
+        logger.info("")
         
         proxy = self.config["playerok"]["api"]["proxy"]
         if proxy:
@@ -1001,7 +1002,6 @@ class PlayerokBot:
             user = f"{user[:3]}*****" if user else "-"
             password = f"{password[:3]}*****" if password else "-"
 
-            logger.info("")
             logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
             logger.info(f"{Fore.YELLOW}Информация о прокси:")
             logger.info(f" · IP: {Fore.LIGHTWHITE_EX}{ip}:{port}")

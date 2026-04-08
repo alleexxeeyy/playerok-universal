@@ -56,6 +56,11 @@ class EventListener:
         self._possible_new_chat = ThreadingEvent()
         self._last_chats_check = 0
 
+    def _parse_iso(self, iso_dt: str):
+        if iso_dt.endswith("Z"):
+            iso_dt = iso_dt[:-1] + "+00:00"
+        return datetime.fromisoformat(iso_dt)
+
     def _get_actual_message(
         self, message_id: str, chat_id: str
     ):
@@ -119,7 +124,7 @@ class EventListener:
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
                 deal_id = actual_msg.deal.id
-                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #status_date = self._parse_iso(actual_msg.created_at)
                 #self._set_active_deal(chat, actual_msg.deal, status_date)
                 if deal_id not in self.review_check_deals:
                     self.review_check_deals.append(deal_id)
@@ -135,7 +140,7 @@ class EventListener:
         elif message.text == "{{ITEM_SENT}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
-                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #status_date = self._parse_iso(actual_msg.created_at)
                 #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     ItemSentEvent(actual_msg.deal, chat),
@@ -145,7 +150,7 @@ class EventListener:
         elif message.text == "{{DEAL_CONFIRMED}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
-                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #status_date = self._parse_iso(actual_msg.created_at)
                 #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealConfirmedEvent(actual_msg.deal, chat),
@@ -155,7 +160,7 @@ class EventListener:
         elif message.text == "{{DEAL_ROLLED_BACK}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
-                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #status_date = self._parse_iso(actual_msg.created_at)
                 #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealRolledBackEvent(actual_msg.deal, chat),
@@ -165,7 +170,7 @@ class EventListener:
         elif message.text == "{{DEAL_HAS_PROBLEM}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
-                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #status_date = self._parse_iso(actual_msg.created_at)
                 #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealHasProblemEvent(actual_msg.deal, chat),
@@ -175,7 +180,7 @@ class EventListener:
         elif message.text == "{{DEAL_PROBLEM_RESOLVED}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
             if actual_msg and actual_msg.deal:
-                #status_date = datetime.fromisoformat(actual_msg.created_at)
+                #status_date = self._parse_iso(actual_msg.created_at)
                 #self._set_active_deal(chat, actual_msg.deal, status_date)
                 return [
                     DealProblemResolvedEvent(actual_msg.deal, chat),
@@ -292,7 +297,7 @@ class EventListener:
             msg = chat.last_message
             if (
                 msg
-                and (now - datetime.fromisoformat(msg.created_at).astimezone(timezone.utc)).total_seconds() > 90
+                and (now - self._parse_iso(msg.created_at).astimezone(timezone.utc)).total_seconds() > 90
                 and not self._is_msg_processed(msg.id)
             ):
                 self.processed_msgs.append((msg, chat.id))
@@ -483,7 +488,7 @@ class EventListener:
                                 not is_chat_processed
                                 or not is_msg_processed or (
                                     is_msg_processed
-                                    and (now - datetime.fromisoformat(last_msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90
+                                    and (now - self._parse_iso(last_msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90
                                 )
                             ):
                                 possible_chats.append(chat)
@@ -503,7 +508,7 @@ class EventListener:
                     # Новый чат — смотрим last_message сначала (быстрый путь)
                     if (
                         last_msg and last_msg.text == "{{ITEM_PAID}}"
-                        and (now - datetime.fromisoformat(last_msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90
+                        and (now - self._parse_iso(last_msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90
                     ):
                         events = self._proccess_new_chat_message(chat, last_msg)
                         for event in events:
@@ -519,7 +524,7 @@ class EventListener:
                             (
                             msg for msg in messages
                             if msg.text == "{{ITEM_PAID}}"
-                            and (now - datetime.fromisoformat(msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90 
+                            and (now - self._parse_iso(msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90 
                             # ^ проверка на то, что эта сделка была совершена недавно
                             ),
                             None
@@ -546,7 +551,7 @@ class EventListener:
                         msg_list = self.account.get_chat_messages(chat_id, 24)
                         messages = sorted(
                             msg_list.messages, 
-                            key=lambda x: datetime.fromisoformat(x.created_at)
+                            key=lambda x: self._parse_iso(x.created_at)
                         )
                         break
                     except: 
@@ -556,12 +561,12 @@ class EventListener:
                     try:
                         status_msgs = [
                             msg for msg in messages 
-                            if datetime.fromisoformat(msg.created_at) 
+                            if self._parse_iso(msg.created_at) 
                             >= status_date and msg.deal.status
                         ]
 
                         for msg in status_msgs:
-                            msg_date = datetime.fromisoformat(msg.created_at)
+                            msg_date = self._parse_iso(msg.created_at)
                             if msg.deal.status == last_status and msg_date == status_date:
                                 continue
                             

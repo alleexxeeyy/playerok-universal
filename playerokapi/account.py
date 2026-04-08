@@ -1359,7 +1359,7 @@ class Account:
     def get_item_priority_statuses(
         self, 
         item_id: str, 
-        item_price: str
+        item_price: int | str
     ) -> list[types.ItemPriorityStatus]:
         """
         Получает статусы приоритетов для предмета.

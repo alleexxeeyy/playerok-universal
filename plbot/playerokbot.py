@@ -400,9 +400,10 @@ class PlayerokBot:
                 time.sleep(1)
                 statuses = self.account.get_item_priority_statuses(item.id, item.raw_price)
 
-                pr_status = next((st for st in statuses if st.type == PriorityTypes.DEFAULT or st.price == 0), None)
-                if not pr_status:
-                    raise Exception("DEFAULT статус не найден")
+                pr_status = next(
+                    (st for st in statuses if st.type == PriorityTypes.DEFAULT or st.price == 0), 
+                    statuses[0]
+                )
 
                 time.sleep(1)
                 new_item = self.account.publish_item(item.id, pr_status.id)

@@ -20,6 +20,11 @@ SAVED_ITEMS = DataFile(
     path="bot_data/saved_items.json",
     default=[]
 )
+CACHED_ORDERS = DataFile(
+    name="cached_orders",
+    path="bot_data/cached_orders.json",
+    default={}
+)
 LATEST_EVENTS_TIMES = DataFile(
     name="latest_events_times",
     path="bot_data/latest_events_times.json",
@@ -28,7 +33,7 @@ LATEST_EVENTS_TIMES = DataFile(
         "auto_withdrawal": None
     }
 )
-DATA = [INITIALIZED_USERS, SAVED_ITEMS, LATEST_EVENTS_TIMES]
+DATA = [INITIALIZED_USERS, SAVED_ITEMS, CACHED_ORDERS, LATEST_EVENTS_TIMES]
 
 
 def get_json(path: str, default: dict | list) -> dict:
@@ -42,6 +47,7 @@ def get_json(path: str, default: dict | list) -> dict:
     :param default: Стандартная структура файла.
     :type default: `dict`
     """
+    
     folder_path = os.path.dirname(path)
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
@@ -66,6 +72,7 @@ def set_json(path: str, new: dict):
     :param new: Новые данные.
     :type new: `dict`
     """
+    
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(new, f, indent=4, ensure_ascii=False)
 

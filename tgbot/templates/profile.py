@@ -8,7 +8,10 @@ from .. import callback_datas as calls
 def profile_text():
     from plbot.playerokbot import get_playerok_bot
     
-    acc = get_playerok_bot().account.get()
+    plbot = get_playerok_bot()
+    plbot.refresh_account()
+    
+    acc = plbot.account
     profile = acc.profile
     
     txt = textwrap.dedent(f"""

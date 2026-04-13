@@ -2,9 +2,7 @@ import os
 import re
 import sys
 import ctypes
-import string
 import logging
-import requests
 import pkg_resources
 import subprocess
 import shlex
@@ -12,14 +10,9 @@ import curl_cffi
 import random
 import time
 import asyncio
-import base64
 from colorlog import ColoredFormatter
-from colorama import Fore
 from threading import Thread
 from logging import getLogger
-
-from playerokapi.account import Account
-from settings import Settings as sett
 
 
 logger = getLogger("universal.utils")
@@ -113,6 +106,7 @@ def is_package_installed(requirement_string: str) -> bool:
     :param requirement_string: Строка пакета из файла зависимостей.
     :type requirement_string: str
     """
+    
     try:
         parts = shlex.split(requirement_string)
         if not parts:
@@ -133,6 +127,7 @@ def install_requirements(requirements_path: str):
     :param requirements_path: Путь к файлу зависимостей.
     :type requirements_path: str
     """
+    
     try:
         if not os.path.exists(requirements_path):
             return
@@ -222,127 +217,3 @@ def run_forever_in_thread(func: callable, args: list = [], kwargs: dict = {}):
             loop.close()
 
     Thread(target=run, daemon=True).start()
-
-
-def is_token_valid(token: str) -> bool:
-    if not re.match(r"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$", token):
-        return False
-    try:
-        header, payload, signature = token.split('.')
-        for part in (header, payload, signature):
-            padding = '=' * (-len(part) % 4)
-            base64.urlsafe_b64decode(part + padding)
-        return True
-    except Exception:
-        return False
-
-
-def is_pl_account_working() -> bool:
-    try:
-        config = sett.get("config")
-        Account(
-            token=config["playerok"]["api"]["token"],
-            user_agent=config["playerok"]["api"]["user_agent"],
-            requests_timeout=config["playerok"]["api"]["requests_timeout"],
-            proxy=config["playerok"]["api"]["proxy"] or None
-        ).get()
-        return True
-    except:
-        return False
-
-
-def is_pl_account_banned() -> bool:
-    try:
-        config = sett.get("config")
-        acc = Account(
-            token=config["playerok"]["api"]["token"],
-            user_agent=config["playerok"]["api"]["user_agent"],
-            requests_timeout=config["playerok"]["api"]["requests_timeout"],
-            proxy=config["playerok"]["api"]["proxy"] or None
-        ).get()
-        return acc.profile.is_blocked
-    except:
-        return False
-
-
-def is_user_agent_valid(ua: str) -> bool:
-    if not ua or not (10 <= len(ua) <= 512):
-        return False
-    allowed_chars = string.ascii_letters + string.digits + string.punctuation + ' '
-    return all(c in allowed_chars for c in ua)
-
-
-def is_proxy_valid(proxy: str) -> bool:
-    ip_pattern = r'(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)'
-    pattern_ip_port = re.compile(
-        rf'^{ip_pattern}\.{ip_pattern}\.{ip_pattern}\.{ip_pattern}:(\d+)$'
-    )
-    pattern_auth_ip_port = re.compile(
-        rf'^[^:@]+:[^:@]+@{ip_pattern}\.{ip_pattern}\.{ip_pattern}\.{ip_pattern}:(\d+)$'
-    )
-    match = pattern_ip_port.match(proxy)
-    if match:
-        port = int(match.group(1))
-        return 1 <= port <= 65535
-    match = pattern_auth_ip_port.match(proxy)
-    if match:
-        port = int(match.group(1))
-        return 1 <= port <= 65535
-    return False
-
-
-def is_proxy_working(proxy: str, test_url="https://playerok.com", timeout=10) -> bool:
-    proxies = {
-        "http": f"http://{proxy}",
-        "https": f"http://{proxy}"
-    }
-    try:
-        response = requests.get(test_url, proxies=proxies, timeout=timeout)
-        return response.status_code < 404
-    except Exception:
-        return False
-
-
-def is_tg_token_valid(token: str) -> bool:
-    pattern = r'^\d{7,12}:[A-Za-z0-9_-]{35}$'
-    return bool(re.match(pattern, token))
-
-
-def is_tg_bot_exists() -> bool:
-    try:
-        config = sett.get("config")
-        token = config["telegram"]["api"]["token"]
-        proxy = config["telegram"]["api"]["proxy"]
-        
-        if proxy:
-            proxies = {
-                "http": f"http://{proxy}",
-                "https": f"http://{proxy}",
-            }
-        else:
-            proxies = None
-        
-        response = requests.get(
-            f"https://api.telegram.org/bot{token}/getMe", 
-            proxies=proxies,
-            timeout=5
-        )
-        
-        data = response.json()
-        return data.get("ok", False) is True and data.get("result", {}).get("is_bot", False) is True
-    except Exception:
-        return False
-    
-
-def is_password_valid(password: str) -> bool:
-    if len(password) < 6 or len(password) > 64:
-        return False
-    common_passwords = {
-        "123456", "1234567", "12345678", "123456789", "password", "qwerty",
-        "admin", "123123", "111111", "abc123", "letmein", "welcome",
-        "monkey", "login", "root", "pass", "test", "000000", "user",
-        "qwerty123", "iloveyou"
-    }
-    if password.lower() in common_passwords:
-        return False
-    return True

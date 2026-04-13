@@ -9,7 +9,7 @@ from .. import states
 from .. import callback_datas as calls
 from ..helpful import throw_float_message
 
-from core.utils import (
+from utils import (
     is_token_valid,
     is_user_agent_valid,
     is_proxy_valid, 

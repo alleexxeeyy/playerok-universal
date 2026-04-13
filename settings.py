@@ -221,6 +221,7 @@ def validate_config(config, default):
     :return: True если структура валидна, иначе False.
     :rtype: bool
     """
+    
     for key, value in default.items():
         if key not in config:
             return False
@@ -277,9 +278,11 @@ def get_json(path: str, default: dict, need_restore: bool = True) -> dict:
     :param need_restore: Нужно ли сделать проверку на целостность конфига.
     :type need_restore: `bool`
     """
+    
     folder_path = os.path.dirname(path)
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
+    
     try:
         with open(path, 'r', encoding='utf-8') as f:
             config = json.load(f)

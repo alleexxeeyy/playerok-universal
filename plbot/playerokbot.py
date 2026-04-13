@@ -74,8 +74,8 @@ class PlayerokBot:
         self.account = self.playerok_account = Account(
             token=self.config["playerok"]["api"]["token"],
             user_agent=self.config["playerok"]["api"]["user_agent"],
-            requests_timeout=self.config["playerok"]["api"]["requests_timeout"],
-            proxy=self.config["playerok"]["api"]["proxy"] or None
+            proxy=self.config["playerok"]["api"]["proxy"] or None,
+            requests_timeout=self.config["playerok"]["api"]["requests_timeout"]
         ).get()
 
         self.__saved_chats: dict[str, Chat] = {}
@@ -154,8 +154,8 @@ class PlayerokBot:
         Пытается отправить за N попыток, если не удалось - выдаёт ошибку в консоль.
         """
         
-        if not all((text, photo_file_path)):
-            return None
+        if not any((text, photo_file_path)): 
+            return
         
         for _ in range(max_attempts):
             try:

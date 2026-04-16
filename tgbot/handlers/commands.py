@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
+from core.utils import restart
 
 from .. import templates as templ
 from ..helpful import throw_float_message, do_auth
@@ -27,7 +28,7 @@ async def handler_start(message: types.Message, state: FSMContext):
     )
 
 
-"""@router.message(Command("restart"))
+@router.message(Command("restart"))
 async def handler_restart(message: types.Message, state: FSMContext):
     await state.set_state(None)
     
@@ -38,6 +39,8 @@ async def handler_restart(message: types.Message, state: FSMContext):
     await throw_float_message(
         state=state,
         message=message,
-        text=templ.menu_text(),
-        reply_markup=templ.menu_kb()
-    )"""
+        text="🔄️ <b>Перезагружаю бота</b>, подождите...",
+        reply_markup=templ.destroy_kb()
+    )
+    
+    restart(from_tg=True)

@@ -1,6 +1,7 @@
+import os
+import sys
 import asyncio
 import traceback
-import os
 from colorama import Fore, init as init_colorama
 from logging import getLogger
 
@@ -51,9 +52,9 @@ async def clear_logs_task():
         await asyncio.sleep(30)
 
 
-async def start_telegram_bot():
+async def start_telegram_bot(from_tg=False):
     from tgbot.telegrambot import TelegramBot
-    run_async_in_thread(TelegramBot().run_bot)
+    run_async_in_thread(TelegramBot().run_bot, (from_tg,))
 
 
 async def start_playerok_bot():
@@ -63,6 +64,8 @@ async def start_playerok_bot():
 
 if __name__ == "__main__":
     try:
+        from_tg = "--from_tg" in sys.argv
+
         install_requirements("requirements.txt") # установка недостающих зависимостей, если таковые есть
         patch_requests()
         setup_logger()
@@ -86,7 +89,7 @@ if __name__ == "__main__":
         set_modules(modules)
         asyncio.run(connect_modules(modules))
 
-        main_loop.run_until_complete(start_telegram_bot())
+        main_loop.run_until_complete(start_telegram_bot(from_tg))
         main_loop.run_until_complete(start_playerok_bot())
         main_loop.create_task(clear_logs_task())
 

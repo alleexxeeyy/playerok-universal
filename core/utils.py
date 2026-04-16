@@ -34,9 +34,15 @@ def shutdown():
     main_loop.call_soon_threadsafe(main_loop.stop)
 
 
-def restart():
+def restart(from_tg=False):
     python = sys.executable
-    os.execv(python, [python] + sys.argv)
+    args = sys.argv.copy()
+
+    if from_tg:
+        args.append("--from_tg")
+
+    logger.info("Перезапуск бота...")
+    os.execv(python, [python] + args)
 
 
 def set_title(title: str):

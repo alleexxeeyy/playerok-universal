@@ -58,7 +58,10 @@ class TelegramBot:
 
     async def _set_main_menu(self):
         try:
-            main_menu_commands = [BotCommand(command="/start", description="🏠 Главное меню")]
+            main_menu_commands = [
+                BotCommand(command="/start", description="🏠 Главное меню"),
+                BotCommand(command="/restart", description="🔄️ Перезагрузить")
+            ]
             await self.bot.set_my_commands(main_menu_commands)
         except:
             pass
@@ -102,7 +105,7 @@ class TelegramBot:
         except:
             pass
 
-    async def run_bot(self):
+    async def run_bot(self, from_tg=False):
         self.loop = asyncio.get_running_loop()
 
         await self._set_main_menu()
@@ -136,9 +139,22 @@ class TelegramBot:
             logger.info(f" · Пароль: {Fore.LIGHTWHITE_EX}{password}")
             logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
 
+        if from_tg:
+            await self.notify_bot_restarted()
+
         while True:
             try: await self.dp.start_polling(self.bot, skip_updates=True, handle_signals=False)
             except: pass
+
+    async def notify_bot_restarted(self):
+        config = sett.get("config")
+        for user_id in config["telegram"]["bot"]["signed_users"]:
+            await self.bot.send_message(
+                chat_id=user_id, 
+                text="✅ Бот был <b>успешно перезагружен</b>",
+                reply_markup=templ.destroy_kb(),
+                parse_mode="HTML"
+            )
 
     async def call_seller(self, calling_name: str, chat_id: int | str):
         config = sett.get("config")

@@ -150,7 +150,7 @@ class PlayerokBot:
         return False
 
 
-    def send_message(self, chat_id: str, text: str | None = None, photo_file_paths: list[str] | None = None,
+    def send_message(self, chat_id: str, text: str | None = None, photo_file_paths: list[str] = [],
                      mark_chat_as_read: bool = None, exclude_watermark: bool = False, max_attempts: int = 3) -> ChatMessage | None:
         """
         Кастомный метод отправки сообщения в чат Playerok.

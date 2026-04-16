@@ -179,17 +179,10 @@ class PlayerokBot:
                 
                 return mess
             except Exception as e:
-                msg = ""
-                if text: 
-                    msg += text.replace('\n', ' ').strip()
-                if photo_file_paths:
-                    msg += f", Изображения ({len(photo_file_paths)})"
-                
-                logger.error(
-                    f"{Fore.LIGHTRED_EX}Ошибка при отправке сообщения {Fore.LIGHTWHITE_EX}«{msg}» "
-                    f"{Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id} {Fore.LIGHTRED_EX}: {Fore.WHITE}{e}"
-                )
-                return
+                err = e
+                break
+        else:
+            err = "Не удалось отправить сообщение"
         
         msg = ""
         if text: 
@@ -198,8 +191,8 @@ class PlayerokBot:
             msg += f", Изображения ({len(photo_file_paths)})"
         
         logger.error(
-            f"{Fore.LIGHTRED_EX}Не удалось отправить сообщение {Fore.LIGHTWHITE_EX}«{msg}» "
-            f"{Fore.LIGHTRED_EX}в чат {Fore.LIGHTWHITE_EX}{chat_id}"
+            f"{Fore.LIGHTRED_EX}Ошибка при отправке сообщения «{msg}» "
+            f"{Fore.LIGHTRED_EX}в чат {chat_id}{Fore.LIGHTRED_EX}: {Fore.WHITE}{err}"
         )
 
     def _serealize_item(self, item: ItemProfile) -> dict:
@@ -592,7 +585,7 @@ class PlayerokBot:
             while True:
                 if (
                     self.config["playerok"]["auto_bump_items"]["enabled"]
-                    and datetime.now() >= self._do_call_event(
+                    and self._do_call_event(
                         self.latest_events_times["auto_bump_items"],
                         self.config["playerok"]["auto_bump_items"]["interval"]
                     )
@@ -604,7 +597,7 @@ class PlayerokBot:
             while True:
                 if (
                     self.config["playerok"]["auto_withdrawal"]["enabled"]
-                    and datetime.now() >= self._do_call_event(
+                    and self._do_call_event(
                         self.latest_events_times["auto_withdrawal"],
                         self.config["playerok"]["auto_withdrawal"]["interval"]
                     )

@@ -25,3 +25,19 @@ async def handler_start(message: types.Message, state: FSMContext):
         text=templ.menu_text(),
         reply_markup=templ.menu_kb()
     )
+
+
+"""@router.message(Command("restart"))
+async def handler_restart(message: types.Message, state: FSMContext):
+    await state.set_state(None)
+    
+    config = sett.get("config")
+    if message.from_user.id not in config["telegram"]["bot"]["signed_users"]:
+        return await do_auth(message, state)
+    
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.menu_text(),
+        reply_markup=templ.menu_kb()
+    )"""

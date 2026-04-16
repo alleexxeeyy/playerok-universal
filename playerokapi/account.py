@@ -1095,7 +1095,7 @@ class Account:
         self, 
         chat_id: str, 
         text: str | None = None,
-        photo_file_paths: list[str] | None = None, 
+        photo_file_paths: list[str] = [], 
         mark_chat_as_read: bool = False
     ) -> types.ChatMessage:
         """

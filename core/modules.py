@@ -1,6 +1,7 @@
 import os
 import sys
 import importlib
+import traceback
 import uuid
 from uuid import UUID
 from colorama import Fore
@@ -221,7 +222,7 @@ def load_modules() -> list[Module]:
                 )
                 modules.append(module_data)
             except Exception as e:
-                logger.error(f"{Fore.LIGHTRED_EX}Ошибка при загрузке модуля {name}: {Fore.WHITE}{e}")
+                logger.error(f"{Fore.LIGHTRED_EX}Ошибка при загрузке модуля {name}: {Fore.WHITE}{traceback.format_exc()}")
     
     return modules
 

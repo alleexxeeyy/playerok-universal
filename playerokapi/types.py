@@ -7,7 +7,6 @@ from .enums import *
 from .misc import PERSISTED_QUERIES
 
 
-
 class FileObject:
     """
     Объект файла.
@@ -2314,6 +2313,41 @@ class Moderator:
 
     def __init__(self):
         pass
+
+
+class TemporaryAttachmentUploadOutput:
+    """
+    Выходные данные для загрузки временного вложения
+    (приложенное к сообщению изображение).
+
+    :param id: ID данных.
+    :type id: `str`
+
+    :param url: URL изображения.
+    :type url: `str`
+
+    :param chat_id: ID чата, куда отправляется изображение.
+    :type chat_id: `str`
+
+    :param client_attachment_id: ID файла-приложения клиента.
+    :type client_attachment_id: `str`
+
+    :param expires_at: Дата истечения.
+    :type expires_at: `str`
+    """
+
+    def __init__(self, id: str, url: str, chat_id: str,
+                 client_attachment_id: str, expires_at: str):
+        self.id: str = id
+        """ ID данных. """
+        self.url: str = id
+        """ URL изображения. """
+        self.chat_id: str = id
+        """ ID чата, куда отправляется изображение. """
+        self.client_attachment_id: str = id
+        """ ID приложения клиента. """
+        self.expires_at: str = id
+        """ Дата истечения. """
 
 
 class ChatMessageButton:

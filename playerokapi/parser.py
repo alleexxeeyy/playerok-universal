@@ -904,6 +904,20 @@ def item_deal_list(data: dict) -> "ItemDealList":
     )
 
 
+def temporary_attachment_upload_output(data: dict) -> "TemporaryAttachmentUploadOutput":
+    from .types import TemporaryAttachmentUploadOutput
+    if not data:
+        return None
+
+    return TemporaryAttachmentUploadOutput(
+        id=data.get("id"),
+        url=data.get("url"),
+        chat_id=data.get("chatId"),
+        client_attachment_id=data.get("clientAttachmentId"),
+        expires_at=data.get("expiresAt")
+    )
+
+
 def chat_message_button(data: dict) -> "ChatMessageButton":
     from .types import ChatMessageButton
     if not data:

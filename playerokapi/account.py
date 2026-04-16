@@ -7,6 +7,7 @@ import time
 import os
 import tempfile
 import shutil
+import uuid
 
 import tls_requests
 import curl_cffi
@@ -126,13 +127,76 @@ class Account:
             verify=self._tmp_cert_path
         )
 
+    # under testing...
+    """def refresh_ddg(self):
+        
+        #import easyocr
+        print(1)
+        import CaptchaCracker as cc
+
+        from selenium import webdriver
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
+
+        print(2)
+        driver = webdriver.Chrome()
+        driver.get("https://playerok.com")
+        wait = WebDriverWait(driver, 30)
+
+        print(3)
+        iframe = wait.until(
+            EC.presence_of_element_located((By.ID, "ddg-iframe"))
+        )
+        print(4)
+        input()
+        
+        driver.switch_to.frame(iframe)
+
+        st_nums = [
+            int(name.replace("captcha", "").replace(".png", "")) 
+             for name in os.listdir("playerokapi/captchas") 
+             if name.startswith("captcha")
+        ]
+        st_num = max(st_nums) + 1 if st_nums else 1
+        print("st_num:", st_num) #ddg-captcha__checkbox
+        
+        for i in range(st_num, 1000):
+            print(i)
+            captcha = wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".ddg-modal__captcha-image"))
+            )
+
+            print("captcha:", captcha)
+            captcha.screenshot(f"playerokapi/captchas/captcha{i}.png")
+
+            btn = wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".ddg-modal__refresh"))
+            )
+            btn.click()
+            time.sleep(3)
+        
+        #result = reader.readtext("captcha.png")
+        #input(result)
+        cookies = driver.get_cookies()
+
+        ddg_cookies = {}
+        for c in cookies:
+            if c["name"].startswith("__ddg"):
+                ddg_cookies[c["name"]] = c["value"]
+
+        input(ddg_cookies)
+
+        driver.quit()"""
+
     def request(
         self, 
         method: Literal["get", "post"], 
         url: str, 
         headers: dict[str, str], 
         payload: dict[str, str] | None = None, 
-        files: dict | None = None
+        files: dict | None = None,
+        pass_304: bool = True
     ) -> requests.Response:
         """
         Отправляет запрос на сервер playerok.com.
@@ -159,7 +223,7 @@ class Account:
         except: x_gql_op = "viewer"
         _headers = {
             "accept": "*/*",
-            "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+            "accept-language": "ru,en;q=0.9",
             "access-control-allow-headers": "sentry-trace, baggage",
             "apollo-require-preflight": "true",
             "apollographql-client-name": "web",
@@ -168,14 +232,14 @@ class Account:
             "origin": "https://playerok.com",
             "priority": "u=1, i",
             "referer": "https://playerok.com/",
-            "sec-ch-ua": "\"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\", \"Not_A Brand\";v=\"99\"",
-            "sec-ch-ua-arch": "\"x86\"",
-            "sec-ch-ua-bitness": "\"64\"",
-            "sec-ch-ua-full-version": "\"144.0.7559.110\"",
-            "sec-ch-ua-full-version-list": "Not(A:Brand\";v=\"8.0.0.0\", \"Chromium\";v=\"144.0.7559.110\", \"Google Chrome\";v=\"144.0.7559.110\"",
+            "sec-ch-ua": '"Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"',
+            "sec-ch-ua-arch": '"x86"',
+            "sec-ch-ua-bitness": '"64"',
+            "sec-ch-ua-full-version": '"146.0.7680.180"',
+            "sec-ch-ua-full-version-list": '"Chromium";v="146.0.7680.180", "Not-A.Brand";v="24.0.0.0", "Google Chrome";v="146.0.7680.180"',
             "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-model": "\"\"",
-            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-ch-ua-model": '""',
+            "sec-ch-ua-platform": '"Windows"',
             "sec-ch-ua-platform-version": "\"19.0.0\"",
             "sec-fetch-dest": "empty",
             "sec-fetch-mode": "cors",
@@ -238,9 +302,11 @@ class Account:
             resp = make_req()
             if not any(sig in resp.text for sig in cf_sigs):
                 break
+
             self._refresh_clients()
             delay = min(120.0, 5.0 * (2 ** attempt)) 
             logger.warning(f"Cloudflare Detected, пробую отправить запрос снова через {delay} секунд")
+            
             time.sleep(delay)
         else:
             raise CloudflareDetectedException(resp)
@@ -252,7 +318,7 @@ class Account:
         if "errors" in json:
             raise RequestPlayerokError(resp)
 
-        if resp.status_code != 200:
+        if resp.status_code != 200 and not (resp.status_code == 304 and pass_304):
            raise RequestFailedError(resp)
         
         return resp
@@ -309,7 +375,10 @@ class Account:
         
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         data: dict = r["data"]["user"]
-        if data.get("__typename") == "User": self.profile = account_profile(data)
+        
+        if data.get("__typename") == "User": 
+            self.profile = account_profile(data)
+        
         return self
     
     def get_user(
@@ -330,7 +399,7 @@ class Account:
         :return: Объект профиля пользователя.
         :rtype: `playerokapi.types.UserProfile`
         """
-        if not any([id, username]):
+        if not any((id, username)):
             raise TypeError("Не был передан ни один из обязательных аргументов: id, username")
         
         headers = {"accept": "*/*"}
@@ -538,7 +607,7 @@ class Account:
         :return: Объект игры.
         :rtype: `playerokapi.types.Game`
         """
-        if not any([id, slug]):
+        if not any((id, slug)):
             raise TypeError("Не был передан ни один из обязательных аргументов: id, slug")
         
         headers = {"accept": "*/*"}
@@ -581,7 +650,7 @@ class Account:
         :return: Объект категории игры.
         :rtype: `playerokapi.types.GameCategory`
         """
-        if not id and not all([game_id, slug]):
+        if not id and not all((game_id, slug)):
             if not id and (game_id or slug):
                 raise TypeError("Связка аргументов game_id, slug была передана не полностью")
             raise TypeError("Не был передан ни один из обязательных аргументов: id, game_id, slug")
@@ -983,12 +1052,50 @@ class Account:
 
         r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
         return chat(r["data"]["markChatAsRead"])
-    
+
+    def upload_chat_image_into_temporary_store(
+        self, 
+        photo_file_path: str,
+        chat_id: str
+    ) -> types.Chat:
+        """
+        Выкладывает изображение чата во временное хранилище
+        (перед отправкой сообщения с изображением).
+
+        :param chat_id: ID чата.
+        :type chat_id: `str`
+
+        :return: Объект чата с обновлёнными данными.
+        :rtype: `playerokapi.types.Chat`
+        """
+        headers = {"accept": "*/*"}
+        operations = {
+            "operationName": "uploadChatImageIntoTemporaryStore",
+            "query": QUERIES.get("uploadChatImageIntoTemporaryStore"),
+            "variables": {
+                "file": None,
+                "input": {
+                    "chatId": chat_id,
+                    "clientAttachmentId": str(uuid.uuid4())
+                }
+            }
+        }
+        
+        files = {"1": open(photo_file_path, "rb")}
+        map = {"1": ["variables.file"]} if photo_file_path else None
+        payload = {
+            "operations": json.dumps(operations), 
+            "map": json.dumps(map)
+        }
+        
+        r = self.request("post", f"{self.base_url}/graphql", headers, payload, files).json()
+        return temporary_attachment_upload_output(r["data"]["uploadChatImageIntoTemporaryStore"])
+
     def send_message(
         self, 
         chat_id: str, 
         text: str | None = None,
-        photo_file_path: str | None = None, 
+        photo_file_paths: list[str] | None = None, 
         mark_chat_as_read: bool = False
     ) -> types.ChatMessage:
         """
@@ -1001,8 +1108,8 @@ class Account:
         :param text: Текст сообщения, _опционально_.
         :type text: `str` or `None`
 
-        :param photo_file_path: Путь к файлу фотографии, _опционально_.
-        :type photo_file_path: `str` or `None`
+        :param photo_file_paths: Массив путей к файлам фотографий, _опционально_.
+        :type photo_file_paths: `list` of `str`
 
         :param mark_chat_as_read: Пометить чат, как прочитанный перед отправкой, _опционально_.
         :type mark_chat_as_read: `bool`
@@ -1010,31 +1117,31 @@ class Account:
         :return: Объект отправленного сообщения.
         :rtype: `playerokapi.types.ChatMessage`
         """
-        if not any([text, photo_file_path]):
-            raise TypeError("Не был передан ни один из обязательных аргументов: text, photo_file_path")
+        if not any((text, photo_file_paths)):
+            raise TypeError("Не был передан ни один из обязательных аргументов: text, photo_file_paths")
         
         if mark_chat_as_read:
             self.mark_chat_as_read(chat_id=chat_id)
+        
         headers = {"accept": "*/*"}
-        operations = {
+        payload = {
             "operationName": "createChatMessage",
-            "query": QUERIES.get("createChatMessageWithFile") if photo_file_path else QUERIES.get("createChatMessage"),
+            "query": QUERIES.get("createChatMessage"),
             "variables": {
                 "input": {
-                    "chatId": chat_id
+                    "chatId": chat_id,
+                    "imagesIds": [],
+                    "text": text or ""
                 }
             }
         }
-        if photo_file_path:
-            operations["variables"]["file"] = None
-        elif text:
-            operations["variables"]["input"]["text"] = text
         
-        files = {"1": open(photo_file_path, "rb")} if photo_file_path else None
-        map = {"1":["variables.file"]} if photo_file_path else None
-        payload = operations if not files else {"operations": json.dumps(operations), "map": json.dumps(map)}
+        for file_path in photo_file_paths:
+            image = self.upload_chat_image_into_temporary_store(file_path, chat_id)
+            if image:
+                payload["variables"]["input"]["imagesIds"].append(image.id)
         
-        r = self.request("post", f"{self.base_url}/graphql", headers, payload, files).json()
+        r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
         return chat_message(r["data"]["createChatMessage"])
  
     def create_item(
@@ -1285,7 +1392,7 @@ class Account:
         :return: Страница профилей предметов.
         :rtype: `playerokapi.types.ItemProfileList`
         """
-        if not any([game_id, category_id]):
+        if not any((game_id, category_id)):
             raise TypeError("Не был передан ни один из обязательных аргументов: game_id, category_id")
         
         headers = {"accept": "*/*"}
@@ -1328,7 +1435,7 @@ class Account:
         :return: Объект предмета.
         :rtype: `playerokapi.types.MyItem` or `playerokapi.types.Item` or `playerokapi.types.ItemProfile`
         """
-        if not any([id, slug]):
+        if not any((id, slug)):
             raise TypeError("Не был передан ни один из обязательных аргументов: id, slug")
         
         headers = {"accept": "*/*"}

@@ -611,7 +611,7 @@ class PlayerokBot:
         Thread(target=withdrawal_loop, daemon=True).start()
 
     async def _on_new_message(self, event: NewMessageEvent):
-        if event.message.user is None:
+        if not event.message.user:
             return
         
         self.log_new_message(event.message, event.chat)

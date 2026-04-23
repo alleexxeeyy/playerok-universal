@@ -1,24 +1,18 @@
 import requests
 
 
-class CloudflareDetectedException(Exception):
+class BotCheckDetectedException(Exception):
     """
-    Ошибка обнаружения Cloudflare защиты при отправке запроса.
+    Ошибка обнаружения проверки на бота при отправке запроса.
 
     :param response: Объект ответа.
     :type response: `requests.Response`
     """
-
-    def __init__(self, response: requests.Response):
-        self.response = response
-        self.status_code = self.response.status_code
-        self.html_text = self.response.text
-
+    
     def __str__(self):
         msg = (
-            f"Ошибка: CloudFlare заметил подозрительную активность при отправке запроса на сайт Playerok."
-            f"\nКод ошибки: {self.status_code}"
-            f"\nОтвет: {self.html_text}"
+            "Бот-проверка заметила подозрительную активность при отправке запроса на сайт Playerok. "
+            "Чтобы продолжить работу, вам нужно поменять параметр ddg5 на актуальный, или поменять cookies на актуальные."
         )
         return msg
 
@@ -96,3 +90,13 @@ class UnauthorizedError(Exception):
 
     def __str__(self):
         return "Не удалось подключиться к аккаунту Playerok. Может вы указали неверный token?"
+
+
+class NotInitiatedError(Exception):
+    """Исключение, которое возбуждается, если аккаунт Playerok не был инициализирован (не был вызван метод `get()`)."""
+
+    def __str__(self):
+        return (
+            "Аккаунт Playerok не инициализирован для выполнения этого действия. "
+            "Прежде чем сделать это, вызовите метод Account(...).get()."
+        )

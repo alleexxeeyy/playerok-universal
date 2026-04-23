@@ -10,7 +10,7 @@ class ActionsStates(StatesGroup):
 
 
 class SettingsStates(StatesGroup):
-    waiting_for_token = State()
+    waiting_for_cookies = State()
     waiting_for_user_agent = State()
 
     waiting_for_requests_timeout = State()

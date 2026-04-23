@@ -72,7 +72,7 @@ class PlayerokBot:
         self.latest_events_times = data.get("latest_events_times")
 
         self.account = self.playerok_account = Account(
-            token=self.config["playerok"]["api"]["token"],
+            cookies=self.config["playerok"]["api"]["cookies"],
             user_agent=self.config["playerok"]["api"]["user_agent"],
             proxy=self.config["playerok"]["api"]["proxy"] or None,
             requests_timeout=self.config["playerok"]["api"]["requests_timeout"]

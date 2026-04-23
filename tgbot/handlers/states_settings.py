@@ -10,6 +10,7 @@ from .. import callback_datas as calls
 from ..helpful import throw_float_message
 
 from utils import (
+    is_cookies_valid,
     is_token_valid,
     is_user_agent_valid,
     is_proxy_valid, 
@@ -20,24 +21,28 @@ from utils import (
 router = Router()
 
 
-@router.message(states.SettingsStates.waiting_for_token, F.text)
-async def handler_waiting_for_token(message: types.Message, state: FSMContext):
+@router.message(states.SettingsStates.waiting_for_cookies, F.text)
+async def handler_waiting_for_cookies(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
         
-        token = message.text
+        str_cookies = message.text
+        cookies = {
+            c.split("=")[0].strip(): c.split("=")[1].strip() for c
+            in str_cookies.split(";") if c.strip() and "=" in c
+        }
         
-        if not is_token_valid(token):
-            raise Exception("❌ Неверный формат токена. Пример: eyJhbGciOiJIUzI1NiIsInR5cCI1IkpXVCJ9")
+        if not is_cookies_valid(str_cookies) or not is_token_valid(cookies["token"]):
+            raise Exception("❌ Неверные Cookie-данные. Убедитесь, что они указаны в формате Header String")
 
         config = sett.get("config")
-        config["playerok"]["api"]["token"] = token
+        config["playerok"]["api"]["cookies"] = str_cookies
         sett.set("config", config)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>Токен</b> был успешно изменён на <b>{token}</b>"),
+            text=templ.settings_auth_float_text(f"🍪 <b>Cookie-данные</b> были успешно изменены на: <blockquote>{str_cookies}</blockquote>"),
             reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
         )
     except Exception as e:

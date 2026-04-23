@@ -35,10 +35,22 @@ class Account:
     Класс, описывающий данные и методы Playerok аккаунта.
 
     :param token: Токен аккаунта.
-    :type token: `str`
+    :type token: `str` or `None`
+
+    :param ddg5: Cookie для обхода защиты DDoS-Guard (полное название: `__ddg5_`).
+            \n **Примечание:** эта Cookie "умирает" каждый раз, когда:
+            \n - меняется IP
+            \n - меняется User-Agent / TLS fingerprint
+            \n - сервер обновил ключи/алгоритм
+            \n Чтобы API работал, эта Cookie должна быть взята из Cookie-данных аккаунта, токен которого вы указали, и запросы должны идти с того же IP-адреса, под которым Вы авторизовывались на Playerok.
+            \n Если она недействительна, при запросах будет вызываться исключение `BotCheckDetectedException`.
+    :type ddg5: `str` or `None`
 
     :param user_agent: Юзер-агент браузера.
-    :type user_agent: `str`
+    :type user_agent: `str` or `None`
+
+    :param cookies: Куки-данные авторизованного аккаунта. Можно указывать вместо параметров `token`, `ddg5`, `user_agent`.
+    :type cookies: `str` or `dict[str, str]` or `None`
 
     :param proxy: IPV4 прокси в формате: `user:pass@ip:port` или `ip:port`, _опционально_.
     :type proxy: `str` or `None`
@@ -55,24 +67,52 @@ class Account:
         return getattr(cls, "instance")
 
     def __init__(
-            self, 
-            token: str, 
-            user_agent: str = "", 
-            proxy: str = None, 
-            requests_timeout: int = 15,
-            request_max_retries: int = 5,
-            **kwargs
-        ):
+        self, 
+        token: str = None, 
+        ddg5: str = None, 
+        user_agent: str = "", 
+        cookies: str | dict[str, str] = None,
+        proxy: str = None, 
+        requests_timeout: int = 15,
+        request_max_retries: int = 5,
+        **kwargs
+    ):
+        if not any((token, cookies)):
+            raise TypeError("Должен быть указать один из обязательных аргументов: token или cookies")
+
         self.token = token
         """Токен сессии аккаунта."""
+
+        self.ddg5 = ddg5
+        """Cookie для обхода защиты DDoS-Guard."""
+        
         self.user_agent = user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
         """Юзер-агент браузера."""
+
+        self.cookies = cookies
+        """Куки-данные авторизованного аккаунта."""
+        
+        if isinstance(cookies, str):
+            self.cookies = {
+                c.split("=")[0].strip(): c.split("=")[1].strip() for c
+                in cookies.split(";") if c.strip() and "=" in c
+            }
+
+        if not self.cookies:
+            self.cookies = {
+                "token": self.token,
+                "__ddg5_": self.ddg5
+            }
+
         self.requests_timeout = requests_timeout
         """Таймаут ожидания ответов на запросы."""
+        
         self.proxy = proxy
         """Прокси."""
+
         self.__proxy_string = f"http://{self.proxy.replace('https://', '').replace('http://', '')}" if self.proxy else None
         """Строка прокси."""
+
         self.request_max_retries = request_max_retries
         """Максимальное количество повторных попыток отправки запроса."""
 
@@ -110,6 +150,9 @@ class Account:
         self.profile: AccountProfile | None = None
         """Профиль аккаунта (не путать с профилем пользователя). \n\n_Заполняется при первом использовании get()_"""
 
+        self._is_initiated = False
+        """Инициализирован ли аккаунт. """
+
         self._cert_path = os.path.join(os.path.dirname(__file__), "cacert.pem")
         self._tmp_cert_path = os.path.join(tempfile.gettempdir(), "cacert.pem")
         shutil.copyfile(self._cert_path, self._tmp_cert_path)
@@ -126,68 +169,6 @@ class Account:
             proxy=self.__proxy_string,
             verify=self._tmp_cert_path
         )
-
-    # under testing...
-    """def refresh_ddg(self):
-        
-        #import easyocr
-        print(1)
-        import CaptchaCracker as cc
-
-        from selenium import webdriver
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
-        from selenium.webdriver.common.by import By
-
-        print(2)
-        driver = webdriver.Chrome()
-        driver.get("https://playerok.com")
-        wait = WebDriverWait(driver, 30)
-
-        print(3)
-        iframe = wait.until(
-            EC.presence_of_element_located((By.ID, "ddg-iframe"))
-        )
-        print(4)
-        input()
-        
-        driver.switch_to.frame(iframe)
-
-        st_nums = [
-            int(name.replace("captcha", "").replace(".png", "")) 
-             for name in os.listdir("playerokapi/captchas") 
-             if name.startswith("captcha")
-        ]
-        st_num = max(st_nums) + 1 if st_nums else 1
-        print("st_num:", st_num) #ddg-captcha__checkbox
-        
-        for i in range(st_num, 1000):
-            print(i)
-            captcha = wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, ".ddg-modal__captcha-image"))
-            )
-
-            print("captcha:", captcha)
-            captcha.screenshot(f"playerokapi/captchas/captcha{i}.png")
-
-            btn = wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, ".ddg-modal__refresh"))
-            )
-            btn.click()
-            time.sleep(3)
-        
-        #result = reader.readtext("captcha.png")
-        #input(result)
-        cookies = driver.get_cookies()
-
-        ddg_cookies = {}
-        for c in cookies:
-            if c["name"].startswith("__ddg"):
-                ddg_cookies[c["name"]] = c["value"]
-
-        input(ddg_cookies)
-
-        driver.quit()"""
 
     def request(
         self, 
@@ -222,15 +203,15 @@ class Account:
         try: x_gql_op = payload.get("operationName", "viewer")
         except: x_gql_op = "viewer"
         _headers = {
-            "accept": "*/*",
-            "accept-language": "ru,en;q=0.9",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
             "access-control-allow-headers": "sentry-trace, baggage",
             "apollo-require-preflight": "true",
             "apollographql-client-name": "web",
             "content-type": "application/json",
-            "cookie": f"token={self.token}",
-            "origin": "https://playerok.com",
+            "cookie": "; ".join([f"{k}={v}" for k, v in self.cookies.items()]),
             "priority": "u=1, i",
+            "origin": "https://playerok.com",
             "referer": "https://playerok.com/",
             "sec-ch-ua": '"Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"',
             "sec-ch-ua-arch": '"x86"',
@@ -240,7 +221,7 @@ class Account:
             "sec-ch-ua-mobile": "?0",
             "sec-ch-ua-model": '""',
             "sec-ch-ua-platform": '"Windows"',
-            "sec-ch-ua-platform-version": "\"19.0.0\"",
+            "sec-ch-ua-platform-version": '"19.0.0"',
             "sec-fetch-dest": "empty",
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "same-origin",
@@ -289,7 +270,7 @@ class Account:
                 
             raise RequestSendingError(url, err)
 
-        cf_sigs = [
+        sigs = [
             "<title>Just a moment...</title>",
             "window._cf_chl_opt",
             "Enable JavaScript and cookies to continue",
@@ -298,18 +279,16 @@ class Account:
             "Cloudflare Ray ID"
         ]
         
-        for attempt in range(30):
-            resp = make_req()
-            if not any(sig in resp.text for sig in cf_sigs):
-                break
+        resp = make_req()
+        if any(sig in resp.text for sig in sigs):
+            raise BotCheckDetectedException()
 
-            self._refresh_clients()
-            delay = min(120.0, 5.0 * (2 ** attempt)) 
-            logger.warning(f"Cloudflare Detected, пробую отправить запрос снова через {delay} секунд")
-            
-            time.sleep(delay)
-        else:
-            raise CloudflareDetectedException(resp)
+        cookie_headers = {
+            v.split("=")[0]: v.split("=")[1].split(";")[0] 
+            for k, v in resp.headers.multi_items() if k.lower() == "set-cookie"
+        }
+        for k, v in cookie_headers.items():
+            self.cookies[k] = v
         
         json = {}
         try: json = resp.json()
@@ -357,7 +336,8 @@ class Account:
         self.has_confirmed_phone_number = data.get("hasConfirmedPhoneNumber")
         self.can_publish_items = data.get("canPublishItems")
         self.unread_chats_counter = data.get("unreadChatsCounter")
-        
+        self._is_initiated = True
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "user",
@@ -451,6 +431,9 @@ class Account:
         :return: Страница сделок.
         :rtype: `playerokapi.types.ItemDealList`
         """
+        if not self._is_initiated:
+            raise NotInitiatedError()
+
         str_statuses = [status.name for status in statuses] if statuses else None
         str_direction = direction.name if direction else None
         
@@ -699,6 +682,9 @@ class Account:
         :return: Страница соглашений.
         :rtype: `playerokapi.types.GameCategoryAgreementList`
         """
+        if not user_id and not self._is_initiated:
+            raise NotInitiatedError()
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "gameCategoryAgreements",
@@ -900,6 +886,9 @@ class Account:
         :return: Страница чатов.
         :rtype: `playerokapi.types.ChatList`
         """
+        if not self._is_initiated:
+            raise NotInitiatedError()
+        
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "userChats",
@@ -1611,6 +1600,9 @@ class Account:
         :return: Страница транзакций.
         :rtype: `playerokapi.types.TransactionList`
         """
+        if not self._is_initiated:
+            raise NotInitiatedError()
+        
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "transactions",

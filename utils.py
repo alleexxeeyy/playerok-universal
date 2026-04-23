@@ -9,12 +9,32 @@ from logging import getLogger
 from colorama import Fore
 
 from playerokapi.account import Account
+from playerokapi.exceptions import BotCheckDetectedException
 
 from settings import Settings as sett
 from data import Data as data
 
 
 logger = getLogger("universal")
+
+
+def is_cookies_valid(cookie_str: str) -> bool:
+    if not cookie_str or "=" not in cookie_str:
+        return False
+
+    parts = cookie_str.split(";")
+
+    for part in parts:
+        part = part.strip()
+        if "=" not in part:
+            return False
+
+        key, value = part.split("=", 1)
+
+        if not key or not value:
+            return False
+
+    return True
 
 
 def is_token_valid(token: str) -> bool:
@@ -30,25 +50,27 @@ def is_token_valid(token: str) -> bool:
         return False
 
 
-def is_pl_account_working() -> bool:
+def is_pl_account_working() -> tuple[bool, str]:
     try:
         config = sett.get("config")
         Account(
-            token=config["playerok"]["api"]["token"],
+            cookies=config["playerok"]["api"]["cookies"],
             user_agent=config["playerok"]["api"]["user_agent"],
             requests_timeout=config["playerok"]["api"]["requests_timeout"],
             proxy=config["playerok"]["api"]["proxy"] or None
         ).get()
-        return True
+        return True, ""
+    except BotCheckDetectedException:
+        return False, "Бот-проверка заметила подозрительную активность при подключении к аккаунту Playerok. Чтобы продолжить работу, вам нужно указать актуальные Cookie-данные вашего авторизованного Playerok аккаунта."
     except:
-        return False
+        return False, ""
 
 
 def is_pl_account_banned() -> bool:
     try:
         config = sett.get("config")
         acc = Account(
-            token=config["playerok"]["api"]["token"],
+            cookies=config["playerok"]["api"]["cookies"],
             user_agent=config["playerok"]["api"]["user_agent"],
             requests_timeout=config["playerok"]["api"]["requests_timeout"],
             proxy=config["playerok"]["api"]["proxy"] or None
@@ -144,35 +166,38 @@ def is_password_valid(password: str) -> bool:
 def configure_config():
     config = sett.get("config")
     
-    while not config["playerok"]["api"]["token"]:
-        while not config["playerok"]["api"]["token"]:
+    while not config["playerok"]["api"]["cookies"] :
+        while not config["playerok"]["api"]["cookies"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}токен {Fore.WHITE}вашего Playerok аккаунта. "
-                f"Его можно узнать из Cookie-данных, воспользуйтесь расширением Cookie-Editor."
-                f"\n  {Fore.WHITE}· Пример: eyJhbGciOiJIUzI1NiIsInR5cCI1IkpXVCJ9.eyJzdWIiOiIxZWUxMzg0Ni..."
+                f"\n{Fore.WHITE}Введите {Fore.YELLOW}Cookie-Данные {Fore.WHITE}вашего "
+                f"{Fore.LIGHTWHITE_EX}авторизованного {Fore.WHITE}Playerok аккаунта в формате Header String. "
+                f"\nАвторизуйтесь в свой аккаунт на сайте, а после скопируйте куки с помощью расширения Cookie-Editor (ЛКМ на расширение -> Export -> Header String)."
+                f"\n  {Fore.WHITE}· Пример: __ddg3=4L7yBmrBwMwKm15X;token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             )
-            token = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
-            if is_token_valid(token):
-                config["playerok"]["api"]["token"] = token
+            str_cookies = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            cookies = {
+                c.split("=")[0].strip(): c.split("=")[1].strip() for c
+                in str_cookies.split(";") if c.strip() and "=" in c
+            }
+            
+            if is_cookies_valid(str_cookies) and is_token_valid(cookies["token"]):
+                config["playerok"]["api"]["cookies"] = str_cookies
                 sett.set("config", config)
-                print(f"\n{Fore.GREEN}Токен успешно сохранён в конфиг.")
+                print(f"\n{Fore.GREEN}Cookie-данные успешно сохранены в конфиг.")
             else:
                 print(
-                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
-                    f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
+                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректные Cookie-данные. "
+                    f"Убедитесь, что они соответствует формату и попробуйте ещё раз."
                 )
 
         while not config["playerok"]["api"]["user_agent"]:
             print(
                 f"\n{Fore.WHITE}Введите {Fore.LIGHTMAGENTA_EX}User Agent {Fore.WHITE}вашего браузера. "
-                f"Его можно скопировать на сайте {Fore.LIGHTWHITE_EX}https://whatmyuseragent.com. "
-                f"Или вы можете пропустить этот параметр, нажав Enter."
+                f"Его можно скопировать на сайте {Fore.LIGHTWHITE_EX}https://whatmyuseragent.com."
                 f"\n  {Fore.WHITE}· Пример: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
             )
             user_agent = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
-            if not user_agent:
-                print(f"\n{Fore.YELLOW}Вы пропустили ввод User Agent. Учтите, что в таком случае бот может работать нестабильно.")
-                break
+            
             if is_user_agent_valid(user_agent):
                 config["playerok"]["api"]["user_agent"] = user_agent
                 sett.set("config", config)
@@ -191,6 +216,7 @@ def configure_config():
                 f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
             )
             proxy = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            
             if not proxy:
                 print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
                 break
@@ -211,6 +237,7 @@ def configure_config():
                 f"\n  {Fore.WHITE}· Пример: 7257913369:AAG2KjLL3-zvvfSQFSVhaTb4w7tR2iXsJXM"
             )
             token = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            
             if is_tg_token_valid(token):
                 config["telegram"]["api"]["token"] = token
                 sett.set("config", config)
@@ -229,6 +256,7 @@ def configure_config():
                 f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
             )
             proxy = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            
             if not proxy:
                 print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
                 break
@@ -249,6 +277,7 @@ def configure_config():
             f"\n  {Fore.WHITE}· Пароль должен быть сложным, длиной не менее 6 и не более 64 символов."
         )
         password = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+        
         if is_password_valid(password):
             config["telegram"]["bot"]["password"] = password
             sett.set("config", config)
@@ -261,23 +290,26 @@ def configure_config():
             f"\n{Fore.LIGHTRED_EX}Похоже, что прокси для Playerok аккаунта не работает. "
             f"Пожалуйста, проверьте его и введите снова."
         )
-        config["playerok"]["api"]["token"] = ""
+        
+        config["playerok"]["api"]["cookies"] = ""
         config["playerok"]["api"]["user_agent"] = ""
         config["playerok"]["api"]["proxy"] = ""
         sett.set("config", config)
+        
         return configure_config()
     elif config["playerok"]["api"]["proxy"]:
         logger.info(f"{Fore.LIGHTYELLOW_EX}Playerok прокси успешно работает.")
 
-    if not is_pl_account_working():
-        print(
-            f"\n{Fore.LIGHTRED_EX}Не удалось подключиться к вашему Playerok аккаунту. "
-            f"Пожалуйста, убедитесь, что у вас указан верный токен и введите его снова."
-        )
-        config["playerok"]["api"]["token"] = ""
+    is_pl_acc_working, reason = is_pl_account_working()
+    if not is_pl_acc_working:
+        reason = reason if reason else "Не удалось подключиться к вашему Playerok аккаунту. Пожалуйста, убедитесь, что у вас указан верный токен и введите его снова."
+        print(f"\n{Fore.LIGHTRED_EX}{reason}")
+        
+        config["playerok"]["api"]["cookies"] = ""
         config["playerok"]["api"]["user_agent"] = ""
         config["playerok"]["api"]["proxy"] = ""
         sett.set("config", config)
+        
         return configure_config()
     else:
         logger.info(f"{Fore.LIGHTYELLOW_EX}Playerok аккаунт успешно авторизован.")
@@ -287,10 +319,12 @@ def configure_config():
             f"{Fore.LIGHTRED_EX}\nВаш Playerok аккаунт забанен! "
             f"Увы, я не могу запустить бота на заблокированном аккаунте..."
         )
+        
         config["playerok"]["api"]["token"] = ""
         config["playerok"]["api"]["user_agent"] = ""
         config["playerok"]["api"]["proxy"] = ""
         sett.set("config", config)
+        
         return configure_config()
 
     if config["telegram"]["api"]["proxy"] and not is_proxy_working(
@@ -301,9 +335,11 @@ def configure_config():
             f"{Fore.LIGHTRED_EX}\nПохоже, что прокси для Telegram бота не работает. "
             f"Пожалуйста, проверьте его и введите снова."
         )
+        
         config["telegram"]["api"]["token"] = ""
         config["telegram"]["api"]["proxy"] = ""
         sett.set("config", config)
+        
         return configure_config()
     elif config["telegram"]["api"]["proxy"]:
         logger.info(f"{Fore.LIGHTYELLOW_EX}Telegram прокси успешно работает.")
@@ -316,6 +352,7 @@ def configure_config():
         config["telegram"]["api"]["token"] = ""
         config["telegram"]["api"]["proxy"] = ""
         sett.set("config", config)
+        
         return configure_config()
     else:
         logger.info(f"{Fore.LIGHTYELLOW_EX}Telegram бот успешно работает.")

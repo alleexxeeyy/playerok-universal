@@ -15,19 +15,19 @@ from .pagination import *
 router = Router()
 
 
-@router.callback_query(F.data == "enter_token")
-async def callback_enter_token(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(states.SettingsStates.waiting_for_token)
+@router.callback_query(F.data == "enter_cookies")
+async def callback_enter_cookies(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(states.SettingsStates.waiting_for_cookies)
     
     config = sett.get("config")
-    golden_key = config["playerok"]["api"]["token"] or "❌ Не задано"
+    cookies = config["playerok"]["api"]["cookies"] or "❌ Не задано"
     
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.settings_auth_float_text(
-            f"🔐 Введите новый <b>токен</b> вашего аккаунта:"
-            f"\n・ Текущее: <code>{golden_key}</code>"
+            f"🍪 Введите новые <b>Cookie-данные</b> вашего аккаунта:"
+            f"\n・ Текущие: <blockquote>{cookies}</blockquote>"
         ),
         reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
     )

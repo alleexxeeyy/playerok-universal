@@ -358,7 +358,7 @@ class EventListener:
             "origin": "https://playerok.com",
             "pragma": "no-cache",
             "sec-websocket-extensions": "permessage-deflate; client_max_window_bits",
-            "cookie": f"token={self.account.token}",
+            "cookie": "; ".join([f"{k}={v}" for k, v in self.account.cookies.items()]),
             "user-agent": self.account.user_agent
         }
 

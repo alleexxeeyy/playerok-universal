@@ -38,13 +38,13 @@ class Account:
     :type token: `str` or `None`
 
     :param ddg5: Cookie для обхода защиты DDoS-Guard (полное название: `__ddg5_`).
-            \n **Примечание:** эта Cookie "умирает" каждый раз, когда:
-            \n - меняется IP
-            \n - меняется User-Agent / TLS fingerprint
-            \n - сервер обновил ключи/алгоритм
-            \n Чтобы API работал, эта Cookie должна быть взята из Cookie-данных аккаунта, токен которого вы указали, и запросы должны идти с того же IP-адреса, под которым Вы авторизовывались на Playerok.
-            \n Если она недействительна, при запросах будет вызываться исключение `BotCheckDetectedException`.
-    :type ddg5: `str` or `None`
+                \n **Примечание:** эта Cookie "умирает" каждый раз, когда:
+                \n - меняется IP
+                \n - меняется User-Agent / TLS fingerprint
+                \n - сервер обновил ключи/алгоритм
+                \n Чтобы API работал, эта Cookie должна быть взята из Cookie-данных аккаунта, токен которого вы указали, и запросы должны идти с того же IP-адреса, под которым Вы авторизовывались на Playerok.
+                \n Если она недействительна, при запросах будет вызываться исключение `BotCheckDetectedException`.
+    :type ddg5: `str`
 
     :param user_agent: Юзер-агент браузера.
     :type user_agent: `str` or `None`
@@ -57,9 +57,6 @@ class Account:
 
     :param requests_timeout: Таймаут ожидания ответов на запросы.
     :type requests_timeout: `int`
-
-    :param request_max_retries: Максимальное количество повторных попыток отправки запроса, если была обнаружена CloudFlare защита.
-    :type request_max_retries: `int`
     """
     def __new__(cls, *args, **kwargs) -> Account:
         if not hasattr(cls, "instance"):
@@ -69,12 +66,11 @@ class Account:
     def __init__(
         self, 
         token: str = None, 
-        ddg5: str = None, 
+        ddg5: str = "", 
         user_agent: str = "", 
         cookies: str | dict[str, str] = None,
         proxy: str = None, 
         requests_timeout: int = 15,
-        request_max_retries: int = 5,
         **kwargs
     ):
         if not any((token, cookies)):
@@ -112,9 +108,6 @@ class Account:
 
         self.__proxy_string = f"http://{self.proxy.replace('https://', '').replace('http://', '')}" if self.proxy else None
         """Строка прокси."""
-
-        self.request_max_retries = request_max_retries
-        """Максимальное количество повторных попыток отправки запроса."""
 
         self.base_url = "https://playerok.com"
         """Базовый URL для всех запросов."""
@@ -165,7 +158,7 @@ class Account:
         )
         self.__curl_session = curl_cffi.Session(
             impersonate="chrome",
-            timeout=10,
+            timeout=self.requests_timeout,
             proxy=self.__proxy_string,
             verify=self._tmp_cert_path
         )

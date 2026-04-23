@@ -320,7 +320,7 @@ def configure_config():
             f"Увы, я не могу запустить бота на заблокированном аккаунте..."
         )
         
-        config["playerok"]["api"]["token"] = ""
+        config["playerok"]["api"]["cookies"] = ""
         config["playerok"]["api"]["user_agent"] = ""
         config["playerok"]["api"]["proxy"] = ""
         sett.set("config", config)

@@ -174,7 +174,7 @@ def configure_config():
                 f"\nАвторизуйтесь в свой аккаунт на сайте, а после скопируйте куки с помощью расширения Cookie-Editor (ЛКМ на расширение -> Export -> Header String)."
                 f"\n  {Fore.WHITE}· Пример: __ddg3=4L7yBmrBwMwKm15X;token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             )
-            str_cookies = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            str_cookies = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
             cookies = {
                 c.split("=")[0].strip(): c.split("=")[1].strip() for c
                 in str_cookies.split(";") if c.strip() and "=" in c
@@ -196,7 +196,7 @@ def configure_config():
                 f"Его можно скопировать на сайте {Fore.LIGHTWHITE_EX}https://whatmyuseragent.com."
                 f"\n  {Fore.WHITE}· Пример: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
             )
-            user_agent = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            user_agent = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
             
             if is_user_agent_valid(user_agent):
                 config["playerok"]["api"]["user_agent"] = user_agent
@@ -215,7 +215,7 @@ def configure_config():
                 f"Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
                 f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
             )
-            proxy = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            proxy = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
             
             if not proxy:
                 print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
@@ -236,7 +236,7 @@ def configure_config():
                 f"\n{Fore.WHITE}Введите {Fore.CYAN}токен вашего Telegram бота{Fore.WHITE}. Бота нужно создать у @BotFather."
                 f"\n  {Fore.WHITE}· Пример: 7257913369:AAG2KjLL3-zvvfSQFSVhaTb4w7tR2iXsJXM"
             )
-            token = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            token = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
             
             if is_tg_token_valid(token):
                 config["telegram"]["api"]["token"] = token
@@ -255,7 +255,7 @@ def configure_config():
                 f"Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
                 f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
             )
-            proxy = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+            proxy = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
             
             if not proxy:
                 print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
@@ -276,7 +276,7 @@ def configure_config():
             f"Бот будет запрашивать этот пароль при каждой новой попытке взаимодействия чужого пользователя с вашим Telegram ботом."
             f"\n  {Fore.WHITE}· Пароль должен быть сложным, длиной не менее 6 и не более 64 символов."
         )
-        password = input(f"  {Fore.WHITE}↳ {Fore.LIGHTWHITE_EX}").strip()
+        password = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
         
         if is_password_valid(password):
             config["telegram"]["bot"]["password"] = password

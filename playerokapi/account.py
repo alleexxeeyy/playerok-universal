@@ -46,11 +46,11 @@ class Account:
                 \n Если она недействительна, при запросах будет вызываться исключение `BotCheckDetectedException`.
     :type ddg5: `str`
 
+    :param cookies: Куки-данные авторизованного аккаунта. Можно указывать вместо параметров `token`, `ddg5`.
+    :type cookies: `str` or `dict[str, str]` or `None`
+
     :param user_agent: Юзер-агент браузера.
     :type user_agent: `str` or `None`
-
-    :param cookies: Куки-данные авторизованного аккаунта. Можно указывать вместо параметров `token`, `ddg5`, `user_agent`.
-    :type cookies: `str` or `dict[str, str]` or `None`
 
     :param proxy: IPV4 прокси в формате: `user:pass@ip:port` или `ip:port`, _опционально_.
     :type proxy: `str` or `None`
@@ -67,8 +67,8 @@ class Account:
         self, 
         token: str = None, 
         ddg5: str = "", 
-        user_agent: str = "", 
         cookies: str | dict[str, str] = None,
+        user_agent: str = "", 
         proxy: str = None, 
         requests_timeout: int = 15,
         **kwargs
@@ -81,9 +81,6 @@ class Account:
 
         self.ddg5 = ddg5
         """Cookie для обхода защиты DDoS-Guard."""
-        
-        self.user_agent = user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
-        """Юзер-агент браузера."""
 
         self.cookies = cookies
         """Куки-данные авторизованного аккаунта."""
@@ -99,6 +96,9 @@ class Account:
                 "token": self.token,
                 "__ddg5_": self.ddg5
             }
+
+        self.user_agent = user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+        """Юзер-агент браузера."""
 
         self.requests_timeout = requests_timeout
         """Таймаут ожидания ответов на запросы."""

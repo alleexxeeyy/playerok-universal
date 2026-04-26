@@ -163,6 +163,8 @@ class ItemDealStatuses(Enum):
     """Сделка подтверждена автоматически."""
     ROLLED_BACK = 5
     """Сделка возвращена."""
+    HAS_PROBLEM = 6
+    """Пользователь сообщил о проблеме в сделке."""
 
 
 class ItemDealDirections(Enum):

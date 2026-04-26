@@ -509,7 +509,7 @@ class PlayerokBot:
     def log_new_review(self, deal: ItemDeal):
         logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
         logger.info(f"{Fore.YELLOW}Новый отзыв по сделке {deal.id}:")
-        logger.info(f" · Оценка: {Fore.LIGHTYELLOW_EX}{'★' * deal.review.rating or 5} ({deal.review.rating or 5})")
+        logger.info(f" · Оценка: {Fore.LIGHTYELLOW_EX}{'⭐' * deal.review.rating or 5} ({deal.review.rating or 5})")
         logger.info(f" · Текст: {Fore.LIGHTWHITE_EX}{deal.review.text}")
         logger.info(f" · Оставил: {Fore.LIGHTWHITE_EX}{deal.review.creator.username}")
         logger.info(f" · Дата: {Fore.LIGHTWHITE_EX}{datetime.fromisoformat(deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}")
@@ -627,7 +627,6 @@ class PlayerokBot:
             and (self.config["playerok"]["tg_logging"]["events"]["new_user_message"] 
             or self.config["playerok"]["tg_logging"]["events"]["new_system_message"])
         ):
-            do = False
             if (
                 self.config["playerok"]["tg_logging"]["events"]["new_user_message"] 
                 and not is_support_chat
@@ -635,9 +634,6 @@ class PlayerokBot:
                 self.config["playerok"]["tg_logging"]["events"]["new_system_message"] 
                 and is_support_chat
             ): 
-                do = True 
-            
-            if do:
                 text = f"<b>{event.message.user.username}:</b> "
                 text += event.message.text or ""
                 text += f'<b><a href="{event.message.file.url}">{event.message.file.filename}</a></b>' if event.message.file else ""
@@ -659,10 +655,10 @@ class PlayerokBot:
             if event.message.user.id not in self.initialized_users:
                 self.initialized_users.append(event.message.user.id)
         
-            if str(event.message.text).lower() in ("!команды", "!commands"):
+            if event.message.text.lower() in ("!команды", "!commands"):
                 self.send_message(event.chat.id, self.msg("cmd_commands"))
             
-            elif str(event.message.text).lower() in ("!продавец", "!seller"):
+            elif event.message.text.lower() in ("!продавец", "!seller"):
                 asyncio.run_coroutine_threadsafe(
                     get_telegram_bot().call_seller(event.message.user.username, event.chat.id), 
                     get_telegram_bot_loop()
@@ -936,6 +932,13 @@ class PlayerokBot:
         elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
             self.send_message(event.chat.id, self.msg(
                 "deal_refunded", 
+                deal_id=event.deal.id, 
+                deal_item_name=event.deal.item.name, 
+                deal_item_price=event.deal.item.price
+            ))
+        elif event.deal.status is ItemDealStatuses.HAS_PROBLEM:
+            self.send_message(event.chat.id, self.msg(
+                "deal_has_problem", 
                 deal_id=event.deal.id, 
                 deal_item_name=event.deal.item.name, 
                 deal_item_price=event.deal.item.price

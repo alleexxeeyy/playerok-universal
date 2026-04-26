@@ -72,7 +72,7 @@ if __name__ == "__main__":
         
         set_title(f"Playerok Universal v{VERSION} by @alleexxeeyy")
         print(
-            f"\n\n"
+            f"\n\n →"
             f"\n   {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
             f"\n"
             f"\n   {Fore.YELLOW}Наши ссылки:"

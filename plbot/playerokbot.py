@@ -510,7 +510,7 @@ class PlayerokBot:
         logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
         logger.info(f"{Fore.YELLOW}Новый отзыв по сделке {deal.id}:")
         logger.info(f" · Оценка: {Fore.LIGHTYELLOW_EX}{'⭐' * deal.review.rating or 5} ({deal.review.rating or 5})")
-        logger.info(f" · Текст: {Fore.LIGHTWHITE_EX}{deal.review.text}")
+        logger.info(f" · Текст: {Fore.LIGHTWHITE_EX}{deal.review.text or '-'}")
         logger.info(f" · Оставил: {Fore.LIGHTWHITE_EX}{deal.review.creator.username}")
         logger.info(f" · Дата: {Fore.LIGHTWHITE_EX}{datetime.fromisoformat(deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}")
         logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
@@ -687,7 +687,7 @@ class PlayerokBot:
                         text=(
                             f"<b>Оценка:</b> {'⭐' * event.deal.review.rating}"
                             f"\n<b>Оставил:</b> {event.deal.review.creator.username}"
-                            f"\n<b>Текст:</b> {event.deal.review.text}"
+                            f"\n<b>Текст:</b> {event.deal.review.text or '-'}"
                             f"\n<b>Дата:</b> {datetime.fromisoformat(event.deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}"
                         )
                     ),
@@ -809,7 +809,7 @@ class PlayerokBot:
                                 if mess:
                                     logger.info(
                                         f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "
-                                        f"{Fore.YELLOW}отправлено сообщение авто-выдачи {Fore.LIGHTYELLOW_EX}«{msg}»"
+                                        f"{Fore.YELLOW}отправлено сообщение авто-выдачи {Fore.LIGHTYELLOW_EX}«{' '.join(msg)}»"
                                     )
                         
                         break

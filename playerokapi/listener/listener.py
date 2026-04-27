@@ -123,7 +123,7 @@ class EventListener:
         
         if message.text == "{{ITEM_PAID}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message
-            actual_deal = self._get_actual_deal(actual_msg.deal.id) or message.deals
+            actual_deal = self._get_actual_deal(actual_msg.deal.id) or message.deal
             
             if actual_msg and actual_deal:
                 deal_id = actual_deal.id
@@ -207,7 +207,7 @@ class EventListener:
             "type": "connection_init", 
             "payload": {
                 "x-gql-op": "ws-subscription",
-                "x-gql-path": "/chats",
+                "x-gql-path": "/chats/[id]",
                 "x-timezone-offset": -180
             }
         }))
@@ -215,6 +215,7 @@ class EventListener:
     def _subscribe_chat_updated(self):
         self.ws.send(json.dumps({
             "id": str(uuid.uuid4()), 
+            "type": "subscribe",
             "payload": {
                 "extensions": {},
                 "operationName": "chatUpdated",
@@ -226,7 +227,6 @@ class EventListener:
                     "showForbiddenImage": True
                 }
             },
-            "type": "subscribe"
         }))
 
     def _subscribe_chat_marked_as_read(self):
@@ -368,7 +368,6 @@ class EventListener:
             "accept-language": "ru,en;q=0.9",
             "cache-control": "no-cache",
             "connection": "Upgrade",
-            "host": "ws.playerok.com",
             "origin": "https://playerok.com",
             "pragma": "no-cache",
             "sec-websocket-extensions": "permessage-deflate; client_max_window_bits",
@@ -421,6 +420,7 @@ class EventListener:
 
                 while True:
                     msg = self.ws.recv()
+                    print(msg)
                     Thread(target=self.proccess_ws_message, args=(msg,), daemon=True).start()
             except websocket._exceptions.WebSocketException:
                 time.sleep(3)

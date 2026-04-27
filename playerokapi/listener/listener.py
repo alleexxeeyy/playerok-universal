@@ -420,7 +420,6 @@ class EventListener:
 
                 while True:
                     msg = self.ws.recv()
-                    print(msg)
                     Thread(target=self.proccess_ws_message, args=(msg,), daemon=True).start()
             except websocket._exceptions.WebSocketException:
                 time.sleep(3)

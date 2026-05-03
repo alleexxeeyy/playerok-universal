@@ -80,8 +80,8 @@ bash <(curl -s https://raw.githubusercontent.com/alleexxeeyy/playerok-universal/
 | `pluniversal log`     | **🗒️ Логи бота**         |
 | `pluniversal log100`  | **📃 Последние 100 логов**          |
 | `pluniversal update`  | **🔵 Обновление бота**              | 
-| `pluniversal enable`  | **☑️ Включить авто-запуска бота**  |
-| `pluniversal disable` | **❌ Выключить авто-запуска бота** |
+| `pluniversal enable`  | **☑️ Включить авто-запуск бота**  |
+| `pluniversal disable` | **❌ Выключить авто-запуск бота** |
 
 ## 📚 Для разработчиков
 

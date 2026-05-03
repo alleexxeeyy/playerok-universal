@@ -22,6 +22,7 @@ from core.modules import (
 from core.handlers import call_bot_event
 from updater import check_for_updates
 from utils import configure_config
+from settings import Settings as sett
 
 
 logger = getLogger("universal")
@@ -72,18 +73,37 @@ if __name__ == "__main__":
         
         set_title(f"Playerok Universal v{VERSION} by @alleexxeeyy")
         print(
-            f"\n\n →"
-            f"\n   {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
+            f"\n\n   {Fore.LIGHTYELLOW_EX}┌───────────────────────────────────────┐\n"
+            f"\n     {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
+            f"\n       {Fore.WHITE}by {Fore.LIGHTYELLOW_EX}@alleexxeeyy (3xtra)"
             f"\n"
-            f"\n   {Fore.YELLOW}Наши ссылки:"
-            f"\n   {Fore.WHITE}· TG бот: {Fore.LIGHTWHITE_EX}https://t.me/alexey_production_bot"
-            f"\n   {Fore.WHITE}· TG канал: {Fore.LIGHTWHITE_EX}https://t.me/alexeyproduction"
-            f"\n   {Fore.WHITE}· GitHub: {Fore.LIGHTWHITE_EX}https://github.com/alleexxeeyy/playerok-universal"
-            f"\n\n\n"
+            f"\n     {Fore.WHITE}· GitHub: {Fore.LIGHTWHITE_EX}github.com/alleexxeeyy/playerok-universal"
+            f"\n     {Fore.WHITE}· Новости: {Fore.LIGHTWHITE_EX}t.me/alexeyproduction"
+            f"\n     {Fore.WHITE}· Плагины: {Fore.LIGHTWHITE_EX}t.me/alexey_production_bot"
+            f"\n\n   {Fore.LIGHTYELLOW_EX}└───────────────────────────────────────┘\n\n"
         )
         
         check_for_updates()
-        configure_config()
+
+        config = sett.get("config")
+        needs_setup = (
+            not config["playerok"]["api"]["cookies"] or
+            not config["playerok"]["api"]["user_agent"] or
+            not config["telegram"]["api"]["token"] or
+            not config["telegram"]["bot"]["password"]
+        )
+ 
+        if needs_setup:
+            if sys.stdin.isatty():
+                configure_config()
+            else:
+                print(
+                    f"\n{Fore.YELLOW}⚠️  Бот не настроен!"
+                    f"\n{Fore.WHITE}Подключитесь к серверу и выполните команду:"
+                    f"\n\n   {Fore.CYAN}bot setup"
+                    f"\n\n{Fore.WHITE}Это запустит интерактивную настройку прямо в терминале.\n"
+                )
+                sys.exit(0)  # код 0 = не перезапускать сервис (Restart=on-failure)
 
         modules = load_modules()
         set_modules(modules)

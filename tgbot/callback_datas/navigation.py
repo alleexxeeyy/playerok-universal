@@ -1,21 +1,24 @@
 from aiogram.filters.callback_data import CallbackData
 
 
-class MenuNavigation(CallbackData, prefix="menpag"):
+class MenuNavigation(CallbackData, prefix="mennav"):
     to: str
 
+class PlaceholdersNavigation(CallbackData, prefix="plhnav"):
+    to: str
+    by: str
 
-class SettingsNavigation(CallbackData, prefix="sepag"):
+class StatsNavigation(CallbackData, prefix="stnav"):
     to: str
 
-
-class BotSettingsNavigation(CallbackData, prefix="bspag"):
+class SettingsNavigation(CallbackData, prefix="senva"):
     to: str
 
-
-class ItemsSettingsNavigation(CallbackData, prefix="ispag"):
+class BotSettingsNavigation(CallbackData, prefix="bsnav"):
     to: str
 
+class ItemsSettingsNavigation(CallbackData, prefix="isnav"):
+    to: str
 
-class InstructionNavigation(CallbackData, prefix="inspag"):
+class InstructionNavigation(CallbackData, prefix="insnav"):
     to: str

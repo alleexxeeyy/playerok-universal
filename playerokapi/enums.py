@@ -163,8 +163,6 @@ class ItemDealStatuses(Enum):
     """Сделка подтверждена автоматически."""
     ROLLED_BACK = 5
     """Сделка возвращена."""
-    HAS_PROBLEM = 6
-    """Пользователь сообщил о проблеме в сделке."""
 
 
 class ItemDealDirections(Enum):
@@ -194,6 +192,8 @@ class UserTypes(Enum):
     """Модератор."""
     BOT = 2
     """Бот."""
+    CHECKER = 3
+    """Проверяющий."""
 
 
 class ChatTypes(Enum):
@@ -326,3 +326,21 @@ class GameCategoryInstructionTypes(Enum):
     """Для продавца."""
     FOR_BUYER = 1
     """Для покупателя."""
+
+
+class MessageTemplateTypes(Enum):
+    """Типы шаблонных сообщений."""
+
+    ACTIVE_DEAL_PROBLEM = 0
+    """Проблема в активной сделке."""
+    FINISHED_DEAL_PROBLEM = 1
+    """Проблема в завершённой сделке."""
+
+
+class ChatMessageEvents(Enum):
+    """Ивенты сообщения."""
+
+    CHAT_STARTED = 0
+    """Переписка началась (когда к вам в чате поддержки подключается помощник)."""
+    CHAT_FINISHED = 1
+    """Переписка заврешилась."""

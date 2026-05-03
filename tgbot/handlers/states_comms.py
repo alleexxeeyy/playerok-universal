@@ -25,15 +25,15 @@ async def handler_waiting_for_custom_commands_page(message: types.Message, state
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_comms_text(),
-            reply_markup=templ.settings_comms_kb(page=int(message.text) - 1)
+            text=templ.comms_text(),
+            reply_markup=templ.comms_kb(page=int(message.text) - 1)
         )
     except Exception as e:
         data = await state.get_data()
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_comms_float_text(e), 
+            text=templ.comms_float_text(e), 
             reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=data.get("last_page", 0)).pack())
         )
         
@@ -54,7 +54,7 @@ async def handler_waiting_for_new_custom_command(message: types.Message, state: 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_comm_float_text(f"💬 Введите <b>ответ для команды</b> <code>{message.text.strip()}</code>:"),
+            text=templ.new_comm_float_text(f"💬 Введите <b>ответ для команды</b> <code>{message.text.strip()}</code>:"),
             reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=data.get("last_page", 0)).pack())
         )
     except Exception as e:
@@ -62,7 +62,7 @@ async def handler_waiting_for_new_custom_command(message: types.Message, state: 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_comm_float_text(e), 
+            text=templ.new_comm_float_text(e), 
             reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=data.get("last_page", 0)).pack())
         )
         
@@ -85,9 +85,9 @@ async def handler_waiting_for_new_custom_command_answer(message: types.Message, 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_comm_float_text(
+            text=templ.new_comm_float_text(
                 f"✔️ Подтвердите <b>добавление новой команды:</b>"
-                f"\n<b>· Команда:</b> {cmd}"
+                f"\n\n<b>· Команда:</b> {cmd}"
                 f"\n<b>· Ответ:</b> <blockquote>{answr}</blockquote>"
             ),
             reply_markup=templ.confirm_kb(confirm_cb="add_new_custom_command", cancel_cb=calls.CustomCommandsPagination(page=data.get("last_page", 0)).pack())
@@ -97,7 +97,7 @@ async def handler_waiting_for_new_custom_command_answer(message: types.Message, 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_comm_float_text(e), 
+            text=templ.new_comm_float_text(e), 
             reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=data.get("last_page", 0)).pack())
         )
 
@@ -119,7 +119,7 @@ async def handler_waiting_for_custom_command_answer(message: types.Message, stat
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_comm_page_float_text(f"✅ <b>Текст ответа</b> команды <code>{data['custom_command']}</code> был успешно изменён на: <blockquote>{message.text.strip()}</blockquote>"),
+            text=templ.comm_page_float_text(f"✅ <b>Текст ответа</b> команды <code>{data['custom_command']}</code> был успешно изменён на: <blockquote>{message.text.strip()}</blockquote>"),
             reply_markup=templ.back_kb(calls.CustomCommandPage(command=data["custom_command"]).pack())
         )
     except Exception as e:
@@ -127,6 +127,6 @@ async def handler_waiting_for_custom_command_answer(message: types.Message, stat
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_comm_page_float_text(e), 
+            text=templ.comm_page_float_text(e), 
             reply_markup=templ.back_kb(calls.CustomCommandPage(command=data["custom_command"]).pack())
         )

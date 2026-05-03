@@ -32,8 +32,8 @@ async def handler_waiting_for_new_included_complete_deal_keyphrases(message: typ
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_complete_included_float_text(
-                "✅ Предмет успешно включён в подтверждение"
+            text=templ.new_complete_included_float_text(
+                "✅ Товар успешно включён в подтверждение"
             ),
             reply_markup=templ.back_kb(calls.IncludedCompleteDealsPagination(page=last_page).pack())
         )
@@ -41,7 +41,7 @@ async def handler_waiting_for_new_included_complete_deal_keyphrases(message: typ
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_complete_included_float_text(e), 
+            text=templ.new_complete_included_float_text(e), 
             reply_markup=templ.back_kb(calls.IncludedCompleteDealsPagination(page=last_page).pack())
         )
 
@@ -79,8 +79,8 @@ async def handler_waiting_for_new_included_complete_deals_keyphrases_file(messag
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_complete_included_float_text(
-                f"✅ Успешно включено <b>{len(keyphrases_list)} предметов</b> из файла в подтверждение"
+            text=templ.new_complete_included_float_text(
+                f"✅ Успешно включено <b>{len(keyphrases_list)} товаров</b> из файла в подтверждение"
             ),
             reply_markup=templ.back_kb(calls.IncludedCompleteDealsPagination(page=last_page).pack())
         )
@@ -88,7 +88,7 @@ async def handler_waiting_for_new_included_complete_deals_keyphrases_file(messag
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_complete_included_float_text(e), 
+            text=templ.new_complete_included_float_text(e), 
             reply_markup=templ.back_kb(calls.IncludedCompleteDealsPagination(page=last_page).pack())
         )
 
@@ -113,8 +113,8 @@ async def handler_waiting_for_new_excluded_complete_deal_keyphrases(message: typ
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_complete_excluded_float_text(
-                "✅ Предмет успешно добавлен в исключения для подтверждения"
+            text=templ.new_complete_excluded_float_text(
+                "✅ Товар успешно добавлен в исключения для подтверждения"
             ),
             reply_markup=templ.back_kb(calls.ExcludedCompleteDealsPagination(page=last_page).pack())
         )
@@ -122,7 +122,7 @@ async def handler_waiting_for_new_excluded_complete_deal_keyphrases(message: typ
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_complete_excluded_float_text(e), 
+            text=templ.new_complete_excluded_float_text(e), 
             reply_markup=templ.back_kb(calls.ExcludedCompleteDealsPagination(page=last_page).pack())
         )
 
@@ -160,8 +160,8 @@ async def handler_waiting_for_new_excluded_complete_deals_keyphrases_file(messag
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_complete_excluded_float_text(
-                f"✅ Успешно добавлено <b>{len(keyphrases_list)} предметов</b> из файла в исключения для подтверждения"
+            text=templ.new_complete_excluded_float_text(
+                f"✅ Успешно добавлено <b>{len(keyphrases_list)} товаров</b> из файла в исключения для подтверждения"
             ),
             reply_markup=templ.back_kb(calls.ExcludedCompleteDealsPagination(page=last_page).pack())
         )
@@ -169,6 +169,6 @@ async def handler_waiting_for_new_excluded_complete_deals_keyphrases_file(messag
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_complete_excluded_float_text(e), 
+            text=templ.new_complete_excluded_float_text(e), 
             reply_markup=templ.back_kb(calls.ExcludedCompleteDealsPagination(page=last_page).pack())
         )

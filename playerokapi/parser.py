@@ -645,6 +645,7 @@ def item(data: dict) -> "Item":
         obtaining_type=game_category_obtaining_type(data.get("obtainingType")),
         price=data.get("price"),
         raw_price=data.get("rawPrice"),
+        priority=PriorityTypes.__members__.get(data.get("priority")),
         priority_position=data.get("priorityPosition"),
         attachments=[file(att) for att in (data.get("attachments") or [])],
         attributes=data.get("attributes"),
@@ -849,6 +850,16 @@ def review_list(data: dict) -> "ReviewList":
     )
 
 
+def item_deal_props(data: dict) -> "ItemDealProps":
+    from .types import ItemDealProps
+    if not data:
+        return None
+    
+    return ItemDealProps(
+        auto_confirm_period=data.get("autoConfirmPeriod")
+    )
+
+
 def item_deal(data: dict) -> "ItemDeal":
     from .types import ItemDeal
     if not data:
@@ -864,7 +875,7 @@ def item_deal(data: dict) -> "ItemDeal":
         has_problem=data.get("hasProblem"),
         report_problem_enabled=data.get("reportProblemEnabled"),
         completed_user=user_profile(data.get("completedBy")),
-        props=data.get("props"),
+        props=item_deal_props(data.get("props")),
         previous_status=data.get("prevStatus"),
         completed_at=data.get("completedAt"),
         created_at=data.get("createdAt"),
@@ -943,14 +954,14 @@ def chat_message(data: dict) -> "ChatMessage":
         is_read=data.get("isRead"),
         is_suspicious=data.get("isSuspicious"),
         is_bulk_messaging=data.get("isBulkMessaging"),
-        file=file(data.get("file")),
+        images=[file(img) for img in (data.get("images") or [])],
         game=game(data.get("game")),
         user=user_profile(data.get("user")),
         deal=item_deal(data.get("deal")),
         item=item(data.get("item")),
         transaction=transaction(data.get("transaction")),
         moderator=moderator(data.get("moderator")),
-        event=event(data.get("event")),
+        event=ChatMessageEvents.__members__.get(data.get("event")),
         event_by_user=user_profile(data.get("eventByUser")),
         event_to_user=user_profile(data.get("eventToUser")),
         is_auto_response=data.get("isAutoResponse"),
@@ -979,5 +990,46 @@ def chat_message_list(data: dict) -> "ChatMessageList":
     return ChatMessageList(
         messages=[chat_message(edge.get("node")) for edge in (data.get("edges") or [])],
         page_info=chat_message_page_info(data.get("pageInfo")),
+        total_count=data.get("totalCount"),
+    )
+
+
+def message_template(data: dict) -> "MessageTemplate":
+    from .types import MessageTemplate
+    if not data:
+        return None
+    
+    return MessageTemplate(
+        id=data.get("id"),
+        type=MessageTemplateTypes.__members__.get(data.get("type")),
+        title=data.get("title"),
+        text=data.get("text"),
+        sequence=data.get("sequence"),
+        created_at=data.get("createdAt"),
+        group=data.get("group")
+    )
+
+
+def message_template_page_info(data: dict) -> "MessageTemplatePageInfo":
+    from .types import MessageTemplatePageInfo
+    if not data:
+        return None
+
+    return MessageTemplatePageInfo(
+        start_cursor=data.get("startCursor"),
+        end_cursor=data.get("endCursor"),
+        has_previous_page=data.get("hasPreviousPage"),
+        has_next_page=data.get("hasNextPage"),
+    )
+
+
+def message_template_list(data: dict) -> "MessageTemplateList":
+    from .types import MessageTemplateList
+    if not data:
+        return None
+    
+    return MessageTemplateList(
+        message_templates=[message_template(edge.get("node")) for edge in (data.get("edges") or [])],
+        page_info=message_template_page_info(data.get("pageInfo")),
         total_count=data.get("totalCount"),
     )

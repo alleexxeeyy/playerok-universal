@@ -3,10 +3,28 @@ from aiogram.fsm.state import State, StatesGroup
 
 class SystemStates(StatesGroup):
     waiting_for_password = State()
+    waiting_for_current_password = State()
+    waiting_for_new_password = State()
 
 
 class ActionsStates(StatesGroup):
-    waiting_for_message_content = State()
+    waiting_for_chats_search_value = State()
+    waiting_for_fast_answer_message = State()
+    waiting_for_chat_answer_message = State()
+
+    waiting_for_fast_problem_description = State()
+    waiting_for_deal_problem_description = State()
+
+    waiting_for_items_game_name = State()
+
+    waiting_for_trans_min_value = State()
+    waiting_for_trans_max_value = State()
+    waiting_for_trans_from_date = State()
+    waiting_for_trans_to_date = State()
+
+    waiting_for_reviews_game_name = State()
+    waiting_for_reviews_min_item_price = State()
+    waiting_for_reviews_max_item_price = State()
 
 
 class SettingsStates(StatesGroup):
@@ -22,10 +40,13 @@ class SettingsStates(StatesGroup):
     waiting_for_sbp_bank_phone_number = State()
     waiting_for_usdt_address = State()
 
-    waiting_for_tg_logging_chat_id = State()
+    waiting_for_notifications_chat_id = State()
     waiting_for_watermark_value = State()
 
     waiting_for_logs_max_file_size = State()
+
+    waiting_for_new_fast_reply_text = State()
+    waiting_for_fast_reply_text = State()
 
 
 class MessagesStates(StatesGroup):

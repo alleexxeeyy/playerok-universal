@@ -39,7 +39,20 @@ from tgbot.telegrambot import (
 from tgbot.templates import (
     log_text, 
     log_new_mess_kb, 
-    log_new_deal_kb
+    log_new_deal_kb,
+    log_new_problem_kb,
+    log_item_kb,
+    log_deal_kb,
+    log_transaction_kb,
+    destroy_kb
+)
+
+from .msg_types import (
+    msg_account,
+    msg_user_from_chat,
+    msg_item,
+    msg_deal,
+    msg_chat
 )
 
 
@@ -69,7 +82,6 @@ class PlayerokBot:
         self.initialized_users = data.get("initialized_users")
         self.saved_items = data.get("saved_items")
         self.cached_orders = data.get("cached_orders")
-        self.latest_events_times = data.get("latest_events_times")
 
         self.account = self.playerok_account = Account(
             cookies=self.config["playerok"]["api"]["cookies"],
@@ -116,34 +128,54 @@ class PlayerokBot:
                 shutdown()
         except Exception as e:
             logger.error(f"{Fore.LIGHTRED_EX}Ошибка при проверке на блокировку: {Fore.WHITE}{e}")
-    
-    def msg(self, message_name: str, messages_config_name: str = "messages", 
-            messages_data: dict = DATA, **kwargs) -> str | None:
+
+    def _format_msg_text(self, text: str, **kwargs):
+
         class SafeDict(dict):
             def __missing__(self, key):
+                if "." in key:
+                    parts = key.split(".")
+                    obj = self.get(parts[0])
+                    if obj is None:
+                        return "{" + key + "}"
+                    try:
+                        for part in parts[1:]:
+                            obj = getattr(obj, part) if hasattr(obj, part) else obj[part]
+                        return obj
+                    except (AttributeError, KeyError, TypeError):
+                        return "{" + key + "}"
                 return "{" + key + "}"
+            
+        return text.format_map(SafeDict(**kwargs))
+
+    def msg(self, message_name: str, messages_config_name: str = "messages", 
+            messages_data: dict = DATA, **kwargs) -> str | None:
+        kwargs["account"] = msg_account(self.account.profile)
 
         messages = sett.get(messages_config_name, messages_data) or {}
         mess = messages.get(message_name, {})
         if not mess.get("enabled"):
             return None
+        
         message_lines: list[str] = mess.get("text", [])
         if not message_lines:
             return f"Сообщение {message_name} пустое"
+        
         try:
-            msg = "\n".join([line.format_map(SafeDict(**kwargs)) for line in message_lines])
+            msg = self._format_msg_text("\n".join(message_lines), **kwargs)
             return msg
         except:
             pass
+        
         return f"Не удалось получить сообщение {message_name}"
         
-    def _do_call_event(self, latest_event_time, event_interval):
-        if not latest_event_time:
+    def _do_call_event(self, last_time, interval):
+        if not last_time:
             return True
         
         if datetime.now() >= (
-            datetime.fromisoformat(latest_event_time) 
-            + timedelta(seconds=event_interval)
+            datetime.fromisoformat(last_time) 
+            + timedelta(seconds=interval)
         ):
             return True
         
@@ -162,7 +194,7 @@ class PlayerokBot:
         
         for _ in range(max_attempts):
             try:
-                read_chat_enabled = self.config["playerok"]["read_chat"]["enabled"]
+                read_chat_enabled = self.config["playerok"]["read_chat"]
                 watermark_enabled = self.config["playerok"]["watermark"]["enabled"]
                 watermark = self.config["playerok"]["watermark"]["value"]
                 
@@ -252,14 +284,14 @@ class PlayerokBot:
 
     def get_my_items(
         self, 
-        count: int = -1, 
+        statuses: list[ItemStatuses] | None = None,
         game_id: str | None = None, 
         category_id: str | None = None,
-        statuses: list[ItemStatuses] | None = None
+        count: int = -1
     ) -> list[ItemProfile]:
         """
-        Получает все предметы аккаунта и сохраняет их.
-        Берёт из сохранённых предметы, которые не удалось получить
+        Получает все товары аккаунта и сохраняет их.
+        Берёт из сохранённых товары, которые не удалось получить
         """
         
         my_items: list[ItemProfile] = []
@@ -303,6 +335,12 @@ class PlayerokBot:
                 raise
             
         return my_items
+
+    def log_to_tg(self, text, kb=None):
+        asyncio.run_coroutine_threadsafe(
+            get_telegram_bot().log_event(text=text, kb=kb), 
+            get_telegram_bot_loop()
+        )
 
 
     def bump_item(self, item: ItemProfile | MyItem):
@@ -351,21 +389,51 @@ class PlayerokBot:
                     f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. "
                     f"{Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1"
                 )
+
+                if (
+                    self.config["playerok"]["notifications"]["enabled"]
+                    and self.config["playerok"]["notifications"]["events"]["item_bumped"]
+                ):
+                    self.log_to_tg(
+                        log_text(f'⬆️ Товар <a href="https://playerok.com/products/{item.slug}">«{item.name}»</a> поднят. Позиция: {item.sequence} → 1'),
+                        log_item_kb(item.id)
+                    )
+
+                return True
         except Exception as e:
-            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предмета «{name_frmtd}»: {Fore.WHITE}{e}")
+            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии товара «{name_frmtd}»: {Fore.WHITE}{e}")
+            if (
+                self.config["playerok"]["notifications"]["enabled"]
+                and self.config["playerok"]["notifications"]["events"]["item_bumped"]
+            ):
+                self.log_to_tg(
+                    log_text(
+                        f'❌ Ошибка при поднятии товара <a href="https://playerok.com/products/{item.slug}">«{item.name}»</a>',
+                        f"<blockquote>{e}</blockquote>"
+                    ),
+                    log_item_kb(item.id)
+                )
+            return False
 
     def bump_items(self): 
         try:
-            self.latest_events_times["auto_bump_items"] = datetime.now().isoformat()
-            data.set("latest_events_times", self.latest_events_times)
+            self.config["playerok"]["auto_bump_items"]["last_time"] = datetime.now().isoformat()
+            sett.set("config", self.config)
 
             items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
             up_items = [it for it in items if it.priority != PriorityTypes.DEFAULT]
             
+            total = len(up_items)
+            cnt = 0
+            
             for item in up_items:
-                self.bump_item(item)
+                if self.bump_item(item):
+                    cnt += 1
+
+            return True, total, cnt, None
         except Exception as e:
-            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии предметов: {Fore.WHITE}{e}")
+            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии товаров: {Fore.WHITE}{e}")
+            return False, 0, 0, e
 
     def restore_item(self, item: Item | MyItem | ItemProfile):
         try:
@@ -410,12 +478,33 @@ class PlayerokBot:
                 time.sleep(1)
                 new_item = self.account.publish_item(item.id, pr_status.id)
                 
-                if new_item.status in (ItemStatuses.PENDING_APPROVAL, ItemStatuses.APPROVED):
-                    logger.info(f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}товар восстановлен")
-                else:
-                    logger.error(f"{Fore.LIGHTRED_EX}Не удалось восстановить предмет «{name_frmtd}». Его текущий статус: {Fore.WHITE}{new_item.status.name}")
+                logger.info(
+                    f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» "
+                    f"{Fore.WHITE}— {Fore.YELLOW}товар восстановлен"
+                )
+                if (
+                    self.config["playerok"]["notifications"]["enabled"]
+                    and self.config["playerok"]["notifications"]["events"]["item_restored"]
+                ):
+                    self.log_to_tg(
+                        log_text(f'♻️ Товар <a href="https://playerok.com/products/{new_item.slug}">«{item.name}»</a> восстановлен'),
+                        log_item_kb(item.id)
+                    )
+                return True
         except Exception as e:
-            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении предмета «{name_frmtd}»: {Fore.WHITE}{e}")
+            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении товара «{name_frmtd}»: {Fore.WHITE}{e}")
+            if (
+                self.config["playerok"]["notifications"]["enabled"]
+                and self.config["playerok"]["notifications"]["events"]["item_restored"]
+            ):
+                self.log_to_tg(
+                    log_text(
+                        f'❌ Ошибка при восстановлении товара <a href="https://playerok.com/products/{item.slug}">«{item.name}»</a>',
+                        f"<blockquote>{e}</blockquote>"
+                    ),
+                    log_item_kb(item.id)
+                )
+            return False
             
     def restore_expired_items(self):
         try:
@@ -430,12 +519,12 @@ class PlayerokBot:
                 time.sleep(0.5)
                 self.restore_item(item)
         except Exception as e:
-            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении истёкших предметов: {Fore.WHITE}{e}")
+            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при восстановлении истёкших товаров: {Fore.WHITE}{e}")
 
     def request_withdrawal(self) -> bool:
         try:
-            self.latest_events_times["auto_withdrawal"] = datetime.now().isoformat()
-            data.set("latest_events_times", self.latest_events_times)
+            self.config["playerok"]["auto_withdrawal"]["last_time"] = datetime.now().isoformat()
+            sett.set("config", self.config)
             
             balance = 0
             self.account = self.account.get()
@@ -452,18 +541,42 @@ class PlayerokBot:
                 account = self.config["playerok"]["auto_withdrawal"]["sbp_phone_number"]
                 sbp_bank_member_id = self.config["playerok"]["auto_withdrawal"]["sbp_bank_id"]
             
-            self.account.request_withdrawal(
+            trans = self.account.request_withdrawal(
                 provider=provider,
                 account=account,
                 value=balance,
                 sbp_bank_member_id=sbp_bank_member_id
             )
             
-            logger.info(f"{Fore.LIGHTWHITE_EX}{balance or '?'}₽ {Fore.WHITE}— {Fore.YELLOW}транзакция на вывод создана")
-            return True
+            logger.info(
+                f"{Fore.LIGHTWHITE_EX}{balance or '?'}₽ {Fore.WHITE}"
+                f"— {Fore.YELLOW}транзакция на вывод создана"
+            )
+
+            if (
+                self.config["playerok"]["notifications"]["enabled"]
+                and self.config["playerok"]["notifications"]["events"]["withdrawal_requested"]
+            ):
+                self.log_to_tg(
+                    log_text(f'💳 Транзакция на вывод {balance}₽ успешно создана'),
+                    log_transaction_kb(trans.id)
+                )
+
+            return True, balance, None
         except Exception as e:
             logger.error(f"{Fore.LIGHTRED_EX}Ошибка при создании транзакции на вывод {balance}₽: {Fore.WHITE}{e}")
-        return False
+            if (
+                self.config["playerok"]["notifications"]["enabled"]
+                and self.config["playerok"]["notifications"]["events"]["withdrawal_requested"]
+            ):
+                self.log_to_tg(
+                    log_text(
+                        f'❌ Ошибка при создании транзакции на вывод {balance}₽',
+                        f"<blockquote>{e}</blockquote>"
+                    ),
+                    destroy_kb()
+                )
+            return False, 0, e
 
 
     def log_new_message(self, message: ChatMessage, chat: Chat):
@@ -482,8 +595,10 @@ class PlayerokBot:
         longest_line_len = 0
         text = ""
         
-        if message.text is not None: text = message.text
-        elif message.file is not None: text = f"{Fore.LIGHTMAGENTA_EX}Изображение {Fore.WHITE}({message.file.url})"
+        if message.text: 
+            text = message.text
+        if message.images: 
+            text = f"{Fore.LIGHTMAGENTA_EX}*Изображения ({len(message.images)})*" + ((f" {Fore.WHITE}" + text) if text else "")
         
         for raw_line in text.split("\n"):
             if not raw_line.strip():
@@ -560,8 +675,6 @@ class PlayerokBot:
                     data.set("saved_items", self.saved_items)
                 if data.get("cached_orders") != self.cached_orders: 
                     data.set("cached_orders", self.cached_orders)
-                if data.get("latest_events_times") != self.latest_events_times: 
-                    data.set("latest_events_times", self.latest_events_times)
                 
                 time.sleep(3)
 
@@ -586,7 +699,7 @@ class PlayerokBot:
                 if (
                     self.config["playerok"]["auto_bump_items"]["enabled"]
                     and self._do_call_event(
-                        self.latest_events_times["auto_bump_items"],
+                        self.config["playerok"]["auto_bump_items"]["last_time"],
                         self.config["playerok"]["auto_bump_items"]["interval"]
                     )
                 ):
@@ -598,7 +711,7 @@ class PlayerokBot:
                 if (
                     self.config["playerok"]["auto_withdrawal"]["enabled"]
                     and self._do_call_event(
-                        self.latest_events_times["auto_withdrawal"],
+                        self.config["playerok"]["auto_withdrawal"]["last_time"],
                         self.config["playerok"]["auto_withdrawal"]["interval"]
                     )
                 ):
@@ -623,29 +736,33 @@ class PlayerokBot:
 
         is_support_chat = event.chat.id in (self.account.system_chat_id, self.account.support_chat_id)
         if (
-            self.config["playerok"]["tg_logging"]["enabled"]
-            and (self.config["playerok"]["tg_logging"]["events"]["new_user_message"] 
-            or self.config["playerok"]["tg_logging"]["events"]["new_system_message"])
+            self.config["playerok"]["notifications"]["enabled"]
+            and (self.config["playerok"]["notifications"]["events"]["new_user_message"] 
+            or self.config["playerok"]["notifications"]["events"]["new_system_message"])
         ):
             if (
-                self.config["playerok"]["tg_logging"]["events"]["new_user_message"] 
+                self.config["playerok"]["notifications"]["events"]["new_user_message"] 
                 and not is_support_chat
             ) or (
-                self.config["playerok"]["tg_logging"]["events"]["new_system_message"] 
+                self.config["playerok"]["notifications"]["events"]["new_system_message"] 
                 and is_support_chat
             ): 
-                text = f"<b>{event.message.user.username}:</b> "
-                text += event.message.text or ""
-                text += f'<b><a href="{event.message.file.url}">{event.message.file.filename}</a></b>' if event.message.file else ""
-                asyncio.run_coroutine_threadsafe(
-                    get_telegram_bot().log_event(
-                        text=log_text(
-                            title=f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', 
-                            text=text.strip()
-                        ),
-                        kb=log_new_mess_kb(event.message.user.username)
-                    ), 
-                    get_telegram_bot_loop()
+                text = event.message.text or ""
+                
+                if event.message.images:
+                    imgs = []
+                    for i, file in enumerate(event.message.images, start=1):
+                        imgs.append(f'<a href="{file.url}">*Изображение {i}*</a>')
+                    text = ", ".join(imgs) + ((" " + text) if text else "")
+
+                text = text or f"<i>Без сообщения</i>"
+                
+                self.log_to_tg(
+                    log_text(
+                        f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', 
+                        f"<b>{event.message.user.username}:</b> <blockquote>{text.strip()}</blockquote>"
+                    ),
+                    log_new_mess_kb(event.chat.id)
                 )
 
         if (
@@ -654,21 +771,26 @@ class PlayerokBot:
         ):
             if event.message.user.id not in self.initialized_users:
                 self.initialized_users.append(event.message.user.id)
-        
-            if event.message.text.lower() in ("!команды", "!commands"):
-                self.send_message(event.chat.id, self.msg("cmd_commands"))
             
             elif event.message.text.lower() in ("!продавец", "!seller"):
                 asyncio.run_coroutine_threadsafe(
                     get_telegram_bot().call_seller(event.message.user.username, event.chat.id), 
                     get_telegram_bot_loop()
                 )
-                self.send_message(event.chat.id, self.msg("cmd_seller"))
+                self.send_message(event.chat.id, self.msg(
+                    "cmd_seller", 
+                    user=msg_user_from_chat(event.chat),
+                    chat=msg_chat(event.chat)
+                ))
             
-            elif self.config["playerok"]["custom_commands"]["enabled"]:
-                if event.message.text.lower() in [key.lower() for key in self.custom_commands.keys()]:
-                    msg = "\n".join(self.custom_commands[event.message.text])
-                    self.send_message(event.chat.id, msg)
+            elif event.message.text.lower() in [key.lower() for key in self.custom_commands.keys()]:
+                msg = self._format_msg_text(
+                    "\n".join(self.custom_commands[event.message.text]),
+                    account=msg_account(self.account.profile),
+                    user=msg_user_from_chat(event.chat),
+                    chat=msg_chat(event.chat)
+                )
+                self.send_message(event.chat.id, msg)
 
     async def _on_new_review(self, event: NewReviewEvent):
         if event.deal.user.id == self.account.id:
@@ -677,31 +799,26 @@ class PlayerokBot:
         self.log_new_review(event.deal)
         
         if (
-            self.config["playerok"]["tg_logging"]["enabled"] 
-            and self.config["playerok"]["tg_logging"]["events"]["new_review"]
+            self.config["playerok"]["notifications"]["enabled"] 
+            and self.config["playerok"]["notifications"]["events"]["new_review"]
         ):
-            asyncio.run_coroutine_threadsafe(
-                get_telegram_bot().log_event(
-                    text=log_text(
-                        title=f'💬✨ Новый отзыв по <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', 
-                        text=(
-                            f"<b>Оценка:</b> {'⭐' * event.deal.review.rating}"
-                            f"\n<b>Оставил:</b> {event.deal.review.creator.username}"
-                            f"\n<b>Текст:</b> {event.deal.review.text or '-'}"
-                            f"\n<b>Дата:</b> {datetime.fromisoformat(event.deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}"
-                        )
-                    ),
-                    kb=log_new_mess_kb(event.deal.user.username)
-                ), 
-                get_telegram_bot_loop()
+            text_frmtd = f"<blockquote>{event.deal.review.text}</blockquote>" if event.deal.review.text else "<i>Без текста</i>"
+            self.log_to_tg(
+                log_text(
+                    f'🌟 Новый отзыв в <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', 
+                    (f"<b>👤 Оставил:</b> {event.deal.review.creator.username}"
+                    f"\n<b>✨ Оценка:</b> {'⭐' * event.deal.review.rating}"
+                    f"\n<b>🏷️ Текст:</b> {text_frmtd}")
+                ),
+                log_new_mess_kb(event.chat.id)
             )
 
         self.send_message(event.chat.id, self.msg(
             "new_review", 
-            deal_id=event.deal.id, 
-            deal_item_name=event.deal.item.name, 
-            deal_item_price=event.deal.item.price,
-            review_rating=event.deal.review.rating
+            user=msg_user_from_chat(event.chat),
+            chat=msg_chat(event.chat),
+            deal=msg_deal(event.deal),
+            item=msg_item(event.deal.item)
         ))
 
     async def _on_new_problem(self, event: ItemPaidEvent):
@@ -709,23 +826,45 @@ class PlayerokBot:
             return
 
         self.log_new_problem(event.deal)
+
+        self.send_message(event.chat.id, self.msg(
+            "deal_has_problem", 
+            user=msg_user_from_chat(event.chat),
+            chat=msg_chat(event.chat),
+            deal=msg_deal(event.deal),
+            item=msg_item(event.deal.item)
+        ))
+
         if (
-            self.config["playerok"]["tg_logging"]["enabled"] 
-            and self.config["playerok"]["tg_logging"]["events"]["new_problem"]
+            self.config["playerok"]["notifications"]["enabled"] 
+            and self.config["playerok"]["notifications"]["events"]["new_problem"]
         ):
-            asyncio.run_coroutine_threadsafe(
-                get_telegram_bot().log_event(
-                    text=log_text(
-                        title=f'🤬 Новая жалоба в <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', 
-                        text=(
-                            f"<b>Покупатель:</b> {event.deal.user.username}"
-                            f"\n<b>Предмет:</b> {event.deal.item.name}"
-                        )
-                    ),
-                    kb=log_new_mess_kb(event.deal.user.username)
-                ), 
-                get_telegram_bot_loop()
+            self.log_to_tg(
+                log_text(
+                    f'🤬 Новая проблема в <a href="https://playerok.com/deal/{event.deal.id}">сделке</a>', 
+                    (f"<b>👤 Покупатель:</b> {event.deal.user.username}"
+                    f"\n<b>🛍️ Товар:</b> {event.deal.item.name}")
+                ),
+                log_new_problem_kb(event.chat.id)
             )
+
+    async def _on_deal_confirmed(self, event: DealConfirmedEvent):
+        self.send_message(event.chat.id, self.msg(
+            "deal_confirmed", 
+            user=msg_user_from_chat(event.chat),
+            chat=msg_chat(event.chat),
+            deal=msg_deal(event.deal),
+            item=msg_item(event.deal.item)
+        ))
+
+    async def _on_deal_rolled_back(self, event: DealRolledBackEvent):
+        self.send_message(event.chat.id, self.msg(
+            "deal_refunded", 
+            user=msg_user_from_chat(event.chat),
+            chat=msg_chat(event.chat),
+            deal=msg_deal(event.deal),
+            item=msg_item(event.deal.item)
+        ))
 
     async def _on_new_deal(self, event: NewDealEvent):
         if event.deal.user.id == self.account.id:
@@ -745,28 +884,25 @@ class PlayerokBot:
         
         self.log_new_deal(event.deal)
         if (
-            self.config["playerok"]["tg_logging"]["enabled"] 
-            and self.config["playerok"]["tg_logging"]["events"]["new_deal"]
+            self.config["playerok"]["notifications"]["enabled"] 
+            and self.config["playerok"]["notifications"]["events"]["new_deal"]
         ):
-            asyncio.run_coroutine_threadsafe(
-                get_telegram_bot().log_event(
-                    text=log_text(
-                        title=f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', 
-                        text=(
-                            f"<b>Покупатель:</b> {event.deal.user.username}"
-                            f"\n<b>Предмет:</b> {(event.deal.item.name or '-')}"
-                            f"\n<b>Сумма:</b> {event.deal.item.price or '?'}₽"
-                        )
-                    ),
-                    kb=log_new_deal_kb(event.deal.user.username, event.deal.id)
-                ), 
-                get_telegram_bot_loop()
+            self.log_to_tg(
+                log_text(
+                    f'📋 Новая <a href="https://playerok.com/deal/{event.deal.id}">сделка</a>', 
+                    (f"<b>👤 Покупатель:</b> {event.deal.user.username}"
+                    f"\n<b>🛍️ Товар:</b> {(event.deal.item.name or '-')}"
+                    f"\n<b>💰 Сумма:</b> {event.deal.item.price or '?'}₽")
+                ),
+                log_new_deal_kb(event.chat.id, event.deal.id)
             )
 
         self.send_message(event.chat.id, self.msg(
             "new_deal", 
-            deal_item_name=(event.deal.item.name or "-"), 
-            deal_item_price=event.deal.item.price
+            user=msg_user_from_chat(event.chat),
+            chat=msg_chat(event.chat),
+            deal=msg_deal(event.deal),
+            item=msg_item(event.deal.item)
         ))
         
         is_support_chat = event.chat.id in (self.account.system_chat_id, self.account.support_chat_id)
@@ -776,43 +912,45 @@ class PlayerokBot:
         ):
             self.send_message(event.chat.id, self.msg(
                 "first_message", 
-                username=event.deal.user.username
+                user=msg_user_from_chat(event.chat),
+                chat=msg_chat(event.chat),
+                deal=msg_deal(event.deal),
+                item=msg_item(event.deal.item)
             ))
             self.initialized_users.append(event.deal.user.id)
                 
-        if self.config["playerok"]["auto_deliveries"]["enabled"]:
-            for i, auto_delivery in enumerate(list(self.auto_deliveries)):
-                for phrase in auto_delivery["keyphrases"]:
-                    if (
-                        phrase.lower() in (event.deal.item.name or "").lower() 
-                        or (event.deal.item.name or "").lower() == phrase.lower()
-                    ):
-                        piece = auto_delivery.get("piece", False)
-                        if piece:
-                            goods =  auto_delivery.get("goods", [])
-                            try: good = goods[0]
-                            except: break
+        for i, auto_delivery in enumerate(list(self.auto_deliveries)):
+            for phrase in auto_delivery["keyphrases"]:
+                if (
+                    phrase.lower() in (event.deal.item.name or "").lower() 
+                    or (event.deal.item.name or "").lower() == phrase.lower()
+                ):
+                    piece = auto_delivery.get("piece", False)
+                    if piece:
+                        goods =  auto_delivery.get("goods", [])
+                        try: good = goods[0]
+                        except: break
 
-                            mess = self.send_message(event.chat.id, good)
+                        mess = self.send_message(event.chat.id, good)
+                        if mess:
+                            logger.info(
+                                f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "
+                                f"{Fore.YELLOW}выдан товар {Fore.LIGHTYELLOW_EX}«{good}»{Fore.YELLOW}. "
+                                f"Остаток: {Fore.LIGHTYELLOW_EX}{len(goods)-1}"
+                            )
+                            self.auto_deliveries[i]["goods"].pop(goods.index(good))
+                            sett.set("auto_deliveries", self.auto_deliveries)
+                    else:
+                        msg = auto_delivery.get("message", "")
+                        if msg:
+                            mess = self.send_message(event.chat.id, "\n".join(msg))
                             if mess:
                                 logger.info(
                                     f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "
-                                    f"{Fore.YELLOW}выдан товар {Fore.LIGHTYELLOW_EX}«{good}»{Fore.YELLOW}. "
-                                    f"Остаток: {Fore.LIGHTYELLOW_EX}{len(goods)-1}"
+                                    f"{Fore.YELLOW}отправлено сообщение авто-выдачи {Fore.LIGHTYELLOW_EX}«{' '.join(msg)}»"
                                 )
-                                self.auto_deliveries[i]["goods"].pop(goods.index(good))
-                                sett.set("auto_deliveries", self.auto_deliveries)
-                        else:
-                            msg = auto_delivery.get("message", "")
-                            if msg:
-                                mess = self.send_message(event.chat.id, "\n".join(msg))
-                                if mess:
-                                    logger.info(
-                                        f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "
-                                        f"{Fore.YELLOW}отправлено сообщение авто-выдачи {Fore.LIGHTYELLOW_EX}«{' '.join(msg)}»"
-                                    )
-                        
-                        break
+                    
+                    break
         
         if self.config["playerok"]["auto_complete_deals"]["enabled"]:
             if not event.deal.item.name:
@@ -873,7 +1011,16 @@ class PlayerokBot:
                 return
             
             self.restore_item(item)
-                      
+
+    async def _on_item_sent(self, event: ItemSentEvent):
+        self.send_message(event.chat.id, self.msg(
+            "deal_sent", 
+            user=msg_user_from_chat(event.chat),
+            chat=msg_chat(event.chat),
+            deal=msg_deal(event.deal),
+            item=msg_item(event.deal.item)
+        ))
+
     async def _on_deal_status_changed(self, event: DealStatusChangedEvent):
         if event.deal.user.id == self.account.id:
             return
@@ -883,66 +1030,25 @@ class PlayerokBot:
         
         status_frmtd = "Неизвестный"
         if event.deal.status is ItemDealStatuses.PAID: 
-            status_frmtd = "Оплачен"
+            status_frmtd = "Оплачено"
         elif event.deal.status is ItemDealStatuses.PENDING: 
-            status_frmtd = "В ожидании отправки"
+            status_frmtd = "В ожидании"
         elif event.deal.status is ItemDealStatuses.SENT: 
-            status_frmtd = "Продавец подтвердил выполнение"
+            status_frmtd = "Товар отправлен"
         elif event.deal.status is ItemDealStatuses.CONFIRMED: 
-            status_frmtd = "Покупатель подтвердил сделку"
+            status_frmtd = "Выполнено"
         elif event.deal.status is ItemDealStatuses.ROLLED_BACK: 
             status_frmtd = "Возврат"
 
         self.log_deal_status_changed(event.deal, status_frmtd)
         if (
-            self.config["playerok"]["tg_logging"]["enabled"] 
-            and self.config["playerok"]["tg_logging"]["events"]["deal_status_changed"]
+            self.config["playerok"]["notifications"]["enabled"] 
+            and self.config["playerok"]["notifications"]["events"]["deal_status_changed"]
         ):
-            asyncio.run_coroutine_threadsafe(
-                get_telegram_bot().log_event(
-                    log_text(
-                        title=f'🔄️📋 Статус <a href="https://playerok.com/deal/{event.deal.id}/">сделки</a> изменился', 
-                        text=f"<b>Новый статус:</b> {status_frmtd}"
-                    )
-                ), 
-                get_telegram_bot_loop()
+            self.log_to_tg(
+                log_text(f'🔃 Статус <a href="https://playerok.com/deal/{event.deal.id}/">сделки</a> изменился на «{status_frmtd}»'),
+                log_deal_kb(event.deal.id)
             )
-
-        if event.deal.status is ItemDealStatuses.PENDING:
-            self.send_message(event.chat.id, self.msg(
-                "deal_pending", 
-                deal_id=event.deal.id, 
-                deal_item_name=event.deal.item.name, 
-                deal_item_price=event.deal.item.price
-            ))
-        elif event.deal.status is ItemDealStatuses.SENT:
-            self.send_message(event.chat.id, self.msg(
-                "deal_sent", 
-                deal_id=event.deal.id, 
-                deal_item_name=event.deal.item.name, 
-                deal_item_price=event.deal.item.price
-            ))
-        elif event.deal.status is ItemDealStatuses.CONFIRMED:
-            self.send_message(event.chat.id, self.msg(
-                "deal_confirmed", 
-                deal_id=event.deal.id, 
-                deal_item_name=event.deal.item.name, 
-                deal_item_price=event.deal.item.price
-            ))
-        elif event.deal.status is ItemDealStatuses.ROLLED_BACK:
-            self.send_message(event.chat.id, self.msg(
-                "deal_refunded", 
-                deal_id=event.deal.id, 
-                deal_item_name=event.deal.item.name, 
-                deal_item_price=event.deal.item.price
-            ))
-        elif event.deal.status is ItemDealStatuses.HAS_PROBLEM:
-            self.send_message(event.chat.id, self.msg(
-                "deal_has_problem", 
-                deal_id=event.deal.id, 
-                deal_item_name=event.deal.item.name, 
-                deal_item_price=event.deal.item.price
-            ))
 
 
     async def run_bot(self):
@@ -992,9 +1098,12 @@ class PlayerokBot:
         add_bot_event_handler("ON_PLAYEROK_BOT_INIT", PlayerokBot._on_playerok_bot_init, 0)
         add_playerok_event_handler(EventTypes.NEW_MESSAGE, PlayerokBot._on_new_message, 0)
         add_playerok_event_handler(EventTypes.NEW_REVIEW, PlayerokBot._on_new_review, 0)
-        add_playerok_event_handler(EventTypes.DEAL_HAS_PROBLEM, PlayerokBot._on_new_problem, 0)
         add_playerok_event_handler(EventTypes.NEW_DEAL, PlayerokBot._on_new_deal, 0)
         add_playerok_event_handler(EventTypes.ITEM_PAID, PlayerokBot._on_item_paid, 0)
+        add_playerok_event_handler(EventTypes.ITEM_SENT, PlayerokBot._on_item_sent, 0)
+        add_playerok_event_handler(EventTypes.DEAL_HAS_PROBLEM, PlayerokBot._on_new_problem, 0)
+        add_playerok_event_handler(EventTypes.DEAL_CONFIRMED, PlayerokBot._on_deal_confirmed, 0)
+        add_playerok_event_handler(EventTypes.DEAL_ROLLED_BACK, PlayerokBot._on_deal_rolled_back, 0)
         add_playerok_event_handler(EventTypes.DEAL_STATUS_CHANGED, PlayerokBot._on_deal_status_changed, 0)
 
         async def listener_loop():

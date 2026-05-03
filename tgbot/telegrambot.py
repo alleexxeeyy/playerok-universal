@@ -82,6 +82,8 @@ class TelegramBot:
     async def _set_description(self):
         try:
             description = textwrap.dedent(f"""
+                💙 𝐏𝐋𝐀𝐘𝐄𝐑𝐎𝐊 𝐔𝐍𝐈𝐕𝐄𝐑𝐒𝐀𝐋 💙
+                                          
                 🟢 Вечный онлайн
                 ♻️ Авто-восстановление товаров
                 ⬆️ Авто-поднятие товаров
@@ -91,14 +93,15 @@ class TelegramBot:
                 💬 Вызов продавца
                 👋 Приветственное сообщение
                 📊 Подробная статистика
-                📲 Уведомления в Telegram
+                📲 Управление в Telegram
+                🔔 Уведомления о событиях
                 🖌️ Кастомизация
                 🔌 Плагины
                                         
                 ⬇️ Скачать бота: https://github.com/alleexxeeyy/playerok-universal
                 
-                📢 Канал: @alexeyproduction
-                🤖 Бот: @alexey_production_bot
+                📢 Новости: @alexeyproduction
+                🤖 Плагины: @alexey_production_bot
                 🧑‍💻 Автор: @alleexxeeyy
             """)
             await self.bot.set_my_description(description=description)
@@ -143,6 +146,7 @@ class TelegramBot:
             await self.notify_bot_restarted()
 
         while True:
+            await self.bot.delete_webhook(drop_pending_updates=True)
             try: await self.dp.start_polling(self.bot, skip_updates=True, handle_signals=False)
             except: pass
 
@@ -156,19 +160,19 @@ class TelegramBot:
                 parse_mode="HTML"
             )
 
-    async def call_seller(self, calling_name: str, chat_id: int | str):
+    async def call_seller(self, username: str, chat_id: int | str):
         config = sett.get("config")
         for user_id in config["telegram"]["bot"]["signed_users"]:
             await self.bot.send_message(
                 chat_id=user_id, 
-                text=templ.call_seller_text(calling_name, f"https://playerok.com/chats/{chat_id}"),
-                reply_markup=templ.destroy_kb(),
+                text=templ.call_seller_text(username, chat_id),
+                reply_markup=templ.call_seller_kb(chat_id),
                 parse_mode="HTML"
             )
         
     async def log_event(self, text: str, kb: InlineKeyboardMarkup | None = None):
         config = sett.get("config")
-        chat_id = config["playerok"]["tg_logging"]["chat_id"]
+        chat_id = config["playerok"]["notifications"]["chat_id"]
         if not chat_id:
             for user_id in config["telegram"]["bot"]["signed_users"]:
                 await self.bot.send_message(

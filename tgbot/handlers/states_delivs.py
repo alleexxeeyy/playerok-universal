@@ -26,8 +26,8 @@ async def handler_waiting_for_auto_deliveries_page(message: types.Message, state
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_delivs_float_text(f"📃 Введите номер страницы для перехода:"),
-            reply_markup=templ.settings_delivs_kb(page)
+            text=templ.delivs_float_text(f"📃 Введите номер страницы для перехода:"),
+            reply_markup=templ.delivs_kb(page)
         )
     except Exception as e:
         data = await state.get_data()
@@ -35,7 +35,7 @@ async def handler_waiting_for_auto_deliveries_page(message: types.Message, state
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_delivs_float_text(e), 
+            text=templ.delivs_float_text(e), 
             reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
         )
 
@@ -59,14 +59,14 @@ async def handler_waiting_for_new_auto_delivery_keyphrases(message: types.Messag
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_float_text(f"🛒 Выберите <b>тип авто-выдачи</b>:"),
-            reply_markup=templ.settings_new_deliv_piece_kb(last_page)
+            text=templ.new_deliv_float_text(f"🛒 Выберите <b>тип авто-выдачи</b>:"),
+            reply_markup=templ.new_deliv_piece_kb(last_page)
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_float_text(e), 
+            text=templ.new_deliv_float_text(e), 
             reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
         )
         
@@ -91,9 +91,9 @@ async def handler_waiting_for_new_auto_delivery_message(message: types.Message, 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_float_text(
+            text=templ.new_deliv_float_text(
                 f"✔️ Подтвердите <b>добавление авто-выдачи</b>:"
-                f"\n<b>· Ключевые фразы:</b> <code>{phrases}</code>"
+                f"\n\n<b>· Ключевые фразы:</b> <code>{phrases}</code>"
                 f"\n<b>· Тип выдачи:</b> Сообщением"
                 f"\n<b>· Сообщение:</b> {msg}"
             ),
@@ -106,7 +106,7 @@ async def handler_waiting_for_new_auto_delivery_message(message: types.Message, 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_float_text(e), 
+            text=templ.new_deliv_float_text(e), 
             reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
         )
         
@@ -147,9 +147,9 @@ async def handler_waiting_for_new_auto_delivery_goods(message: types.Message, st
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_float_text(
+            text=templ.new_deliv_float_text(
                 f"✔️ Подтвердите <b>добавление авто-выдачи</b>:"
-                f"\n<b>· Ключевые фразы:</b> <code>{phrases}</code>"
+                f"\n\n<b>· Ключевые фразы:</b> <code>{phrases}</code>"
                 f"\n<b>· Тип выдачи:</b> Поштучно"
                 f"\n<b>· Товары:</b> {len(goods)} шт."
             ),
@@ -162,7 +162,7 @@ async def handler_waiting_for_new_auto_delivery_goods(message: types.Message, st
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_float_text(e), 
+            text=templ.new_deliv_float_text(e), 
             reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
         )
 
@@ -188,14 +188,14 @@ async def handler_waiting_for_auto_delivery_keyphrases(message: types.Message, s
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_deliv_page_float_text(f"✅ <b>Ключевые фразы</b> были успешно изменены на: <code>{keyphrases_str}</code>"),
+            text=templ.deliv_page_float_text(f"✅ <b>Ключевые фразы</b> были успешно изменены на: <code>{keyphrases_str}</code>"),
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=index).pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_deliv_page_float_text(e), 
+            text=templ.deliv_page_float_text(e), 
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=index).pack())
         )
 
@@ -218,14 +218,14 @@ async def handler_waiting_for_auto_delivery_message(message: types.Message, stat
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_deliv_page_float_text(f"✅ <b>Сообщение авто-выдачи</b> было успешно изменено на: <blockquote>{message.text}</blockquote>"),
+            text=templ.deliv_page_float_text(f"✅ <b>Сообщение авто-выдачи</b> было успешно изменено на: <blockquote>{message.text}</blockquote>"),
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=index).pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_deliv_page_float_text(e), 
+            text=templ.deliv_page_float_text(e), 
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=index).pack())
         )
 
@@ -266,7 +266,7 @@ async def handler_waiting_for_auto_delivery_goods_add(message: types.Message, st
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_goods_float_text(
+            text=templ.new_deliv_goods_float_text(
                 f"✅ <b>{len(goods)} товаров</b> успешно добавлено в авто-выдачу"
             ),
             reply_markup=templ.back_kb(calls.DelivGoodsPagination(page=last_page).pack())
@@ -275,6 +275,6 @@ async def handler_waiting_for_auto_delivery_goods_add(message: types.Message, st
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_deliv_goods_float_text(e), 
+            text=templ.new_deliv_goods_float_text(e), 
             reply_markup=templ.back_kb(calls.DelivGoodsPagination(page=last_page).pack())
         )

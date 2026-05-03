@@ -32,14 +32,14 @@ async def handler_waiting_for_new_included_restore_item_keyphrases(message: type
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_restore_included_float_text(f"✅ Предмет с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно включён в восстановление"),
+            text=templ.new_restore_included_float_text(f"✅ Товар с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно включён в восстановление"),
             reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_restore_included_float_text(e), 
+            text=templ.new_restore_included_float_text(e), 
             reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
         )
 
@@ -77,14 +77,14 @@ async def handler_waiting_for_new_included_restore_items_keyphrases_file(message
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_restore_included_float_text(f"✅ Успешно включено <b>{len(keyphrases_list)}</b> предметов из файла в восстановление"),
+            text=templ.new_restore_included_float_text(f"✅ Успешно включено <b>{len(keyphrases_list)}</b> товаров из файла в восстановление"),
             reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_restore_included_float_text(e), 
+            text=templ.new_restore_included_float_text(e), 
             reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
         )
 
@@ -109,14 +109,14 @@ async def handler_waiting_for_new_excluded_restore_item_keyphrases(message: type
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_restore_excluded_float_text(f"✅ Предмет с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно добавлен в исключения для восстановления"),
+            text=templ.new_restore_excluded_float_text(f"✅ Товар с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно добавлен в исключения для восстановления"),
             reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_restore_excluded_float_text(e), 
+            text=templ.new_restore_excluded_float_text(e), 
             reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
         )
 
@@ -154,13 +154,13 @@ async def handler_waiting_for_new_excluded_restore_items_keyphrases_file(message
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_restore_excluded_float_text(f"✅ Успешно добавлено <b>{len(keyphrases_list)}</b> предметов из файла в исключения для восстановления"),
+            text=templ.new_restore_excluded_float_text(f"✅ Успешно добавлено <b>{len(keyphrases_list)}</b> товаров из файла в исключения для восстановления"),
             reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_restore_excluded_float_text(e), 
+            text=templ.new_restore_excluded_float_text(e), 
             reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
         )

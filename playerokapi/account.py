@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import *
 from logging import getLogger
 from typing import Literal
+from datetime import datetime
 import json
 import time
 import os
@@ -276,12 +277,12 @@ class Account:
         if any(sig in resp.text for sig in sigs):
             raise BotCheckDetectedException()
 
-        cookie_headers = {
-            v.split("=")[0]: v.split("=")[1].split(";")[0] 
-            for k, v in resp.headers.multi_items() if k.lower() == "set-cookie"
-        }
-        for k, v in cookie_headers.items():
-            self.cookies[k] = v
+        # cookie_headers = {
+        #     v.split("=")[0]: v.split("=")[1].split(";")[0] 
+        #     for k, v in resp.headers.multi_items() if k.lower() == "set-cookie"
+        # }
+        # for k, v in cookie_headers.items():
+        #     self.cookies[k] = v
         
         json = {}
         try: json = resp.json()
@@ -302,6 +303,7 @@ class Account:
         :return: Объект аккаунта с обновлёнными данными.
         :rtype: `playerokapi.account.Account`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "viewer",
@@ -372,6 +374,7 @@ class Account:
         :return: Объект профиля пользователя.
         :rtype: `playerokapi.types.UserProfile`
         """
+
         if not any((id, username)):
             raise TypeError("Не был передан ни один из обязательных аргументов: id, username")
         
@@ -393,30 +396,34 @@ class Account:
 
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         data: dict = r["data"]["user"]
-        if data.get("__typename") == "UserFragment": profile = data
-        elif data.get("__typename") == "User": profile = data.get("profile")
-        else: profile = None
+        
+        if data.get("__typename") == "UserFragment": 
+            profile = data
+        elif data.get("__typename") == "User": 
+            profile = data.get("profile")
+        else: 
+            profile = None
         
         return user_profile(profile)
 
     def get_deals(
         self, 
-        count: int = 24, 
         statuses: list[ItemDealStatuses] | None = None, 
         direction: ItemDealDirections | None = None, 
+        count: int = 24, 
         after_cursor: str = None
     ) -> types.ItemDealList:
         """
         Получает сделки аккаунта.
 
-        :param count: Кол-во сделок, которые нужно получить (не более 24 за один запрос).
-        :type count: `int`
-
-        :param statuses: Статусы сделок, которые нужно получать, _опционально_.
+        :param statuses: Статусы, сделки которых нужно получать, _опционально_.
         :type statuses: `list[playerokapi.enums.ItemDealsStatuses]` or `None`
 
         :param direction: Направление сделок, _опционально_.
         :type direction: `playerokapi.enums.ItemDealsDirections` or `None`
+
+        :param count: Кол-во сделок, которые нужно получить (не более 24 за один запрос).
+        :type count: `int`
 
         :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
         :type after_cursor: `str`
@@ -424,6 +431,7 @@ class Account:
         :return: Страница сделок.
         :rtype: `playerokapi.types.ItemDealList`
         """
+
         if not self._is_initiated:
             raise NotInitiatedError()
 
@@ -469,6 +477,7 @@ class Account:
         :return: Объект сделки.
         :rtype: `playerokapi.types.ItemDeal`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "deal",
@@ -506,6 +515,7 @@ class Account:
         :return: Объект обновлённой сделки.
         :rtype: `playerokapi.types.ItemDeal`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "updateDeal",
@@ -523,18 +533,22 @@ class Account:
 
     def get_games(
         self, 
-        count: int = 24, 
+        name: str | None = None, 
         type: GameTypes | None = None, 
+        count: int = 24, 
         after_cursor: str = None
     ) -> types.GameList:
         """
         Получает все игры или/и приложения.
 
-        :param count: Кол-во игр, которые нужно получить (не более 24 за один запрос).
-        :type count: `int`
+        :param name: Название игры (необязательно полное), _опционально_.
+        :type name: `name` or `None`
 
         :param type: Тип игр, которые нужно получать. По умолчанию не указано, значит будут все сразу, _опционально_.
         :type type: `playerokapi.enums.GameTypes` or `None`
+
+        :param count: Кол-во игр, которые нужно получить (не более 24 за один запрос).
+        :type count: `int`
 
         :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
         :type after_cursor: `str`
@@ -542,6 +556,7 @@ class Account:
         :return: Страница игр.
         :rtype: `playerokapi.types.GameList`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "games",
@@ -551,6 +566,7 @@ class Account:
                     "after": after_cursor
                 },
                 "filter": {
+                    "name": name,
                     "type": type.name if type else None
                 }
             }),
@@ -583,6 +599,7 @@ class Account:
         :return: Объект игры.
         :rtype: `playerokapi.types.Game`
         """
+
         if not any((id, slug)):
             raise TypeError("Не был передан ни один из обязательных аргументов: id, slug")
         
@@ -626,6 +643,7 @@ class Account:
         :return: Объект категории игры.
         :rtype: `playerokapi.types.GameCategory`
         """
+
         if not id and not all((game_id, slug)):
             if not id and (game_id or slug):
                 raise TypeError("Связка аргументов game_id, slug была передана не полностью")
@@ -675,6 +693,7 @@ class Account:
         :return: Страница соглашений.
         :rtype: `playerokapi.types.GameCategoryAgreementList`
         """
+
         if not user_id and not self._is_initiated:
             raise NotInitiatedError()
 
@@ -723,6 +742,7 @@ class Account:
         :return: Страница соглашений.
         :rtype: `playerokapi.types.GameCategoryAgreementList`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "gameCategoryObtainingTypes",
@@ -775,6 +795,7 @@ class Account:
         :return: Страница инструкий.
         :rtype: `playerokapi.types.GameCategoryInstructionList`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "gameCategoryInstructions",
@@ -829,6 +850,7 @@ class Account:
         :return: Страница полей с данными.
         :rtype: `playerokapi.types.GameCategoryDataFieldList`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "gameCategoryDataFields",
@@ -879,6 +901,7 @@ class Account:
         :return: Страница чатов.
         :rtype: `playerokapi.types.ChatList`
         """
+
         if not self._is_initiated:
             raise NotInitiatedError()
         
@@ -921,6 +944,7 @@ class Account:
         :return: Объект чата.
         :rtype: `playerokapi.types.Chat`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "chat",
@@ -983,6 +1007,7 @@ class Account:
         :return: Страница сообщений.
         :rtype: `playerokapi.types.ChatMessageList`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "chatMessages",
@@ -1021,6 +1046,7 @@ class Account:
         :return: Объект чата с обновлёнными данными.
         :rtype: `playerokapi.types.Chat`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "markChatAsRead",
@@ -1050,6 +1076,7 @@ class Account:
         :return: Объект чата с обновлёнными данными.
         :rtype: `playerokapi.types.Chat`
         """
+
         headers = {"accept": "*/*"}
         operations = {
             "operationName": "uploadChatImageIntoTemporaryStore",
@@ -1082,7 +1109,7 @@ class Account:
     ) -> types.ChatMessage:
         """
         Отправляет сообщение в чат.\n
-        Можно отправить текстовое сообщение `text` или фотографию `photo_file_path`.
+        Можно отправить текстовое сообщение `text` или фотографии `photo_file_paths`.
 
         :param chat_id: ID чата, в который нужно отправить сообщение.
         :type chat_id: `str`
@@ -1099,6 +1126,7 @@ class Account:
         :return: Объект отправленного сообщения.
         :rtype: `playerokapi.types.ChatMessage`
         """
+
         if not any((text, photo_file_paths)):
             raise TypeError("Не был передан ни один из обязательных аргументов: text, photo_file_paths")
         
@@ -1295,6 +1323,7 @@ class Account:
         :param id: ID предмета.
         :type id: `str`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "removeItem",
@@ -1328,6 +1357,7 @@ class Account:
         :return: Объект опубликованного предмета.
         :rtype: `playerokapi.types.Item`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "publishItem",
@@ -1344,12 +1374,73 @@ class Account:
         r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
         return item(r["data"]["publishItem"])
 
+    def get_my_items(
+        self, 
+        game_id: str | None = None, 
+        category_id: str | None = None, 
+        statuses: list[ItemStatuses] = [ItemStatuses.APPROVED], 
+        count: int = 24,
+        after_cursor: str | None = None
+    ) -> types.ItemProfileList:
+        """
+        Получает предметы вашего аккаунта.
+
+        :param game_id: ID игры/приложения, _опционально_.
+        :type game_id: `str` or `None`
+
+        :param category_id: ID категории игры/приложения, _опционально_.
+        :type category_id: `str` or `None`
+
+        :param statuses: Статусы, предметы которых нужно получать.
+        :type statuses: `list[playerokapi.enums.ItemStatuses]`
+
+        :param count: Кол-во предеметов, которые нужно получить (не более 24 за один запрос).
+        :type count: `int`
+
+        :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
+        :type after_cursor: `str` or `None`
+        
+        :return: Страница профилей предметов.
+        :rtype: `playerokapi.types.ItemProfileList`
+        """
+        
+        headers = {"accept": "*/*"}
+        filter = {
+            "userId": self.id, 
+            "status": [st.name for st in statuses if st] if statuses else None
+        }
+        if game_id: 
+            filter["gameId"] = game_id
+        elif category_id: 
+            filter["gameCategoryId"] = category_id
+            
+        payload = {
+            "operationName": "items",
+            "variables": json.dumps({
+                "pagination": {
+                    "first": count,
+                    "after": after_cursor
+                },
+                "filter": filter,
+                "showForbiddenImage": True
+            }),
+            "extensions": json.dumps({
+                "persistedQuery": {
+                    "version": 1,
+                    "sha256Hash": PERSISTED_QUERIES.get("items")
+                }
+            })
+        }
+
+        r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
+        return item_profile_list(r["data"]["items"])
+
     def get_items(
         self, 
         game_id: str | None = None, 
         category_id: str | None = None, 
+        statuses: list[ItemStatuses] = [ItemStatuses.APPROVED], 
         count: int = 24,
-        status: ItemStatuses = ItemStatuses.APPROVED, 
         after_cursor: str | None = None
     ) -> types.ItemProfileList:
         """
@@ -1362,11 +1453,11 @@ class Account:
         :param category_id: ID категории игры/приложения, _опционально_.
         :type category_id: `str` or `None`
 
+        :param statuses: Статусы, предметы которых нужно получать.
+        :type statuses: `list[playerokapi.enums.ItemStatuses]`
+
         :param count: Кол-во предеметов, которые нужно получить (не более 24 за один запрос).
         :type count: `int`
-
-        :param status: Тип предметов, которые нужно получать: активные или проданные. По умолчанию активные.
-        :type status: `playerokapi.enums.ItemStatuses`
 
         :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
         :type after_cursor: `str` or `None`
@@ -1374,11 +1465,16 @@ class Account:
         :return: Страница профилей предметов.
         :rtype: `playerokapi.types.ItemProfileList`
         """
+
         if not any((game_id, category_id)):
             raise TypeError("Не был передан ни один из обязательных аргументов: game_id, category_id")
         
         headers = {"accept": "*/*"}
-        filter = {"gameId": game_id, "status": [status.name] if status else None} if not category_id else {"gameCategoryId": category_id, "status": [status.name] if status else None}
+        if not category_id:
+            filter = {"gameId": game_id, "status": [st.name for st in statuses if st]}
+        else:
+            filter = {"gameCategoryId": category_id, "status": [st.name for st in statuses if st]}
+            
         payload = {
             "operationName": "items",
             "variables": json.dumps({
@@ -1417,6 +1513,7 @@ class Account:
         :return: Объект предмета.
         :rtype: `playerokapi.types.MyItem` or `playerokapi.types.Item` or `playerokapi.types.ItemProfile`
         """
+
         if not any((id, slug)):
             raise TypeError("Не был передан ни один из обязательных аргументов: id, slug")
         
@@ -1462,6 +1559,7 @@ class Account:
         :return: Массив статусов приоритета предмета.
         :rtype: `list[playerokapi.types.ItemPriorityStatus]`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "itemPriorityStatuses",
@@ -1505,6 +1603,7 @@ class Account:
         :return: Объект обновлённого предмета.
         :rtype: `playerokapi.types.Item`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "increaseItemPriorityStatus",
@@ -1537,6 +1636,7 @@ class Account:
         :return: Список провайдеров транзакий.
         :rtype: `list` of `playerokapi.types.TransactionProvider`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "transactionProviders",
@@ -1558,22 +1658,27 @@ class Account:
 
     def get_transactions(
         self, 
-        count: int = 24, 
+        status: TransactionStatuses | None = None,
         operation: TransactionOperations | None = None, 
+        provider_id: TransactionProviderIds | None = None, 
         min_value: int | None = None,
         max_value: int | None = None, 
-        provider_id: TransactionProviderIds | None = None, 
-        status: TransactionStatuses | None = None,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None, 
+        count: int = 24, 
         after_cursor: str | None = None
     ) -> TransactionList:
         """
         Получает все транзакции аккаунта.
 
-        :param count: Кол-во транзакциий которые нужно получить (не более 24 за один запрос).
-        :type count: `int`
+        :param status: Статус транзакции, _опционально_.
+        :type status: `playerokapi.enums.TransactionStatuses` or `None`
 
         :param operation: Операция транзакции, _опционально_.
         :type operation: `playerokapi.enums.TransactionOperations` or `None`
+
+        :param provider_id: ID провайдера транзакции, _опционально_.
+        :type provider_id: `playerokapi.enums.TransactionProviderIds` or `None`
 
         :param min_value: Минимальная сумма транзакции, _опционально_.
         :type min_value: `int` or `None`
@@ -1581,11 +1686,14 @@ class Account:
         :param max_value: Максимальная сумма транзакции, _опционально_.
         :type max_value: `int` or `None`
 
-        :param provider_id: ID провайдера транзакции, _опционально_.
-        :type provider_id: `playerokapi.enums.TransactionProviderIds` or `None`
+        :param from_date: Минимальная дата транзакции, _опционально_.
+        :type from_date: `datetime` or `None`
 
-        :param status: Статус транзакции, _опционально_.
-        :type status: `playerokapi.enums.TransactionStatuses` or `None`
+        :param to_date: Максимальная дата транзакции, _опционально_.
+        :type to_date: `datetime` or `None`
+
+        :param count: Кол-во транзакциий которые нужно получить (не более 24 за один запрос).
+        :type count: `int`
 
         :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
         :type after_cursor: `str` or `None`
@@ -1593,6 +1701,7 @@ class Account:
         :return: Страница транзакций.
         :rtype: `playerokapi.types.TransactionList`
         """
+
         if not self._is_initiated:
             raise NotInitiatedError()
         
@@ -1617,13 +1726,19 @@ class Account:
             }
         }
         
+        if status: payload["variables"]["filter"]["status"] = [status.name]
         if operation: payload["variables"]["filter"]["operation"] = [operation.name]
+        if provider_id: payload["variables"]["filter"]["providerId"] = [provider_id.name]
+        
         if min_value or max_value:
             payload["variables"]["filter"]["value"] = {}
             if min_value: payload["variables"]["filter"]["value"]["min"] = str(min_value)
             if max_value: payload["variables"]["filter"]["value"]["max"] = str(max_value)
-        if provider_id: payload["variables"]["filter"]["providerId"] = [provider_id.name]
-        if status: payload["variables"]["filter"]["status"] = [status.name]
+        
+        if from_date or to_date:
+            payload["variables"]["filter"]["dateRange"] = {}
+            if from_date: payload["variables"]["filter"]["dateRange"]["from"] = from_date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            if to_date: payload["variables"]["filter"]["dateRange"]["to"] = to_date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
         payload["variables"] = json.dumps(payload["variables"])
         payload["extensions"] = json.dumps(payload["extensions"])
@@ -1638,6 +1753,7 @@ class Account:
         :return: Объект провайдера транзакции.
         :rtype: `list` of `playerokapi.types.SBPBankMember`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "SbpBankMembers",
@@ -1674,6 +1790,7 @@ class Account:
         :return: Страница банковских карт пользователя.
         :rtype: `playerokapi.types.UserBankCardList`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "verifiedCards",
@@ -1711,6 +1828,7 @@ class Account:
         :return: True, если карта удалилась, иначе False
         :rtype: `bool`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "deleteCard",
@@ -1754,6 +1872,7 @@ class Account:
         :return: Объект транзакции вывода.
         :rtype: `playerokapi.types.Transaction`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "requestWithdrawal",
@@ -1787,6 +1906,7 @@ class Account:
         :return: Объект отменённой транзакции.
         :rtype: `playerokapi.types.Transaction`
         """
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "removeTransaction",
@@ -1798,3 +1918,185 @@ class Account:
 
         r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
         return transaction(r["data"]["removeTransaction"])
+    
+    def get_message_templates(
+        self, 
+        type: MessageTemplateTypes = MessageTemplateTypes.ACTIVE_DEAL_PROBLEM,
+        count: int = 24, 
+        after_cursor: str | None = None
+    ) -> types.MessageTemplateList:
+        """
+        Получает шаблонные сообщения.
+
+        :param type: Тип шаблонных сообщений.
+        :type type: `playerokapi.enums.MessageTemplateTypes`
+
+        :param count: Кол-во сообщений, которые нужно получить (не более 24 за один запрос).
+        :type count: `int`
+
+        :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
+        :type after_cursor: `str` or `None`
+        
+        :return: Страница шаблонных сообщений.
+        :rtype: `playerokapi.types.MessageTemplateList`
+        """
+
+        headers = {"accept": "*/*"}
+        payload = {
+            "operationName": "messageTemplates",
+            "variables": json.dumps({
+                "pagination": {
+                    "first": count, 
+                    "after": after_cursor
+                }, 
+                "filter": {
+                    "type": type.name
+                }
+            }),
+            "extensions": json.dumps({
+                "persistedQuery": {
+                    "version": 1, 
+                    "sha256Hash": PERSISTED_QUERIES.get("messageTemplates")
+                }
+            })
+        }
+
+        r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
+        return message_template_list(r["data"]["messageTemplates"])
+    
+    def report_deal_problem(
+        self, 
+        deal_id: str,
+        description: str,
+        problem_type_id: str
+    ) -> types.ItemDeal:
+        """
+        Создаёт проблему в сделке.
+
+        :param deal_id: ID сделки.
+        :type deal_id: `str`
+
+        :param description: Описание проблемы.
+        :type description: `str`
+
+        :param problem_type_id: ID типа проблемы (шаблонного сообщения в `get_message_templates()`).
+        :type problem_type_id: `str`
+        
+        :return: Объект обновлённой сделки.
+        :rtype: `playerokapi.types.ItemDeal`
+        """
+
+        headers = {"accept": "*/*"}
+        payload = {
+            "operationName": "reportDealProblem",
+            "query": QUERIES.get("reportDealProblem"),
+            "variables": {
+                "input": {
+                    "dealId": deal_id,
+                    "description": description,
+                    "problemTypeId": problem_type_id
+                }
+            }
+        }
+
+        r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
+        return transaction(r["data"]["reportDealProblem"])
+    
+    def get_my_reviews(
+        self, 
+        status: ReviewStatuses = ReviewStatuses.APPROVED, 
+        comment_required: bool = False, 
+        rating: int | None = None, 
+        game_id: str | None = None, 
+        category_id: str | None = None, 
+        min_item_price: int | None = None, 
+        max_item_price: int | None = None, 
+        sort_direction: SortDirections = SortDirections.DESC, 
+        sort_field: str = "createdAt", 
+        count: int = 24, 
+        after_cursor: str | None = None
+    ) -> ReviewList:
+        """
+        Получает отзывы вашего аккаунта.
+
+        :param status: Тип отзывов, которые нужно получить.
+        :type status: `playerokapi.enums.ReviewStatuses`
+
+        :param comment_required: Обязателен ли комментарий в отзыве, _опционально_.
+        :type comment_required: `bool`
+
+        :param rating: Рейтинг отзывов (1-5), _опционально_.
+        :type rating: `int` or `None`
+
+        :param game_id: ID игры отзывов, _опционально_.
+        :type game_id: `str` or `None`
+
+        :param category_id: ID категории отзывов, _опционально_.
+        :type category_id: `str` or `None`
+
+        :param min_item_price: Минимальная цена предмета отзыва, _опционально_.
+        :type min_item_price: `bool` or `None`
+
+        :param max_item_price: Максимальная цена предмета отзыва, _опционально_.
+        :type max_item_price: `bool` or `None`
+
+        :param sort_direction: Тип сортировки.
+        :type sort_direction: `playerokapi.enums.SortDirections`
+
+        :param sort_field: Поле, по которому будет идти сортировка (по умолчанию `createdAt` - по дате)
+        :type sort_field: `str`
+
+        :param count: Кол-во отзывов, которые нужно получить (не более 24 за один запрос), _опционально_.
+        :type count: `int`
+
+        :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
+        :type after_cursor: `str` or `None`
+        
+        :return: Страница отзывов.
+        :rtype: `PlayerokAPI.types.ReviewList`
+        """
+        
+        headers = {"Accept": "*/*"}
+        filters = {
+            "userId": self.id, 
+            "hasComment": comment_required,
+            "status": [status.name] if status else None
+        }
+        if game_id is not None:
+            filters["gameId"] = game_id
+        if category_id is not None:
+            filters["categoryId"] = category_id
+        if rating is not None:
+            filters["rating"] = rating
+        if min_item_price is not None or max_item_price is not None:
+            item_price = {}
+            if min_item_price is not None:
+                item_price["min"] = min_item_price
+            if max_item_price is not None:
+                item_price["max"] = max_item_price
+            filters["itemPrice"] = item_price
+        
+        payload = {
+            "operationName": "testimonials",
+            "variables": json.dumps({
+                "pagination": {
+                    "first": count, 
+                    "after": after_cursor
+                }, 
+                "filter": filters, 
+                "sort": {
+                    "direction": sort_direction.name if sort_direction else None, 
+                    "field": sort_field
+                },
+                "hasSupportAccess": False
+            }),
+            "extensions": json.dumps({
+                "persistedQuery": {
+                    "version": 1, 
+                    "sha256Hash": PERSISTED_QUERIES.get("testimonials")
+                }
+            })
+        }
+        
+        r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
+        return review_list(r["data"]["testimonials"])

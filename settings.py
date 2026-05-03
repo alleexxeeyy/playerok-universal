@@ -29,18 +29,7 @@ CONFIG = SettingsFile(
                 "enabled": True,
                 "value": "©️ 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹"
             },
-            "read_chat": {
-                "enabled": True
-            },
-            "first_message": {
-                "enabled": True
-            },
-            "custom_commands": {
-                "enabled": True
-            },
-            "auto_deliveries": {
-                "enabled": True
-            },
+            "read_chat": True,
             "auto_restore_items": {
                 "sold": True,
                 "expired": False,
@@ -53,18 +42,20 @@ CONFIG = SettingsFile(
             "auto_bump_items": {
                 "enabled": False,
                 "interval": 3600,
-                "all": False
+                "all": False,
+                "last_time": ""
             },
             "auto_withdrawal": {
                 "enabled": False,
                 "interval": 86400,
+                "last_time": "",
                 "credentials_type": "",
                 "card_id": "",
                 "sbp_bank_id": "",
                 "sbp_phone_number": "",
                 "usdt_address": ""
             },
-            "tg_logging": {
+            "notifications": {
                 "enabled": True,
                 "chat_id": "",
                 "events": {
@@ -74,6 +65,9 @@ CONFIG = SettingsFile(
                     "new_review": True,
                     "new_problem": True,
                     "deal_status_changed": True,
+                    "item_restored": True,
+                    "item_bumped": True,
+                    "withdrawal_requested": True
                 }
             },
         },
@@ -100,7 +94,7 @@ MESSAGES = SettingsFile(
         "first_message": {
             "enabled": True,
             "text": [
-                "👋 Привет, {username}, я бот-помощник 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
+                "👋 Привет, {user.username}, я бот-помощник 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
                 "",
                 "💡 Если вы хотите поговорить с продавцом, напишите команду !продавец, чтобы я пригласил его в этот диалог",
                 "",
@@ -113,13 +107,6 @@ MESSAGES = SettingsFile(
                 "❌ При вводе команды произошла ошибка: {error}"
             ]
         },
-        "cmd_commands": {
-            "enabled": True,
-            "text": [
-                "🕹️ Основные команды:",
-                "・ !продавец — уведомить и позвать продавца в этот чат"
-            ]
-        },
         "cmd_seller": {
             "enabled": True,
             "text": [
@@ -129,15 +116,9 @@ MESSAGES = SettingsFile(
         "new_deal": {
             "enabled": False,
             "text": [
-                "📋 Спасибо за покупку «{deal_item_name}» за {deal_item_price}₽",
+                "📋 Спасибо за покупку «{item.name}» за {item.price}₽",
                 ""
                 "Меня сейчас может не быть на месте, чтобы позвать его, используйте команду !продавец"
-            ]
-        },
-        "deal_pending": {
-            "enabled": False,
-            "text": [
-                "⌛ Отправьте нужные данные, чтобы я смог выполнить ваш заказ"
             ]
         },
         "deal_sent": {
@@ -213,7 +194,13 @@ AUTO_BUMP_ITEMS = SettingsFile(
         "excluded": []
     }
 )
-DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_COMPLETE_DEALS, AUTO_BUMP_ITEMS]
+FAST_REPLIES = SettingsFile(
+    name="fast_replies",
+    path="bot_settings/fast_replies.json",
+    need_restore=False,
+    default=[]
+)
+DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_COMPLETE_DEALS, AUTO_BUMP_ITEMS, FAST_REPLIES]
 
 
 def validate_config(config, default):

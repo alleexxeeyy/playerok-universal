@@ -9,6 +9,7 @@ from logging import getLogger
 from colorama import Fore
 
 from playerokapi.account import Account
+from playerokapi.types import Chat
 from playerokapi.exceptions import BotCheckDetectedException
 
 from settings import Settings as sett
@@ -16,6 +17,36 @@ from data import Data as data
 
 
 logger = getLogger("universal")
+
+
+def strip_html(text):
+    return re.sub(r'<[^>]+>', '', text or '')
+
+
+def parse_date(date_str: str) -> datetime | None:
+    formats = [
+        "%d.%m.%Y",
+        "%d.%m.%y",
+        "%-d.%-m.%Y",
+        "%-d.%-m.%y",
+        "%-d.%m.%Y",
+        "%-d.%m.%y",
+        "%d.%-m.%Y",
+        "%d.%-m.%y",
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def get_event_next_time(last_time_iso, interval):
+    return (
+        datetime.fromisoformat(last_time_iso) + timedelta(seconds=interval)
+        if last_time_iso else datetime.now()
+    )
 
 
 def is_cookies_valid(cookie_str: str) -> bool:
@@ -165,14 +196,15 @@ def is_password_valid(password: str) -> bool:
 
 def configure_config():
     config = sett.get("config")
-    
+    pr = False
+
     while not config["playerok"]["api"]["cookies"] :
         while not config["playerok"]["api"]["cookies"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.YELLOW}Cookie-Данные {Fore.WHITE}вашего "
-                f"{Fore.LIGHTWHITE_EX}авторизованного {Fore.WHITE}Playerok аккаунта в формате Header String. "
-                f"\nАвторизуйтесь в свой аккаунт на сайте, а после скопируйте куки с помощью расширения Cookie-Editor (ЛКМ на расширение -> Export -> Header String)."
-                f"\n  {Fore.WHITE}· Пример: __ddg3=4L7yBmrBwMwKm15X;token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Введите {Fore.YELLOW}Cookie-Данные {Fore.LIGHTYELLOW_EX}├──────────────────────┐{Fore.WHITE}"
+                f"\n\n  Авторизуйтесь в свой аккаунт на Playerok, а после скопируйте куки с помощью расширения Cookie-Editor"
+                f"\n  (ЛКМ на расширение -> Export -> Header String)"
+                f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}__ddg3=4L7yBmrBwMwKm15X;token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             )
             str_cookies = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
             cookies = {
@@ -183,7 +215,7 @@ def configure_config():
             if is_cookies_valid(str_cookies) and is_token_valid(cookies["token"]):
                 config["playerok"]["api"]["cookies"] = str_cookies
                 sett.set("config", config)
-                print(f"\n{Fore.GREEN}Cookie-данные успешно сохранены в конфиг.")
+                print(f"\n{Fore.YELLOW}Cookie-данные успешно сохранены в конфиг.")
             else:
                 print(
                     f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректные Cookie-данные. "
@@ -192,16 +224,20 @@ def configure_config():
 
         while not config["playerok"]["api"]["user_agent"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.LIGHTMAGENTA_EX}User Agent {Fore.WHITE}вашего браузера. "
-                f"Его можно скопировать на сайте {Fore.LIGHTWHITE_EX}https://whatmyuseragent.com."
-                f"\n  {Fore.WHITE}· Пример: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+                f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Введите {Fore.LIGHTMAGENTA_EX}Юзер-агент {Fore.LIGHTYELLOW_EX}├──────────────────────┐{Fore.WHITE}"
+                f"\n\n  Его можно скопировать на сайте https://whatmyuseragent.com"
+                f"\n  {Fore.LIGHTWHITE_EX}Или пропустите эту настройку, нажав Enter"
+                f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."
             )
             user_agent = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
             
+            if not user_agent:
+                print(f"\n{Fore.WHITE}Вы пропустили ввод Юзер-агента.")
+                break
             if is_user_agent_valid(user_agent):
                 config["playerok"]["api"]["user_agent"] = user_agent
                 sett.set("config", config)
-                print(f"\n{Fore.GREEN}User Agent успешно сохранён в конфиг.")
+                print(f"\n{Fore.YELLOW}User Agent успешно сохранён в конфиг.")
             else:
                 print(
                     f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный User Agent. "
@@ -210,12 +246,16 @@ def configure_config():
         
         while not config["playerok"]["api"]["proxy"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 HTTP Прокси {Fore.WHITE}для Playerok аккаунта. "
-                f"Формат: user:password@ip:port или ip:port, если он без авторизации. "
-                f"Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
-                f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
+                f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Введите {Fore.LIGHTBLUE_EX}HTTP прокси {Fore.LIGHTYELLOW_EX}для Playerok ├──────────────────────┐{Fore.WHITE}"
+                f"\n\n  Формат: user:password@ip:port, ip:port:user:password или ip:port"
+                f"\n  {Fore.LIGHTWHITE_EX}Или пропустите эту настройку, нажав Enter"
+                f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
             )
             proxy = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
+
+            if proxy.count(":") == 3:
+                ip, port, user, passwd = proxy.split(":")
+                proxy = f"{user}:{passwd}@{ip}:{port}"
             
             if not proxy:
                 print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
@@ -223,7 +263,7 @@ def configure_config():
             if is_proxy_valid(proxy):
                 config["playerok"]["api"]["proxy"] = proxy
                 sett.set("config", config)
-                print(f"\n{Fore.GREEN}Прокси успешно сохранён в конфиг.")
+                print(f"\n{Fore.YELLOW}Прокси успешно сохранён в конфиг.")
             else:
                 print(
                     f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный Прокси. "
@@ -233,15 +273,16 @@ def configure_config():
     while not config["telegram"]["api"]["token"]:
         while not config["telegram"]["api"]["token"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.CYAN}токен вашего Telegram бота{Fore.WHITE}. Бота нужно создать у @BotFather."
-                f"\n  {Fore.WHITE}· Пример: 7257913369:AAG2KjLL3-zvvfSQFSVhaTb4w7tR2iXsJXM"
+                f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Введите {Fore.CYAN}Токен Telegram бота {Fore.LIGHTYELLOW_EX}├──────────────────────┐{Fore.WHITE}"
+                f"\n\n  {Fore.WHITE}Бота нужно создать у @BotFather (https://t.me/BotFather)"
+                f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}7257913369:AAG2KjLL3-zvvfSQFSVhaTb4w7tR2iXsJXM"
             )
             token = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
             
             if is_tg_token_valid(token):
                 config["telegram"]["api"]["token"] = token
                 sett.set("config", config)
-                print(f"\n{Fore.GREEN}Токен Telegram бота успешно сохранён в конфиг.")
+                print(f"\n{Fore.YELLOW}Токен Telegram бота успешно сохранён в конфиг.")
             else:
                 print(
                     f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
@@ -250,12 +291,16 @@ def configure_config():
 
         while not config["telegram"]["api"]["proxy"]:
             print(
-                f"\n{Fore.WHITE}Введите {Fore.LIGHTBLUE_EX}IPv4 HTTP Прокси {Fore.WHITE}для Telegram бота. "
-                f"Формат: user:password@ip:port или ip:port, если он без авторизации. "
-                f"Если вы не знаете что это, или не хотите устанавливать прокси - пропустите этот параметр, нажав Enter."
-                f"\n  {Fore.WHITE}· Пример: DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
+                f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Введите {Fore.LIGHTBLUE_EX}HTTP прокси {Fore.LIGHTYELLOW_EX}для Telegram ├──────────────────────┐{Fore.WHITE}"
+                f"\n\n  Формат: user:password@ip:port, ip:port:user:password или ip:port"
+                f"\n  {Fore.LIGHTWHITE_EX}Или пропустите эту настройку, нажав Enter"
+                f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}DRjcQTm3Yc:m8GnUN8Q9L@46.161.30.187:8000"
             )
             proxy = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
+
+            if proxy.count(":") == 3:
+                ip, port, user, passwd = proxy.split(":")
+                proxy = f"{user}:{passwd}@{ip}:{port}"
             
             if not proxy:
                 print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
@@ -263,7 +308,7 @@ def configure_config():
             if is_proxy_valid(proxy):
                 config["telegram"]["api"]["proxy"] = proxy
                 sett.set("config", config)
-                print(f"\n{Fore.GREEN}Прокси успешно сохранён в конфиг.")
+                print(f"\n{Fore.YELLOW}Прокси успешно сохранён в конфиг.")
             else:
                 print(
                     f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный прокси. "
@@ -272,18 +317,23 @@ def configure_config():
 
     while not config["telegram"]["bot"]["password"]:
         print(
-            f"\n{Fore.WHITE}Придумайте и введите {Fore.YELLOW}пароль для вашего Telegram бота{Fore.WHITE}. "
-            f"Бот будет запрашивать этот пароль при каждой новой попытке взаимодействия чужого пользователя с вашим Telegram ботом."
-            f"\n  {Fore.WHITE}· Пароль должен быть сложным, длиной не менее 6 и не более 64 символов."
+            f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Придумайте {Fore.YELLOW}Пароль для Telegram бота {Fore.LIGHTYELLOW_EX}├──────────────────────┐{Fore.WHITE}"
+            f"\n\n  Бот будет запрашивать его при каждой новой попытке взаимодействия чужого пользователя"
+            f"\n\n  {Fore.LIGHTWHITE_EX}· Важно: {Fore.WHITE}Пароль должен быть сложным, длиной не менее 6 и не более 64 символов"
         )
         password = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
         
         if is_password_valid(password):
             config["telegram"]["bot"]["password"] = password
             sett.set("config", config)
-            print(f"\n{Fore.GREEN}Пароль успешно сохранён в конфиг.")
+            print(f"\n{Fore.YELLOW}Пароль успешно сохранён в конфиг.")
+            print("") # разделитель
+            pr = True
         else:
             print(f"\n{Fore.LIGHTRED_EX}Ваш пароль не подходит. Убедитесь, что он соответствует формату и не является лёгким и попробуйте ещё раз.")
+
+    if not pr:
+        logger.info("") 
 
     if config["playerok"]["api"]["proxy"] and not is_proxy_working(config["playerok"]["api"]["proxy"]):
         print(

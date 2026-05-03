@@ -31,15 +31,15 @@ async def handler_waiting_for_bump_items_interval(message: types.Message, state:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_bump_float_text(f"✅ <b>Интервал поднятия предметов</b> был успешно изменён на <b>{interval}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
+            text=templ.bump_float_text(f"✅ <b>Интервал поднятия товаров</b> был успешно изменён на <b>{interval}</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_bump_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="bump").pack())
+            text=templ.bump_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
         )
 
 
@@ -63,7 +63,7 @@ async def handler_waiting_for_new_included_bump_item_keyphrases(message: types.M
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_bump_included_float_text(f"✅ Предмет с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно включён в поднятие"),
+            text=templ.new_bump_included_float_text(f"✅ Товар с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно включён в поднятие"),
             reply_markup=templ.back_kb(calls.IncludedBumpItemsPagination(page=last_page).pack())
         )
     except Exception as e:
@@ -72,7 +72,7 @@ async def handler_waiting_for_new_included_bump_item_keyphrases(message: types.M
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_bump_included_float_text(e), 
+            text=templ.new_bump_included_float_text(e), 
             reply_markup=templ.back_kb(calls.IncludedBumpItemsPagination(page=last_page).pack())
         )
 
@@ -110,7 +110,7 @@ async def handler_waiting_for_new_included_bump_items_keyphrases_file(message: t
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_bump_included_float_text(f"✅ Успешно включено <b>{len(keyphrases_list)}</b> предметов из файла в поднятие"),
+            text=templ.new_bump_included_float_text(f"✅ Успешно включено <b>{len(keyphrases_list)}</b> товаров из файла в поднятие"),
             reply_markup=templ.back_kb(calls.IncludedBumpItemsPagination(page=last_page).pack())
         )
     except Exception as e:
@@ -119,7 +119,7 @@ async def handler_waiting_for_new_included_bump_items_keyphrases_file(message: t
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_bump_included_float_text(e), 
+            text=templ.new_bump_included_float_text(e), 
             reply_markup=templ.back_kb(calls.IncludedBumpItemsPagination(page=last_page).pack())
         )
 
@@ -144,7 +144,7 @@ async def handler_waiting_for_new_excluded_bump_item_keyphrases(message: types.M
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_bump_excluded_float_text(f"✅ Предмет с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно добавлен в исключения для поднятия"),
+            text=templ.new_bump_excluded_float_text(f"✅ Товар с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно добавлен в исключения для поднятия"),
             reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
         )
     except Exception as e:
@@ -153,7 +153,7 @@ async def handler_waiting_for_new_excluded_bump_item_keyphrases(message: types.M
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_bump_excluded_float_text(e), 
+            text=templ.new_bump_excluded_float_text(e), 
             reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
         )
 
@@ -191,7 +191,7 @@ async def handler_waiting_for_new_excluded_bump_items_keyphrases_file(message: t
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_bump_excluded_float_text(f"✅ Успешно добавлено <b>{len(keyphrases_list)}</b> предметов из файла в исключения для поднятия"),
+            text=templ.new_bump_excluded_float_text(f"✅ Успешно добавлено <b>{len(keyphrases_list)}</b> товаров из файла в исключения для поднятия"),
             reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
         )
     except Exception as e:
@@ -200,6 +200,6 @@ async def handler_waiting_for_new_excluded_bump_items_keyphrases_file(message: t
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_new_bump_excluded_float_text(e), 
+            text=templ.new_bump_excluded_float_text(e), 
             reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
         )

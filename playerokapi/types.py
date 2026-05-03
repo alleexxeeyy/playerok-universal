@@ -336,17 +336,14 @@ class UserProfile:
 
     def get_items(
         self, 
-        count: int = 24, 
         game_id: str | None = None, 
         category_id: str | None = None, 
-        statuses: list[ItemStatuses] | None = None,
+        statuses: list[ItemStatuses] | None = None, 
+        count: int = 24, 
         after_cursor: str | None = None
     ) -> ItemProfileList:
         """
         Получает предметы пользователя.
-
-        :param count: Кол-во предеметов, которые нужно получить (не более 24 за один запрос), _опционально_.
-        :type count: `int`
         
         :param game_id: ID игры/приложения, чьи предметы нужно получить, _опционально_.
         :type game_id: `str` or `None`
@@ -354,8 +351,11 @@ class UserProfile:
         :param category_id: ID категории игры/приложения, чьи предметы нужно получить, _опционально_.
         :type category_id: `str` or `None`
 
-        :param status: Массив типов предметов, которые нужно получить. Некоторые статусы можно получить только, если это профиль вашего аккаунта. Если не указано, получает сразу все возможные.
-        :type status: `list[playerokapi.enums.ItemStatuses]`
+        :param statuses: Статусы, предметы которых нужно получать.
+        :type statuses: `list[playerokapi.enums.ItemStatuses]` or `None`
+
+        :param count: Кол-во предеметов, которые нужно получить (не более 24 за один запрос), _опционально_.
+        :type count: `int`
 
         :param after_cursor: Курсор, с которого будет идти парсинг (если нету - ищет с самого начала страницы), _опционально_.
         :type after_cursor: `str` or `None`
@@ -363,20 +363,19 @@ class UserProfile:
         :return: Страница профилей предметов.
         :rtype: `PlayerokAPI.types.ItemProfileList`
         """
+
         from .account import get_account
         account = get_account()
         
-        headers = {
-            "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": account.base_url
-        }
+        headers = {"Accept": "*/*"}
         filter = {
             "userId": self.id, 
-            "status": [status.name for status in statuses] if statuses else None
+            "status": [st.name for st in statuses if st] if statuses else None
         }
-        if game_id: filter["gameId"] = game_id
-        elif category_id: filter["gameCategoryId"] = category_id
+        if game_id: 
+            filter["gameId"] = game_id
+        elif category_id: 
+            filter["gameCategoryId"] = category_id
         
         payload = {
             "operationName": "items",
@@ -386,7 +385,7 @@ class UserProfile:
                     "after": after_cursor
                 }, 
                 "filter": filter, 
-                "showForbiddenImage": False
+                "showForbiddenImage": True
             }),
             "extensions": json.dumps({
                 "persistedQuery": {
@@ -401,8 +400,7 @@ class UserProfile:
 
     def get_reviews(
         self, 
-        count: int = 24, 
-        status: ReviewStatuses = ReviewStatuses.APPROVED, 
+        count: int = 24,
         comment_required: bool = False, 
         rating: int | None = None, 
         game_id: str | None = None, 
@@ -418,9 +416,6 @@ class UserProfile:
 
         :param count: Кол-во отзывов, которые нужно получить (не более 24 за один запрос), _опционально_.
         :type count: `int`
-
-        :param status: Тип отзывов, которые нужно получить.
-        :type status: `playerokapi.enums.ReviewStatuses`
 
         :param comment_required: Обязателен ли комментарий в отзыве, _опционально_.
         :type comment_required: `bool`
@@ -452,16 +447,13 @@ class UserProfile:
         :return: Страница отзывов.
         :rtype: `PlayerokAPI.types.ReviewList`
         """
+        
         from .account import get_account
         account = get_account()
         
-        headers = {
-            "Accept": "*/*",
-            "Content-Type": "application/json",
-            "Origin": account.base_url,
-        }
+        headers = {"Accept": "*/*"}
 
-        filters = {"userId": self.id, "status": [status.name] if status else None}
+        filters = {"userId": self.id, "status": "APPROVED"}
         if comment_required is not None:
             filters["hasComment"] = comment_required
         if game_id is not None:
@@ -488,7 +480,8 @@ class UserProfile:
                 "sort": {
                     "direction": sort_direction.name if sort_direction else None, 
                     "field": sort_field
-                }
+                },
+                "hasSupportAccess": False
             }),
             "extensions": json.dumps({
                 "persistedQuery": {
@@ -502,11 +495,17 @@ class UserProfile:
         return parser.review_list(r["data"]["testimonials"])
 
 
-class Event:
-    #TODO: Сделать класс ивента Event
+class ItemDealProps:
+    """
+    Параметры сделки.
 
-    def __init__(self):
-        pass
+    :param auto_confirm_period: Срок авто-подтверждения сделки (в днях).
+    :type auto_confirm_period: `int`
+    """
+
+    def __init__(self, auto_confirm_period: int):
+        self.auto_confirm_period: int = auto_confirm_period
+        """ Срок авто-подтверждения сделки (в днях). """
 
 
 class ItemDeal:
@@ -522,7 +521,7 @@ class ItemDeal:
     :param status_expiration_date: Дата истечения статуса.
     :type status_expiration_date: `str` or `None`
 
-    :param status_description: Описание статуса сделки.
+    :param status_description: Описание статуса сделки ().
     :type status_description: `str` or `None`
 
     :param direction: Направление сделки (покупка/продажа).
@@ -540,7 +539,7 @@ class ItemDeal:
     :param completed_user: Профиль пользователя, подтвердившего сделку.
     :type completed_user: `playerokapi.types.UserProfile` or `None`
 
-    :param props: Реквизиты сделки.
+    :param props: Прочие настройки сделки.
     :type props: `str` or `None`
 
     :param previous_status: Предыдущий статус.
@@ -602,7 +601,7 @@ class ItemDeal:
         self.completed_user: UserProfile | None = completed_user
         """ Профиль пользователя, подтвердившего сделку. """
         self.props: str | None = props
-        """ Реквизиты сделки. """
+        """ Прочие настройки сделки. """
         self.previous_status: ItemDealStatuses | None = previous_status
         """ Предыдущий статус. """
         self.completed_at: str | None = completed_at
@@ -1456,6 +1455,9 @@ class Item:
     :param raw_price: Цена без учёта скидки.
     :type raw_price: `int`
 
+    :param priority: Статус приоритета. 
+    :type priority: `playerokapi.enums.PriorityTypes`
+
     :param priority_position: Приоритетная позиция.
     :type priority_position: `int`
 
@@ -1490,9 +1492,10 @@ class Item:
     :type user: `playerokapi.types.UserProfile`
     """
 
-    def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int, priority_position: int,
-                 attachments: list[FileObject], attributes: dict, category: GameCategory, comment: str | None, data_fields: list[GameCategoryDataField] | None, 
-                 fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses, user: UserProfile):
+    def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int,
+                 priority: PriorityTypes, priority_position: int, attachments: list[FileObject], attributes: dict, category: GameCategory, 
+                 comment: str | None, data_fields: list[GameCategoryDataField] | None,  fee_multiplier: float, game: GameProfile, 
+                 seller_type: UserTypes, status: ItemStatuses, user: UserProfile):
         self.id: str = id
         """ ID предмета. """
         self.slug: str = slug
@@ -1507,6 +1510,8 @@ class Item:
         """ Цена предмета. """
         self.raw_price: int = raw_price
         """ Цена без учёта скидки. """
+        self.priority: int = priority
+        """ Статус приоритета. """
         self.priority_position: int = priority_position
         """ Приоритетная позиция. """
         self.attachments: list[FileObject] = attachments
@@ -2402,8 +2407,8 @@ class ChatMessage:
     :param game: Игра, к которой относится сообщение.
     :type game: `str` or `None`
 
-    :param file: Файл, прикреплённый к сообщению.
-    :type file: `playerokapi.types.FileObject` or `None`
+    :param images: Изображения, прикреплённые к сообщению.
+    :type images: `list[playerokapi.types.FileObject]` or `None`
 
     :param user: Пользователь, который отправил сообщение.
     :type user: `playerokapi.types.UserProfile`
@@ -2430,17 +2435,17 @@ class ChatMessage:
     :type is_auto_response: `bool`
 
     :param event: Ивент сообщения.
-    :type event: `playerokapi.types.Event` or `None`
+    :type event: `playerokapi.enums.ChatMessageEvents` or `None`
 
     :param buttons: Кнопки сообщения.
     :type buttons: `list[playerokapi.types.MessageButton]`
     """
 
     def __init__(self, id: str, text: str, created_at: str, deleted_at: str | None, is_read: bool, 
-                 is_suspicious: bool, is_bulk_messaging: bool, game: Game | None, file: FileObject | None,
+                 is_suspicious: bool, is_bulk_messaging: bool, game: Game | None, images: list[FileObject] | None,
                  user: UserProfile, deal: ItemDeal | None, item: ItemProfile | None, transaction: Transaction | None,
                  moderator: Moderator | None, event_by_user: UserProfile | None, event_to_user: UserProfile | None, 
-                 is_auto_response: bool, event: Event | None, buttons: list[ChatMessageButton]):
+                 is_auto_response: bool, event: ChatMessageEvents | None, buttons: list[ChatMessageButton]):
         self.id: str = id
         """ ID сообщения. """
         self.text: str = text
@@ -2457,8 +2462,8 @@ class ChatMessage:
         """ Массовая ли это рассылка. """
         self.game: Game | None  = game
         """ Игра, к которой относится сообщение. """
-        self.file: FileObject | None  = file
-        """ Файл, прикреплённый к сообщению. """
+        self.images: list[FileObject] | None  = images
+        """ Изображения, прикреплённые к сообщению. """
         self.user: UserProfile = user
         """ Пользователь, который отправил сообщение. """
         self.deal: ItemDeal | None = deal
@@ -2475,7 +2480,7 @@ class ChatMessage:
         """ Ивент для пользователя. """
         self.is_auto_response: bool = is_auto_response
         """ Авто-ответ ли это. """
-        self.event: Event | None = event
+        self.event: ChatMessageEvents | None = event
         """ Ивент сообщения. """
         self.buttons: list[ChatMessageButton] = buttons
         """ Кнопки сообщения. """
@@ -2768,3 +2773,100 @@ class ReviewList:
         """ Информация о странице. """
         self.total_count: int = total_count
         """ Всего отзывов. """
+
+
+class MessageTemplate:
+    """
+    Объект шаблонного сообщения.
+
+    :param id: ID шаблонного сообщения.
+    :type id: `str`
+
+    :param type: Тип шаблонного сообщения.
+    :type type: `playerokapi.enums.MessageTemplateTypes`
+
+    :param title: Заголовок шаблонного сообщения.
+    :type title: `str`
+
+    :param text: Текст шаблонного сообщения.
+    :type text: `str`
+
+    :param sequence: Последовательность шаблонного сообщения.
+    :type sequence: `int`
+
+    :param created_at: Дата создания шаблонного соощбения.
+    :type created_at: `str`
+
+    :param group: Группа шаблонного сообщения (?).
+    :type group: `str` or `None`
+    """
+
+    def __init__(self, id: str, type: MessageTemplateTypes, title: str,
+                 text: str, sequence: int, created_at: str, group: str | None):
+        self.id: str = id
+        """ ID шаблонного сообщения. """
+        self.type: MessageTemplateTypes = type
+        """ Тип шаблонного сообщения. """
+        self.title: str = title
+        """ Заголовок шаблонного сообщения. """
+        self.text: str = text
+        """ Текст шаблонного сообщения. """
+        self.sequence: int = sequence
+        """ Последовательность шаблонного сообщения. """
+        self.created_at: str = created_at
+        """ Дата создания шаблонного соощбения. """
+        self.group: str | None = group
+        """ Группа шаблонного сообщения (?). """
+
+
+class MessageTemplatePageInfo:
+    """
+    Подкласс, описывающий информацию о странице шаблонных сообщений.
+
+    :param start_cursor: Курсор начала страницы.
+    :type start_cursor: `str`
+
+    :param end_cursor: Курсок конца страницы.
+    :type end_cursor: `str`
+
+    :param has_previous_page: Имеет ли предыдущую страницу.
+    :type has_previous_page: `bool`
+
+    :param has_next_page: Имеет ли следующую страницу.
+    :type has_next_page: `bool`
+    """
+
+    def __init__(self, start_cursor: str, end_cursor: str,
+                 has_previous_page: bool, has_next_page: bool):
+        self.start_cursor: str = start_cursor
+        """ Курсор начала страницы. """
+        self.end_cursor: str = end_cursor
+        """ Курсор конца страницы. """
+        self.has_previous_page: bool = has_previous_page
+        """ Имеет ли предыдущую страницу. """
+        self.has_next_page: bool = has_next_page
+        """ Имеет ли следующую страницу. """
+
+
+class MessageTemplateList:
+    """
+    Класс, описывающий страницу шаблонных сообщения.
+
+    :param message_templates: Шаблонные сообщения страницы.
+    :type message_templates: `list[playerokapi.types.MessageTemplate]`
+
+    :param page_info: Информация о странице.
+    :type page_info: `playerokapi.types.MessageTemplatePageInfo`
+
+    :param total_count: Всего шаблонных сообщений.
+    :type total_count: `int`
+    """
+
+    def __init__(self, message_templates: list[MessageTemplate], page_info: MessageTemplatePageInfo,
+                 total_count: int):
+        self.message_templates: list[MessageTemplate] = message_templates
+        """ Шаблонные сообщения страницы. """
+        self.page_info: MessageTemplatePageInfo = page_info
+        """ Информация о странице. """
+        self.total_count: int = total_count
+        """ Всего шаблонных сообщений. """

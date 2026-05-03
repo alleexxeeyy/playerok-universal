@@ -1,53 +1,87 @@
 # Playerok Universal
 [![telegram](https://img.shields.io/badge/telegram-%D0%BA%D0%B0%D0%BD%D0%B0%D0%BB-blue?style=for-the-badge&logo=telegram)](https://t.me/alexeyproduction)
-[![modules](https://img.shields.io/badge/%F0%9F%A7%A9%20%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D0%B8-%D0%B1%D0%BE%D1%82%D0%B0-green?style=for-the-badge)](https://t.me/alexey_production_bot)
+[![plugins](https://img.shields.io/badge/%F0%9F%A7%A9%20%D0%BF%D0%BB%D0%B0%D0%B3%D0%B8%D0%BD%D1%8B-%D0%B1%D0%BE%D1%82%D0%B0-green?style=for-the-badge)](https://t.me/alexey_production_bot)
 [![python](https://img.shields.io/badge/python-3.12.x-yellow?style=for-the-badge&logo=python&link=https%3A%2F%2Fimg.shields.io%2Fbadge%2Ftelegram-%25D0%25BA%25D0%25B0%25D0%25BD%25D0%25B0%25D0%25BB-blue%3Fstyle%3Dfor-the-badge%26logo%3Dtelegram)](https://www.python.org/downloads/release/python-3119/)
 [![stars](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Falleexxeeyy%2Fplayerok-universal&query=%24.stargazers_count&style=for-the-badge&label=stars&color=43d433&logo=github)](https://github.com/alleexxeeyy/playerok-universal/stargazers)
 [![forks](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Falleexxeeyy%2Fplayerok-universal&query=%24.forks_count&style=for-the-badge&label=forks&color=%236c70e6&logo=github)](https://github.com/alleexxeeyy/playerok-universal/forks)
 
-Современный бот-помощник для Playerok 🤖🟦
+Многофункциональный бот-помощник для Playerok 🤖🟦
 
 ---
 
 ## 🗺️ Навигация
-- [Функционал бота](#-функционал)
-- [Установка бота](#%EF%B8%8F-установка)
-- [Полезные ссылки](#-полезные-ссылки)
-- [Для разработчиков](#-для-разработчиков)
+- **[Функционал](#-функционал)**
+- **[Установка](#%EF%B8%8F-установка)**
+  - **[Windows](#-windows)**
+  - **[Linux](#-linux)**
+- **[Для разработчиков](#-для-разработчиков)**
+- **[Ссылки](#-полезные-ссылки)**
 
-## 🔧 Функционал
-### 🤖💬 Telegram бот с полным управлением
-- Настройка любого параметра из конфига в пару действий
-- Просмотр статистики бота и профиля аккаунта
-- Управление ивентами бота
+## ⚙️ Функционал
 
-### ⚙️ Широкий спектр возможностей
-- Система модулей (плагины, подключаемые к боту)
-- Вечный онлайн на сайте
-- Авто-восстановление предметов
-- Авто-поднятие предметов
-- Авто-выдача товаров
-- Авто-вывод средств
-- Авто-подтверждение сделок
-- Приветственное сообщение
-- Пользовательские команды
-- Пользовательская авто-выдача
-- Команда `!продавец` для вызова продавца в чат
-- Редактирование и включение/отключение каждого сообщения
-- Уведомления в TG о новых сообщениях, заказах, отзывах и т.д.
+### 🤖 Полное управление в Telegram боте
+- **🎪 Удобное и понятное меню**
+- **💬 Просмотр чатов** (отправка, чтение сообщений...)
+- **🖼️ Отправка изображений** в чаты
+- **🌟 Просмотр отзывов** (с фильтрами)
+- **📋 Управление сделками** (возвраты, проблемы, подтверждения...)
+- **🛍️ Управление товарами** (публикация, поднятие...)
+- **🛠️ Настройка конфигов**
+- **📊 Просмотр статистики** (за 24 часа, неделю, месяц и всё время)
+- **👤 Просмотр профиля** (вся подробнейшая информация)
+- **🗒️ Просмотр логов** из консоли
+- **🔔 Уведомления о событиях** (новые сообщения, продажи...)
+- **⚡ Быстрые ответы** (сообщения по нажатию одной кнопки)
+- **👤 Просмотр профиля**
+- и многое другое...
 
-### 🌐 Более продвинутое
-- Подключение к прокси HTTPS IPv4
-- Настройка интервалов запросов
+### ✨ Широкие возможности
+- **🧩 Система модулей** (плагины, подключаемые к боту)
+- **🟢 Вечный онлайн на сайте**
+- **🎈 Сообщения на события** (приветственное, новая продажа...)
+- **❗ Собственные команды**
+- **🚀 Авто-выдача товаров** (поштучная и сообщением)
+- **⬆️ Авто-поднятие товаров**
+- **♻️ Восстановление товаров** (проданные и истёкшие)
+- **☑️ Авто-подтверждение сделок**
+- **💸 Авто-вывод средств** 
+- **🌐 Подключение прокси** 
+- и многое другое...
 
 ## ⬇️ Установка
-1. Скачайте [последнюю Release версию](https://github.com/alleexxeeyy/playerok-universal/releases/latest) и распакуйте в любое удобное для вас место
-2. Убедитесь, что у вас установлен **Python версии 3.12.x** (на других версиях работа бота не гарантируется). Если не установлен, сделайте это, перейдя по ссылке https://www.python.org/downloads/release/python-31210/ (при установке нажмите на пункт `Add to PATH`)
-3. Откройте `install_requirements.bat` и дождитесь установки всех необходимых для работы библиотек, а после закройте окно
-4. Чтобы запустить бота, откройте запускатор `start.bat`
-5. После первого запуска вас попросят настроить бота для работы
+
+### 🔷 Windows
+1. Установите **Python версии 3.12.x** (на других версиях работа бота не гарантируется), перейдя по ссылке https://www.python.org/downloads/release/python-31210/ (при установке нажмите на пункт `Add to PATH`).
+2. Скачайте [последнюю Release версию](https://github.com/alleexxeeyy/playerok-universal/releases/latest) и распакуйте в любое удобное для вас место.
+3. Откройте `install.bat` и дождитесь установки всех необходимых зависимостей, а после закройте окно.
+4. Чтобы запустить бота, откройте запускатор `start.bat`.
+5. После первого запуска следуйте действиям в консоли.
 
 [Возникли проблемы с установкой? Нажми на меня](https://telegra.ph/FunPay-Universal--chastye-oshibki-i-ih-resheniya-08-26)
+
+### ♨️ Linux (Ubuntu)
+1. Выполните команду
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/alleexxeeyy/playerok-universal/main/install.sh)
+```
+2. Следуйте инструкциям установщика. Он автоматически установит все необходимые для работы компоненты.
+
+**🕹️ Команды для управления**
+
+| Команда               | Что делает       |
+|-----------------------|-------------------------------------|
+| `pluniversal`         | **🕹️ Меню с командами**             |
+| `pluniversal setup`   | **⚙️ Первичная настройка**          |
+| `pluniversal start`   | **🟢 Запуск бота**                  |
+| `pluniversal stop`    | **⛔ Остановка бота**               |
+| `pluniversal restart` | **🔄️ Перезапуск бота**              |
+| `pluniversal status`  | **📈 Статус бота**                  |
+| `pluniversal log`     | **🗒️ Логи бота**         |
+| `pluniversal log100`  | **📃 Последние 100 логов**          |
+| `pluniversal update`  | **🔵 Обновление бота**              | 
+| `pluniversal enable`  | **☑️ Включить авто-запуска бота**  |
+| `pluniversal disable` | **❌ Выключить авто-запуска бота** |
 
 ## 📚 Для разработчиков
 
@@ -329,7 +363,7 @@
 </details>
 
 
-## 🔗 Полезные ссылки
-- Разработчик: https://github.com/alleexxeeyy (в профиле есть актуальные ссылки на все контакты для связи)
-- Telegram канал: https://t.me/alexeyproduction
-- Telegram бот для покупки официальных модулей: https://t.me/alexey_production_bot
+## 🔗 Ссылки
+- **Разработчик:** [@alleexxeeyy](https://github.com/alleexxeeyy)
+- **Новости:** [@alexeyproduction](https://t.me/alexeyproduction)
+- **Плагины**: [@alexey_production_bot](https://t.me/alexey_production_bot)

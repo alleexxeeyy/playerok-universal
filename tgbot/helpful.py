@@ -19,7 +19,7 @@ async def do_auth(message: Message, state: FSMContext) -> Message | None:
         state=state,
         message=message,
         text=templ.sign_text(
-            '🔑 Введите ключ-пароль, указанный вами в конфиге бота ↓'
+            "🔑 Введите <b>ключ-пароль</b>, указанный вами в конфиге бота:"
             '\n\n<span class="tg-spoiler">Если вы забыли, его можно посмотреть напрямую в конфиге по пути bot_settings/config.json, параметр password в разделе telegram.bot</span>'
         ),
         reply_markup=templ.destroy_kb()
@@ -84,7 +84,7 @@ async def try_edit_message(bot, chat_id, message_id, text, photo, reply_markup, 
         raise
 
 
-async def send_new_message(bot, chat_id, text, photo, reply_markup):
+async def send_new_message(bot, chat_id, text, photo, reply_markup, reply_to):
     if photo:
         return await bot.send_photo(
             chat_id=chat_id,
@@ -97,7 +97,8 @@ async def send_new_message(bot, chat_id, text, photo, reply_markup):
         chat_id=chat_id,
         text=text,
         reply_markup=reply_markup,
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_to_message_id=reply_to
     )
 
 
@@ -108,7 +109,8 @@ async def throw_float_message(
     reply_markup: InlineKeyboardMarkup = None,
     callback: CallbackQuery = None,
     photo: str = None,
-    send: bool = False
+    send: bool = False,
+    reply_to: int = None
 ) -> Message | None:
     
     if not text and not photo:
@@ -118,7 +120,7 @@ async def throw_float_message(
     bot = get_telegram_bot().bot
 
     accent_id = await get_accent_message_id(state, message, bot)
-    new_message_needed = need_new_message(message, bot, send)
+    new_message_needed = need_new_message(message, bot, bool(send or reply_to))
 
     mess = None
 
@@ -148,7 +150,8 @@ async def throw_float_message(
             chat_id=message.chat.id,
             text=text,
             photo=photo,
-            reply_markup=reply_markup
+            reply_markup=reply_markup,
+            reply_to=reply_to
         )
 
     if callback:

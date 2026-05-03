@@ -42,15 +42,15 @@ async def handler_waiting_for_cookies(message: types.Message, state: FSMContext)
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"🍪 <b>Cookie-данные</b> были успешно изменены на: <blockquote>{str_cookies}</blockquote>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
+            text=templ.auth_float_text(f"🍪 <b>Cookie-данные</b> были успешно изменены на: <blockquote>{str_cookies}</blockquote>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="auth").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
+            text=templ.auth_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="auth").pack())
         )
 
 
@@ -71,15 +71,15 @@ async def handler_waiting_for_user_agent(message: types.Message, state: FSMConte
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>User Agent</b> был успешно изменён на <b>{user_agent}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
+            text=templ.auth_float_text(f"✅ <b>User Agent</b> был успешно изменён на <b>{user_agent}</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="auth").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="auth").pack())
+            text=templ.auth_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="auth").pack())
         )
 
 
@@ -104,15 +104,15 @@ async def handler_waiting_for_pl_proxy(message: types.Message, state: FSMContext
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>Прокси для Playerok</b> был успешно изменён на <b>{proxy}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
+            text=templ.auth_float_text(f"✅ <b>Прокси для Playerok</b> был успешно изменён на <b>{proxy}</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
+            text=templ.auth_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
 
 
@@ -137,15 +137,15 @@ async def handler_waiting_for_tg_proxy(message: types.Message, state: FSMContext
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(f"✅ <b>Прокси для Telegram</b> был успешно изменён на <b>{proxy}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
+            text=templ.auth_float_text(f"✅ <b>Прокси для Telegram</b> был успешно изменён на <b>{proxy}</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_auth_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
+            text=templ.auth_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
 
 
@@ -168,15 +168,15 @@ async def handler_waiting_for_requests_timeout(message: types.Message, state: FS
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_conn_float_text(f"✅ <b>Таймаут запросов</b> был успешно изменён на <b>{timeout}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
+            text=templ.conn_float_text(f"✅ <b>Таймаут запросов</b> был успешно изменён на <b>{timeout}</b> сек."),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_conn_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
+            text=templ.conn_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
 
 
@@ -199,20 +199,20 @@ async def handler_waiting_for_listener_requests_delay(message: types.Message, st
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_conn_float_text(f"✅ <b>Периодичность запросов</b> была успешна изменена на <b>{delay}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
+            text=templ.conn_float_text(f"✅ <b>Периодичность запросов</b> была успешна изменена на <b>{delay}</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_conn_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="conn").pack())
+            text=templ.conn_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
 
 
-@router.message(states.SettingsStates.waiting_for_tg_logging_chat_id, F.text)
-async def handler_waiting_for_tg_logging_chat_id(message: types.Message, state: FSMContext):
+@router.message(states.SettingsStates.waiting_for_notifications_chat_id, F.text)
+async def handler_waiting_for_notifications_chat_id(message: types.Message, state: FSMContext):
     try:
         await state.set_state(None)
         
@@ -227,21 +227,21 @@ async def handler_waiting_for_tg_logging_chat_id(message: types.Message, state: 
             chat_id = "@" + str(chat_input).replace("@", "")
         
         config = sett.get("config")
-        config["playerok"]["tg_logging"]["chat_id"] = chat_id
+        config["playerok"]["notifications"]["chat_id"] = chat_id
         sett.set("config", config)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_logger_float_text(f"✅ <b>ID чата для логов</b> было успешно изменено на <b>{chat_id}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="logger").pack())
+            text=templ.notifications_float_text(f"✅ <b>Чат для уведомлений</b> был успешно изменён на <b>{chat_id}</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="notifications").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_logger_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="logger").pack())
+            text=templ.notifications_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="notifications").pack())
         )
 
 
@@ -266,15 +266,15 @@ async def handler_waiting_for_auto_withdrawal_interval(message: types.Message, s
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_withdrawal_float_text(f"✅ <b>Интервал вывода</b> был успешно изменён на <b>{interval_int}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+            text=templ.withdrawal_float_text(f"✅ <b>Интервал вывода</b> был успешно изменён на <b>{interval_int}</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="withdrawal").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_withdrawal_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+            text=templ.withdrawal_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="withdrawal").pack())
         )
 
 
@@ -305,15 +305,15 @@ async def handler_waiting_for_sbp_bank_phone_number(message: types.Message, stat
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_withdrawal_sbp_float_text(f"✅ <b>Данные вывода</b> были успешно изменены на <b>{phone_number} (СБП)</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+            text=templ.withdrawal_sbp_float_text(f"✅ <b>Данные вывода</b> были успешно изменены на <b>{phone_number} (СБП)</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="withdrawal").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_withdrawal_sbp_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+            text=templ.withdrawal_sbp_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="withdrawal").pack())
         )
 
 
@@ -335,15 +335,15 @@ async def handler_waiting_for_usdt_address(message: types.Message, state: FSMCon
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_withdrawal_float_text(f"✅ <b>Данные вывода</b> были успешно изменены на <b>{address} (USDT TRC20)</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+            text=templ.withdrawal_float_text(f"✅ <b>Данные вывода</b> были успешно изменены на <b>{address} (USDT TRC20)</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="withdrawal").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_withdrawal_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="withdrawal").pack())
+            text=templ.withdrawal_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="withdrawal").pack())
         )
             
 
@@ -364,15 +364,15 @@ async def handler_waiting_for_watermark_value(message: types.Message, state: FSM
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_other_float_text(f"✅ <b>Водяной знак сообщений</b> был успешно изменён на <b>{watermark}</b>"),
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="other").pack())
+            text=templ.other_float_text(f"✅ <b>Водяной знак сообщений</b> был успешно изменён на <b>{watermark}</b>"),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="other").pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.settings_other_float_text(e), 
-            reply_markup=templ.back_kb(calls.SettingsNavigation(to="other").pack())
+            text=templ.other_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="other").pack())
         )
             
 
@@ -406,4 +406,61 @@ async def handler_waiting_for_logs_max_file_size(message: types.Message, state: 
             message=message,
             text=templ.logs_float_text(e), 
             reply_markup=templ.back_kb(calls.MenuNavigation(to="logs").pack())
+        )
+            
+
+@router.message(states.SettingsStates.waiting_for_new_fast_reply_text, F.text)
+async def handler_waiting_for_new_fast_reply_text(message: types.Message, state: FSMContext):
+    try:
+        await state.set_state(None)
+        text = message.text
+
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+
+        fast_replies = sett.get("fast_replies")
+        fast_replies.append(text)
+        sett.set("fast_replies", fast_replies)
+        
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.new_fast_reply_text(f"✅ <b>Быстрый ответ</b> успешно добавлен: <blockquote>{text}</blockquote>"),
+            reply_markup=templ.back_kb(calls.FastRepliesPagination(page=last_page).pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.new_fast_reply_text(e), 
+            reply_markup=templ.back_kb(calls.FastRepliesPagination(page=last_page).pack())
+        )
+            
+
+@router.message(states.SettingsStates.waiting_for_fast_reply_text, F.text)
+async def handler_waiting_for_fast_reply_text(message: types.Message, state: FSMContext):
+    try:
+        await state.set_state(None)
+        text = message.text
+
+        data = await state.get_data()
+        index = data.get("fast_reply_index")
+        last_page = data.get("last_page", 0)
+
+        fast_replies = sett.get("fast_replies")
+        fast_replies[index] = text
+        sett.set("fast_replies", fast_replies)
+        
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.new_fast_reply_text(f"✅ <b>Текст авто-ответ</b> был успешно изменён на: <blockquote>{text}</blockquote>"),
+            reply_markup=templ.back_kb(calls.FastRepliesPagination(page=last_page).pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.new_fast_reply_text(e), 
+            reply_markup=templ.back_kb(calls.FastRepliesPagination(page=last_page).pack())
         )

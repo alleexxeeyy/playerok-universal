@@ -13,6 +13,18 @@ def error_text(placeholder: str):
     return txt
 
 
+def new_sign_text(user):
+    username = "@" + user.username.replace("@", "")
+    txt = textwrap.dedent(f"""
+        <b>🔑 Новая авторизация</b>
+
+        Пользователь <b>{username}</b> только что авторизовался в боте
+        
+        ❗ <b>Если это были не Вы</b>, как можно скорее перейдите в раздел <b>«🔑 Авторизации»</b> в меню бота и удалите этого пользователя, а после смените пароль от Telegram бота
+    """)
+    return txt
+
+
 def back_kb(cb: str):
     rows = [[InlineKeyboardButton(text="⬅️ Назад", callback_data=cb)]]
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -39,7 +51,7 @@ def do_action_text(placeholder: str):
     return txt
 
 
-def log_text(title: str, text: str):
+def log_text(title: str, text=""):
     txt = textwrap.dedent(f"""
         <b>{title}</b>
         \n{text}
@@ -47,27 +59,78 @@ def log_text(title: str, text: str):
     return txt
 
 
-def log_new_mess_kb(username: str):
-    rows = [[InlineKeyboardButton(text="💬 Написать", callback_data=calls.RememberUsername(name=username, do="send_mess").pack())]]
+def log_new_mess_kb(chat_id: str):
+    rows = [
+        [
+        InlineKeyboardButton(text="✏️ Ответить", callback_data=calls.RememberChatId(id=chat_id, do="send_mess").pack()),
+        InlineKeyboardButton(text="⚡ Быстрый ответ", callback_data=calls.RememberChatId(id=chat_id, do="send_fast_reply").pack())
+        ],
+        [InlineKeyboardButton(text="💬 Диалог", callback_data=calls.ChatPage(id=chat_id).pack())],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
+    ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
 
 
-def log_new_deal_kb(username: str, deal_id: str):
-    rows = [[
-        InlineKeyboardButton(text="💬 Написать", callback_data=calls.RememberUsername(name=username, do="send_mess").pack()),
+def log_new_deal_kb(chat_id: str, deal_id: str):
+    rows = [
+        [
+        InlineKeyboardButton(text="✏️ Ответить", callback_data=calls.RememberChatId(id=chat_id, do="send_mess").pack()),
+        InlineKeyboardButton(text="⚡ Быстрый ответ", callback_data=calls.RememberChatId(id=chat_id, do="send_fast_reply").pack())
+        ],
+        [
         InlineKeyboardButton(text="☑️ Выполнил", callback_data=calls.RememberDealId(de_id=deal_id, do="complete").pack()),
         InlineKeyboardButton(text="📦 Возврат", callback_data=calls.RememberDealId(de_id=deal_id, do="refund").pack())
-    ]]
+        ],
+        [
+        InlineKeyboardButton(text="💬 Диалог", callback_data=calls.ChatPage(id=chat_id).pack()),
+        InlineKeyboardButton(text="📋 Сделка", callback_data=calls.DealPage(id=deal_id).pack())
+        ],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
+    ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
 
 
-def log_new_review_kb(username: str, deal_id: str):
-    rows = [[
-        InlineKeyboardButton(text="💬🌟 Ответить на отзыв", callback_data=calls.RememberDealId(de_id=deal_id, do="answer_rev").pack()),
-        InlineKeyboardButton(text="💬 Написать", callback_data=calls.RememberUsername(name=username, do="send_mess").pack())
-    ]]
+def log_new_problem_kb(chat_id: str, deal_id: str):
+    rows = [
+        [
+        InlineKeyboardButton(text="✏️ Ответить", callback_data=calls.RememberChatId(id=chat_id, do="send_mess").pack()),
+        InlineKeyboardButton(text="⚡ Быстрый ответ", callback_data=calls.RememberChatId(id=chat_id, do="send_fast_reply").pack())
+        ],
+        [
+        InlineKeyboardButton(text="💬 Диалог", callback_data=calls.ChatPage(id=chat_id).pack()),
+        InlineKeyboardButton(text="📋 Сделка", callback_data=calls.DealPage(id=deal_id).pack())
+        ],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    return kb
+
+
+def log_item_kb(item_id: str):
+    rows = [
+        [InlineKeyboardButton(text="🛍️ Товар", callback_data=calls.ItemPage(id=item_id).pack())],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    return kb
+
+
+def log_deal_kb(deal_id: str):
+    rows = [
+        [InlineKeyboardButton(text="📋 Сделка", callback_data=calls.DealPage(id=deal_id).pack())],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    return kb
+
+
+def log_transaction_kb(deal_id: str):
+    rows = [
+        [InlineKeyboardButton(text="💳 Транзакция", callback_data=calls.TransactionPage(id=deal_id).pack())],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
+    ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
 
@@ -80,9 +143,17 @@ def sign_text(placeholder: str):
     return txt
 
 
-def call_seller_text(calling_name, chat_link):
+def call_seller_text(username: str, chat_id: str):
     txt = textwrap.dedent(f"""
-        🆘 <b>{calling_name}</b> требуется ваша помощь!
-        {chat_link}
+        ❗ <b>{username}</b> вызывает вас в <a href="https://playerok.com/chats/{chat_id}">чат</a>
     """)
     return txt
+
+
+def call_seller_kb(chat_id: str):
+    rows = [
+        [InlineKeyboardButton(text="💬 Перейти в диалог", callback_data=calls.ChatPage(id=chat_id).pack())],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    return kb

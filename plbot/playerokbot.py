@@ -998,7 +998,7 @@ class PlayerokBot:
             
             for _ in range(3):
                 try: 
-                    items = self.get_my_items(count=6, statuses=[ItemStatuses.SOLD])
+                    items = self.get_my_items(count=12, statuses=[ItemStatuses.SOLD])
                     
                     item = next((i for i in items if i.name == event.deal.item.name), None)
                     if not item:

@@ -1,5 +1,6 @@
 import pytz
 import re
+import sys
 from datetime import datetime, timedelta
 from collections import Counter
 import base64
@@ -198,6 +199,21 @@ def configure_config():
     config = sett.get("config")
     pr = False
 
+    needs_setup = (
+        not config["playerok"]["api"]["cookies"] or
+        not config["telegram"]["api"]["token"] or
+        not config["telegram"]["bot"]["password"]
+    )
+
+    if needs_setup and not sys.stdin.isatty():
+        print(
+            f"\n{Fore.YELLOW}⚠️  Бот не настроен!"
+            f"\n{Fore.WHITE}Подключитесь к серверу и выполните команду:"
+            f"\n\n   {Fore.CYAN}bot setup"
+            f"\n\n{Fore.WHITE}Это запустит интерактивную настройку прямо в терминале.\n"
+        )
+        sys.exit(0)
+
     while not config["playerok"]["api"]["cookies"] :
         while not config["playerok"]["api"]["cookies"]:
             print(
@@ -334,7 +350,7 @@ def configure_config():
 
     if not pr:
         logger.info("") 
-
+    
     if config["playerok"]["api"]["proxy"] and not is_proxy_working(config["playerok"]["api"]["proxy"]):
         print(
             f"\n{Fore.LIGHTRED_EX}Похоже, что прокси для Playerok аккаунта не работает. "
@@ -352,7 +368,7 @@ def configure_config():
 
     is_pl_acc_working, reason = is_pl_account_working()
     if not is_pl_acc_working:
-        reason = reason if reason else "Не удалось подключиться к вашему Playerok аккаунту. Пожалуйста, убедитесь, что у вас указан верный токен и введите его снова."
+        reason = reason if reason else "Не удалось подключиться к вашему Playerok аккаунту. Пожалуйста, убедитесь, что у вас указан верные cookie-данные и введите их снова."
         print(f"\n{Fore.LIGHTRED_EX}{reason}")
         
         config["playerok"]["api"]["cookies"] = ""

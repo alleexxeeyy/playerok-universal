@@ -84,26 +84,7 @@ if __name__ == "__main__":
         )
         
         check_for_updates()
-
-        config = sett.get("config")
-        needs_setup = (
-            not config["playerok"]["api"]["cookies"] or
-            not config["playerok"]["api"]["user_agent"] or
-            not config["telegram"]["api"]["token"] or
-            not config["telegram"]["bot"]["password"]
-        )
- 
-        if needs_setup:
-            if sys.stdin.isatty():
-                configure_config()
-            else:
-                print(
-                    f"\n{Fore.YELLOW}⚠️  Бот не настроен!"
-                    f"\n{Fore.WHITE}Подключитесь к серверу и выполните команду:"
-                    f"\n\n   {Fore.CYAN}bot setup"
-                    f"\n\n{Fore.WHITE}Это запустит интерактивную настройку прямо в терминале.\n"
-                )
-                sys.exit(0)  # код 0 = не перезапускать сервис (Restart=on-failure)
+        configure_config()
 
         modules = load_modules()
         set_modules(modules)

@@ -63,13 +63,12 @@ def menu_kb():
         ],
         [InlineKeyboardButton(text="🔑 Авторизации", callback_data=calls.SignedUsersPagination(page=0).pack()),],
         [InlineKeyboardButton(text="━━━  ССЫЛКИ  ━━━", callback_data="null_answer")],
-        [InlineKeyboardButton(text="🧩 Каталог плагинов", url="https://t.me/alexey_production_bot")],
         [
-        InlineKeyboardButton(text="👨‍💻 Разработчик", url="https://t.me/alleexxeeyy"), 
         InlineKeyboardButton(text="📢 Новости", url="https://t.me/alexeyproduction"), 
+        InlineKeyboardButton(text="🧩 Плагины", url="https://t.me/alexey_production_bot"),
         ],
         [
-        InlineKeyboardButton(text="🤖 Бот", url="https://t.me/alexey_production_bot"),
+        InlineKeyboardButton(text="👨‍💻 Разработчик", url="https://t.me/alleexxeeyy"), 
         InlineKeyboardButton(text="🐈‍⬛ GitHub", url="https://github.com/alleexxeeyy/playerok-universal"),
         ]
     ]

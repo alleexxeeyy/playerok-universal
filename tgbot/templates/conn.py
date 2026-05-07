@@ -14,12 +14,12 @@ def conn_text():
     requests_timeout = config["playerok"]["api"]["requests_timeout"] or "❌ Не задано"
     
     txt = textwrap.dedent(f"""
-        <b>📶 Соединение</b>
+        <b>🛜 Соединение</b>
 
         <b>🌐 Прокси для Playerok:</b> {pl_proxy}
         <b>🌐 Прокси для Telegram:</b> {tg_proxy}
 
-        <b>🛜 Таймаут подключения к playerok.com:</b> {requests_timeout} сек.
+        <b>📶 Таймаут подключения к playerok.com:</b> {requests_timeout} сек.
         <blockquote><b>(?)</b> Это максимальное время, за которое должен прийти ответ на запрос с сайта Playerok. Если время истекло, а ответ не пришёл — бот выдаст ошибку. Если у вас слабый интернет, указывайте значение больше.</blockquote>
     """)
     return txt
@@ -48,7 +48,7 @@ def conn_kb():
 
 def conn_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>📶 Соединение</b>
+        <b>🛜 Соединение</b>
         \n{placeholder}
     """)
     return txt

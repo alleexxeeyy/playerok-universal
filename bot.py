@@ -22,7 +22,6 @@ from core.modules import (
 from core.handlers import call_bot_event
 from updater import check_for_updates
 from utils import configure_config
-from settings import Settings as sett
 
 
 logger = getLogger("universal")

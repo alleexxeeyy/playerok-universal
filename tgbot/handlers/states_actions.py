@@ -34,11 +34,11 @@ async def _send_mess(message: types.Message, state: FSMContext):
 
     text = None
     if message.text:
-        if len(message.text.strip()) <= 0:
+        if len(message.text) <= 0:
             raise Exception("❌ Слишком короткий текст")
 
         text = message.text
-        sent_msg += message.text.strip()
+        sent_msg += message.text
 
     photo_paths = []
     if message.photo:
@@ -59,6 +59,7 @@ async def _send_mess(message: types.Message, state: FSMContext):
 
         if message.caption:
             text = message.caption
+            sent_msg += message.caption
             await asyncio.sleep(1)
 
         sent_msg += f", <b>Изображения ({len(photo_paths)})</b>"
@@ -89,7 +90,7 @@ async def handler_waiting_for_fast_answer_message(message: types.Message, state:
             state=state,
             message=message,
             text=templ.do_action_text(
-                f"✅ Сообщение отправлено: <blockquote>{sent_msg.strip()}</blockquote>"
+                f"✅ Сообщение отправлено: <blockquote>{sent_msg}</blockquote>"
             ),
             reply_markup=templ.destroy_kb()
         )
@@ -127,7 +128,7 @@ async def handler_waiting_for_chat_answer_message(message: types.Message, state:
                 message=message,
                 text=templ.chat_float_text(
                     chat,
-                    f"✅ Сообщение <b>успешно отправлено</b>: <blockquote>{sent_msg.strip()}</blockquote>"
+                    f"✅ Сообщение <b>успешно отправлено</b>: <blockquote>{sent_msg}</blockquote>"
                 ),
                 reply_markup=templ.back_kb(calls.ChatPage(id=chat.id).pack())
             )

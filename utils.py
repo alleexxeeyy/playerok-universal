@@ -197,7 +197,6 @@ def is_password_valid(password: str) -> bool:
 
 def configure_config():
     config = sett.get("config")
-    pr = False
 
     needs_setup = (
         not config["playerok"]["api"]["cookies"] or
@@ -209,7 +208,7 @@ def configure_config():
         print(
             f"\n{Fore.YELLOW}⚠️  Бот не настроен!"
             f"\n{Fore.WHITE}Подключитесь к серверу и выполните команду:"
-            f"\n\n   {Fore.CYAN}bot setup"
+            f"\n\n   {Fore.CYAN}pluniversal setup"
             f"\n\n{Fore.WHITE}Это запустит интерактивную настройку прямо в терминале.\n"
         )
         sys.exit(0)
@@ -219,7 +218,7 @@ def configure_config():
             print(
                 f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Введите {Fore.YELLOW}Cookie-Данные {Fore.LIGHTYELLOW_EX}├──────────────────────┐{Fore.WHITE}"
                 f"\n\n  Авторизуйтесь в свой аккаунт на Playerok, а после скопируйте куки с помощью расширения Cookie-Editor"
-                f"\n  (ЛКМ на расширение -> Export -> Header String)"
+                f"\n  (ЛКМ на расширение → Export → Header String)"
                 f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}__ddg3=4L7yBmrBwMwKm15X;token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             )
             str_cookies = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
@@ -253,10 +252,10 @@ def configure_config():
             if is_user_agent_valid(user_agent):
                 config["playerok"]["api"]["user_agent"] = user_agent
                 sett.set("config", config)
-                print(f"\n{Fore.YELLOW}User Agent успешно сохранён в конфиг.")
+                print(f"\n{Fore.YELLOW}Юзер-агент успешно сохранён в конфиг.")
             else:
                 print(
-                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный User Agent. "
+                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный Юзер-агент. "
                     f"Убедитесь, что в нём нет русских символов и попробуйте ещё раз."
                 )
         
@@ -343,13 +342,10 @@ def configure_config():
             config["telegram"]["bot"]["password"] = password
             sett.set("config", config)
             print(f"\n{Fore.YELLOW}Пароль успешно сохранён в конфиг.")
-            print("") # разделитель
-            pr = True
         else:
             print(f"\n{Fore.LIGHTRED_EX}Ваш пароль не подходит. Убедитесь, что он соответствует формату и не является лёгким и попробуйте ещё раз.")
-
-    if not pr:
-        logger.info("") 
+    
+    logger.info("")
     
     if config["playerok"]["api"]["proxy"] and not is_proxy_working(config["playerok"]["api"]["proxy"]):
         print(
@@ -368,7 +364,7 @@ def configure_config():
 
     is_pl_acc_working, reason = is_pl_account_working()
     if not is_pl_acc_working:
-        reason = reason if reason else "Не удалось подключиться к вашему Playerok аккаунту. Пожалуйста, убедитесь, что у вас указан верные cookie-данные и введите их снова."
+        reason = reason if reason else "Не удалось подключиться к вашему Playerok аккаунту. Пожалуйста, убедитесь, что у вас указаны верные cookie-данные и введите их снова."
         print(f"\n{Fore.LIGHTRED_EX}{reason}")
         
         config["playerok"]["api"]["cookies"] = ""

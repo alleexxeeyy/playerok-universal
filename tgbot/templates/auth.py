@@ -13,7 +13,7 @@ def auth_text():
     user_agent = config["playerok"]["api"]["user_agent"] or "❌ Не задано"
     
     txt = textwrap.dedent(f"""
-        <b>🔑 Авторизация</b>
+        <b>🔒 Авторизация</b>
 
         <b>🍪 Cookie-данные:</b> {cookies}
         <b>🎩 User Agent:</b> {user_agent}
@@ -38,7 +38,7 @@ def auth_kb():
 
 def auth_float_text(placeholder: str):
     txt = textwrap.dedent(f"""
-        <b>🔑 Авторизация</b>
+        <b>🔒 Авторизация</b>
         \n{placeholder}
     """)
     return txt

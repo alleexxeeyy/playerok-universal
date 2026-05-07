@@ -161,7 +161,7 @@ async def callback_enter_requests_timeout(callback: CallbackQuery, state: FSMCon
         state=state,
         message=callback.message,
         text=templ.conn_float_text(
-            f"🛜 Введите новый <b>таймаут подключения</b> (в секундах):"
+            f"📶 Введите новый <b>таймаут подключения</b> (в секундах):"
             f"\n\n・ <b>Текущее:</b> <code>{requests_timeout}</code> сек."
         ),
         reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())

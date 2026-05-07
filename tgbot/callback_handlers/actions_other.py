@@ -480,7 +480,7 @@ async def callback_bump_items(callback: CallbackQuery, state: FSMContext):
             await throw_float_message(
                 state=state,
                 message=callback.message,
-                text=templ.bump_float_text(f"❌ Не удалось <b>поднять товары:</b><blockquote>{error}</blockquote>"),
+                text=templ.bump_float_text(f"❌ Не удалось <b>поднять товары</b>: <blockquote>{error}</blockquote>"),
                 reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
             )
     except Exception as e:
@@ -518,7 +518,7 @@ async def callback_request_withdrawal(callback: CallbackQuery, state: FSMContext
             await throw_float_message(
                 state=state,
                 message=callback.message,
-                text=templ.withdrawal_float_text(f"❌ Не удалось <b>создать транзакцию на вывод:</b><blockquote>{error}</blockquote>"),
+                text=templ.withdrawal_float_text(f"❌ Не удалось <b>создать транзакцию на вывод</b>: <blockquote>{error}</blockquote>"),
                 reply_markup=templ.back_kb(calls.MenuNavigation(to="withdrawal").pack())
             )
     except Exception as e:

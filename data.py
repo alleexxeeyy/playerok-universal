@@ -25,15 +25,7 @@ CACHED_ORDERS = DataFile(
     path="bot_data/cached_orders.json",
     default={}
 )
-LATEST_EVENTS_TIMES = DataFile(
-    name="latest_events_times",
-    path="bot_data/latest_events_times.json",
-    default={
-        "auto_bump_items": None,
-        "auto_withdrawal": None
-    }
-)
-DATA = [INITIALIZED_USERS, SAVED_ITEMS, CACHED_ORDERS, LATEST_EVENTS_TIMES]
+DATA = [INITIALIZED_USERS, SAVED_ITEMS, CACHED_ORDERS]
 
 
 def get_json(path: str, default: dict | list) -> dict:

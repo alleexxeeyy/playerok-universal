@@ -140,18 +140,3 @@ async def callback_stats_navigation(callback: CallbackQuery, callback_data: call
         await throw_float_message(
             state, callback.message, templ.stats_all_text(), templ.stats_all_kb(), callback
         )
-
-
-@router.callback_query(calls.InstructionNavigation.filter())
-async def callback_instruction_navgiation(callback: CallbackQuery, callback_data: calls.InstructionNavigation, state: FSMContext):
-    await state.set_state(None)
-    to = callback_data.to
-    
-    if to == "default":
-        await throw_float_message(
-            state, callback.message, templ.instruction_text(), templ.instruction_kb(), callback
-        )
-    elif to == "commands":
-        await throw_float_message(
-            state, callback.message, templ.instruction_comms_text(), templ.instruction_comms_kb(), callback
-        )

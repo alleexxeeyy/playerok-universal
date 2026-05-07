@@ -19,6 +19,3 @@ class BotSettingsNavigation(CallbackData, prefix="bsnav"):
 
 class ItemsSettingsNavigation(CallbackData, prefix="isnav"):
     to: str
-
-class InstructionNavigation(CallbackData, prefix="insnav"):
-    to: str

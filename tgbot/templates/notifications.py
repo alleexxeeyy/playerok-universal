@@ -73,8 +73,10 @@ def notifications_kb():
         [InlineKeyboardButton(text=f"{withdrawal_requested} Вывод средств", callback_data="switch_notifications_withdrawal_requested")],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="default").pack())]
     ]
+    
     if config["playerok"]["notifications"]["chat_id"]:
         rows[1].append(InlineKeyboardButton(text=f"❌ Очистить", callback_data="clean_notifications_chat_id"))
+    
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
 

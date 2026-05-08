@@ -83,8 +83,7 @@ async def handler_waiting_for_fast_answer_message(message: types.Message, state:
         await state.set_state(None)
         await throw_float_message(state, message, "⌛")
 
-        acc, chat, sent_msg = await _send_mess(message, state)
-        username = next((u.username for u in chat.users if u.id != acc.id), "???")
+        _, _, sent_msg = await _send_mess(message, state)
 
         await throw_float_message(
             state=state,

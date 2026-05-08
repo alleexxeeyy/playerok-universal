@@ -32,6 +32,25 @@ except RuntimeError:
     main_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(main_loop)
 
+# патч colorama: на Linux без TTY (запуск через systemd или os.execv)
+# winterm=None и colorama падает в convert_osc -> set_title
+# патчим convert_osc напрямую чтобы это работало при любом способе запуска
+import colorama.ansitowin32 as _a32
+if not sys.stdout.isatty():
+    class _FakeWinTerm:
+        def set_title(self, t): pass
+        def set_cursor_position(self, *a, **k): pass
+        def set_foreground(self, *a, **k): pass
+        def set_background(self, *a, **k): pass
+        def reset_all(self, *a, **k): pass
+        def style(self, *a, **k): pass
+    _a32.winterm = _FakeWinTerm()
+    _orig_osc = _a32.AnsiToWin32.convert_osc
+    def _safe_osc(self, text):
+        try: return _orig_osc(self, text)
+        except (AttributeError, TypeError): return text
+    _a32.AnsiToWin32.convert_osc = _safe_osc
+
 init_colorama()
 init_main_loop(main_loop)
 

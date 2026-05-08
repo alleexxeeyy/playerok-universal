@@ -113,7 +113,7 @@ async def handler_waiting_for_new_password(message: types.Message, state: FSMCon
             text=templ.signed_users_float_text(
                 "✔️ Подтвердите <b>смену пароля</b> для бота:"
                 f"\n\n・ <b>Старый:</b> {old_passwd}"
-                f"\n・ <b>Стоимость:</b> {new_passwd}"
+                f"\n・ <b>Новый:</b> {new_passwd}"
             ),
             reply_markup=templ.confirm_kb(
                 confirm_cb="change_password",

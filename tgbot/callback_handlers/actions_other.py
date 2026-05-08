@@ -290,7 +290,7 @@ async def callback_remember_chat_id(callback: CallbackQuery, callback_data: call
             reply_to=callback.message.message_id
         )
 
-    if do == "send_fast_reply":
+    elif do == "send_fast_reply":
         await throw_float_message(
             state=state,
             message=callback.message,
@@ -314,7 +314,8 @@ async def callback_remember_deal_id(callback: CallbackQuery, callback_data: call
         await callback_fast_change_deal_status(
             callback, calls.FastChangeDealStatus(id=deal_id, st="ROLLED_BACK"), state
         )
-    if do == "complete":
+        
+    elif do == "complete":
         await callback_fast_change_deal_status(
             callback, calls.FastChangeDealStatus(id=deal_id, st="SENT"), state
         )

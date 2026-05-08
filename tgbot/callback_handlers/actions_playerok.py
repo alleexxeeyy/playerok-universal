@@ -247,7 +247,6 @@ async def callback_report_deal_problem(callback: CallbackQuery, callback_data: c
         acc = plbot().account
 
         deal_id = callback_data.id
-        deal = data.get("deal")
         mt_id = data.get("mt_id")
         problem_desc = data.get("problem_desc")
 
@@ -273,7 +272,6 @@ async def callback_publish_item(callback: CallbackQuery, callback_data: calls.Pu
 
         item_id = callback_data.id
         status_id = data.get("item_pr_status_id")
-        item = data.get("item")
 
         from plbot.playerokbot import get_playerok_bot as plbot
         plbot().account.publish_item(item_id, status_id)
@@ -298,7 +296,6 @@ async def callback_increase_item_priority(callback: CallbackQuery, callback_data
 
         item_id = callback_data.id
         status_id = data.get("item_pr_status_id")
-        item = data.get("item")
 
         from plbot.playerokbot import get_playerok_bot as plbot
         plbot().account.increase_item_priority_status(item_id, status_id)

@@ -57,7 +57,7 @@ async def callback_confirm_publish_item(callback: CallbackQuery, callback_data: 
         text=templ.item_float_text(
             "✔️ Подтвердите <b>публикацию товара</b>:"
             f"\n\n・ <b>Товар:</b> {item.name}"
-            f"\n・ <b>Статус:</b> {status_str}"
+            f"\n・ <b>Приоритет:</b> {status_str}"
         ), 
         reply_markup=templ.confirm_kb(
             confirm_cb=calls.PublishItem(id=item.id).pack(), 

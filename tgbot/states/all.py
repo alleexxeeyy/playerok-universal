@@ -43,10 +43,10 @@ class SettingsStates(StatesGroup):
     waiting_for_notifications_chat_id = State()
     waiting_for_watermark_value = State()
 
-    waiting_for_logs_max_file_size = State()
-
     waiting_for_new_fast_reply_text = State()
     waiting_for_fast_reply_text = State()
+
+    waiting_for_logs_max_file_size = State()
 
 
 class MessagesStates(StatesGroup):

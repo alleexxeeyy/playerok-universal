@@ -13,18 +13,6 @@ def error_text(placeholder: str):
     return txt
 
 
-def new_sign_text(user):
-    username = "@" + user.username.replace("@", "")
-    txt = textwrap.dedent(f"""
-        <b>🔑 Новая авторизация</b>
-
-        Пользователь <b>{username}</b> только что авторизовался в боте
-        
-        ❗ <b>Если это были не Вы</b>, как можно скорее перейдите в раздел <b>«🔑 Авторизации»</b> в меню бота и удалите этого пользователя, а после смените пароль от Telegram бота
-    """)
-    return txt
-
-
 def back_kb(cb: str):
     rows = [[InlineKeyboardButton(text="⬅️ Назад", callback_data=cb)]]
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -41,6 +29,18 @@ def confirm_kb(confirm_cb: str, cancel_cb: str):
 def destroy_kb():
     rows = [[InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]]
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def new_sign_text(user):
+    username = "@" + user.username.replace("@", "")
+    txt = textwrap.dedent(f"""
+        <b>🔑 Новая авторизация</b>
+
+        Пользователь <b>{username}</b> только что авторизовался в боте
+        
+        ❗ <b>Если это были не Вы</b>, как можно скорее перейдите в раздел <b>«🔑 Авторизации»</b> в меню бота и удалите этого пользователя, а после смените пароль от Telegram бота
+    """)
+    return txt
 
 
 def do_action_text(placeholder: str):

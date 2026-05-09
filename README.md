@@ -59,7 +59,7 @@
 
 [Возникли проблемы с установкой? Нажми на меня](https://telegra.ph/FunPay-Universal--chastye-oshibki-i-ih-resheniya-08-26)
 
-### ♨️ Linux (Ubuntu)
+### ♨️ Linux (Ubuntu 24)
 1. Выполните команду
 
 ```bash

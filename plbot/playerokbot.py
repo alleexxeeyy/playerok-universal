@@ -284,7 +284,7 @@ class PlayerokBot:
 
     def get_my_items(
         self, 
-        statuses: list[ItemStatuses] | None = None,
+        statuses: list[ItemStatuses] = [ItemStatuses.APPROVED],
         game_id: str | None = None, 
         category_id: str | None = None,
         count: int = -1
@@ -298,26 +298,25 @@ class PlayerokBot:
         svd_items: list[dict] = []
         
         try:
-            user = self.account.get_user(self.account.id)
-            next_cursor = None
-
             while True:
-                itm_list = user.get_items(
+                itm_list = self.account.get_my_items(
                     after_cursor=next_cursor, 
                     game_id=game_id, 
-                    category_id=category_id
+                    category_id=category_id,
+                    statuses=statuses,
+                    count=count if count != -1 else 24
                 )
                 
                 for itm in itm_list.items:
                     svd_items.append(self._serealize_item(itm))
+                    my_items.append(itm)
                     
-                    if statuses is None or itm.status in statuses:
-                        my_items.append(itm)
-                        if len(my_items) >= count and count != -1:
-                            return my_items
+                    if len(my_items) >= count and count != -1:
+                        return my_items
                 
                 if not itm_list.page_info.has_next_page:
                     break
+                
                 next_cursor = itm_list.page_info.end_cursor
                 time.sleep(0.5)
             

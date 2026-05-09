@@ -76,7 +76,7 @@ echo ""
 echo -e "  ${WHITE}Откуда установить бота?${NC}"
 echo ""
 echo -e "  ${CYAN}${BOLD}1${NC}  ${WHITE}Скачать с GitHub${NC}  ${GRAY}(рекомендуется)${NC}"
-echo -e "  ${CYAN}${BOLD}2${NC}  ${WHITE}Из локальных файлов${NC}  ${GRAY}(бот уже загружен вручную)${NC}"
+echo -e "  ${CYAN}${BOLD}2${NC}  ${WHITE}Использовать локальные файлы${NC}  ${GRAY}(бот уже загружен вручную)${NC}"
 echo ""
 read -rp "$(echo -e "  ${CYAN}›${NC} Ваш выбор [1/2]: ")" SOURCE_CHOICE
 
@@ -139,7 +139,14 @@ step "Виртуальное окружение"
 info "Подготовка окружения..."
 cd "$BOT_DIR"
 if [[ -d "venv" ]]; then
-  success "Окружение уже существует — пропускаю"
+  if [[ ! -f "venv/bin/pip" ]]; then
+    warn "Окружение повреждено — пересоздаю..."
+    rm -rf venv
+    $PYTHON -m venv venv
+    success "Виртуальное окружение пересоздано"
+  else
+    success "Окружение уже существует — пропускаю"
+  fi
 else
   $PYTHON -m venv venv
   success "Виртуальное окружение создано"

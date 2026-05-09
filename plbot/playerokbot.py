@@ -287,6 +287,7 @@ class PlayerokBot:
         statuses: list[ItemStatuses] = [ItemStatuses.APPROVED],
         game_id: str | None = None, 
         category_id: str | None = None,
+        obtaining_type_id: str | None = None,
         count: int = -1
     ) -> list[ItemProfile]:
         """
@@ -304,6 +305,7 @@ class PlayerokBot:
                     after_cursor=next_cursor, 
                     game_id=game_id, 
                     category_id=category_id,
+                    obtaining_type_id=obtaining_type_id,
                     statuses=statuses,
                     count=count if count != -1 else 24
                 )

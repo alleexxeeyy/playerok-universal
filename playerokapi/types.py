@@ -338,6 +338,7 @@ class UserProfile:
         self, 
         game_id: str | None = None, 
         category_id: str | None = None, 
+        obtaining_type_id: str | None = None, 
         statuses: list[ItemStatuses] | None = None, 
         count: int = 24, 
         after_cursor: str | None = None
@@ -350,6 +351,9 @@ class UserProfile:
 
         :param category_id: ID категории игры/приложения, чьи предметы нужно получить, _опционально_.
         :type category_id: `str` or `None`
+
+        :param obtaining_type_id: ID типа получения товара, _опционально_.
+        :type obtaining_type_id: `str` or `None`
 
         :param statuses: Статусы, предметы которых нужно получать.
         :type statuses: `list[playerokapi.enums.ItemStatuses]` or `None`
@@ -376,6 +380,9 @@ class UserProfile:
             filter["gameId"] = game_id
         elif category_id: 
             filter["gameCategoryId"] = category_id
+
+        if obtaining_type_id:
+            filter["obtainingTypeId"] = obtaining_type_id
         
         payload = {
             "operationName": "items",

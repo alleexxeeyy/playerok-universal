@@ -1378,6 +1378,7 @@ class Account:
         self, 
         game_id: str | None = None, 
         category_id: str | None = None, 
+        obtaining_type_id: str | None = None, 
         statuses: list[ItemStatuses] = [ItemStatuses.APPROVED], 
         count: int = 24,
         after_cursor: str | None = None
@@ -1390,6 +1391,9 @@ class Account:
 
         :param category_id: ID категории игры/приложения, _опционально_.
         :type category_id: `str` or `None`
+
+        :param obtaining_type_id: ID типа получения товара, _опционально_.
+        :type obtaining_type_id: `str` or `None`
 
         :param statuses: Статусы, предметы которых нужно получать.
         :type statuses: `list[playerokapi.enums.ItemStatuses]`
@@ -1413,6 +1417,9 @@ class Account:
             filter["gameId"] = game_id
         elif category_id: 
             filter["gameCategoryId"] = category_id
+
+        if obtaining_type_id:
+            filter["obtainingTypeId"] = obtaining_type_id
             
         payload = {
             "operationName": "items",
@@ -1439,6 +1446,7 @@ class Account:
         self, 
         game_id: str | None = None, 
         category_id: str | None = None, 
+        obtaining_type_id: str | None = None, 
         statuses: list[ItemStatuses] = [ItemStatuses.APPROVED], 
         count: int = 24,
         after_cursor: str | None = None
@@ -1452,6 +1460,9 @@ class Account:
 
         :param category_id: ID категории игры/приложения, _опционально_.
         :type category_id: `str` or `None`
+
+        :param obtaining_type_id: ID типа получения товара, _опционально_.
+        :type obtaining_type_id: `str` or `None`
 
         :param statuses: Статусы, предметы которых нужно получать.
         :type statuses: `list[playerokapi.enums.ItemStatuses]`
@@ -1474,6 +1485,9 @@ class Account:
             filter = {"gameId": game_id, "status": [st.name for st in statuses if st]}
         else:
             filter = {"gameCategoryId": category_id, "status": [st.name for st in statuses if st]}
+
+        if obtaining_type_id:
+            filter["obtainingTypeId"] = obtaining_type_id
             
         payload = {
             "operationName": "items",

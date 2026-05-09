@@ -296,6 +296,7 @@ class PlayerokBot:
         
         my_items: list[ItemProfile] = []
         svd_items: list[dict] = []
+        next_cursor = None
         
         try:
             while True:

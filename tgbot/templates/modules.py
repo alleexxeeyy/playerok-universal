@@ -44,10 +44,18 @@ def modules_kb(page=0):
         btn_next = InlineKeyboardButton(text="→", callback_data=calls.ModulesPagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="123")
         buttons_row.append(btn_next)
         rows.append(buttons_row)
-
-    rows.append([
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="default").pack())
-    ])
+        
+    rows.append([InlineKeyboardButton(text="➕ Импортировать", callback_data="send_module_file")])
+    rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="default").pack())])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
+
+
+def modules_float_text(placeholder):
+    modules = get_modules()
+    txt = textwrap.dedent(f"""
+        <b>🔌 Модули</b>
+        \n{placeholder}
+    """)
+    return txt

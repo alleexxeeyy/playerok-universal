@@ -47,6 +47,7 @@ class SettingsStates(StatesGroup):
     waiting_for_fast_reply_text = State()
 
     waiting_for_logs_max_file_size = State()
+    waiting_for_module_file = State()
 
 
 class MessagesStates(StatesGroup):

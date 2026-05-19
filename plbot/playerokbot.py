@@ -528,8 +528,9 @@ class PlayerokBot:
             self.config["playerok"]["auto_withdrawal"]["last_time"] = datetime.now().isoformat()
             sett.set("config", self.config)
             
-            balance = 0
             self.account = self.account.get()
+
+            balance = 0
             balance = self.account.profile.balance.withdrawable
             if balance <= 500:
                 raise Exception("Слишком маленький баланс. Транзакция должна быть на сумму от 500₽")
@@ -542,6 +543,10 @@ class PlayerokBot:
                 provider = TransactionProviderIds.SBP
                 account = self.config["playerok"]["auto_withdrawal"]["sbp_phone_number"]
                 sbp_bank_member_id = self.config["playerok"]["auto_withdrawal"]["sbp_bank_id"]
+            elif self.config["playerok"]["auto_withdrawal"]["credentials_type"] == "usdt":
+                provider = TransactionProviderIds.USDT
+                account = self.config["playerok"]["auto_withdrawal"]["usdt_address"]
+                sbp_bank_member_id = None
             
             trans = self.account.request_withdrawal(
                 provider=provider,

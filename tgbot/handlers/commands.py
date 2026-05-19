@@ -2,6 +2,7 @@ from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
+from __init__ import VERSION
 from settings import Settings as sett
 from core.utils import restart
 
@@ -26,6 +27,17 @@ async def handler_start(message: types.Message, state: FSMContext):
         text=templ.menu_text(),
         reply_markup=templ.menu_kb()
     )
+
+    from updater import latest_release
+    if latest_release and latest_release.get("tag_name") != VERSION:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.new_release_text(latest_release),
+            reply_markup=templ.new_release_kb(),
+            disable_web_page_preview=True,
+            send=True
+        )
 
 
 @router.message(Command("restart"))

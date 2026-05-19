@@ -69,6 +69,10 @@ async def callback_menu_navigation(callback: CallbackQuery, callback_data: calls
         await throw_float_message(
             state, callback.message, templ.logs_text(), templ.logs_kb(), callback
         )
+    elif to == "updates":
+        await throw_float_message(
+            state, callback.message, templ.updates_text(), templ.updates_kb(), callback
+        )
 
     elif to == "auth":
         await throw_float_message(

@@ -1,4 +1,3 @@
-from .instruction import *
 from .main import *
 from .menu import *
 from .modules import *
@@ -6,6 +5,7 @@ from .module_page import *
 from .profile import *
 from .notifications import *
 from .logs import *
+from .updates import *
 from .signed_users import *
 
 from .stats_day import *

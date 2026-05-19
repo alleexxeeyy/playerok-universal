@@ -260,6 +260,28 @@ async def callback_switch_notifications_withdrawal_requested(callback: CallbackQ
     )
 
 
+@router.callback_query(F.data == "switch_updates_auto_update")
+async def callback_switch_updates_auto_update(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["updates"]["auto_update"] = not config["updates"]["auto_update"]
+    sett.set("config", config)
+    
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="updates"), state
+    )
+
+
+@router.callback_query(F.data == "switch_updates_notify")
+async def callback_switch_updates_notify(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["updates"]["notify"] = not config["updates"]["notify"]
+    sett.set("config", config)
+    
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="updates"), state
+    )
+
+
 @router.callback_query(F.data == "switch_message_enabled")
 async def callback_switch_message_enabled(callback: CallbackQuery, state: FSMContext):
     try:

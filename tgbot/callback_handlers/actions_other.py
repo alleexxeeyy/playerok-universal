@@ -3,6 +3,7 @@ from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
 from pathlib import Path
 from collections import deque
+
 import shutil
 import os
 
@@ -1430,3 +1431,51 @@ async def callback_sel_reviews_filter_category(callback: CallbackQuery, state: F
         reply_markup=templ.reviews_filter_categories_kb(cats),
         callback=callback
     )
+
+
+@router.callback_query(F.data == "install_update")
+async def callback_install_update(callback: CallbackQuery, state: FSMContext):
+    try:
+        await state.set_state(None)
+
+        mess = await throw_float_message(
+            state=state,
+            message=callback.message,
+            text="<b>🚀 Устанавливаю обновление...</b>" ,
+            callback=callback,
+            reply_to=callback.message.message_id
+        )
+
+        from updater import download_update, install_update, latest_release
+        from core.utils import restart
+
+        bytes = download_update(latest_release)
+        if not bytes:
+            return
+        
+        if install_update(latest_release, bytes):
+            await throw_float_message(
+                state=state,
+                message=mess,
+                text="<b>✅ Обновление установлено</b>" ,
+                callback=callback
+            )
+
+            await throw_float_message(
+                state=state,
+                message=mess,
+                text="🔄️ <b>Перезагружаю бота</b>, подождите...",
+                reply_markup=templ.destroy_kb(),
+                callback=callback,
+                send=True
+            )
+            
+            restart(from_tg=True)
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.error_text(e),
+            reply_markup=templ.destroy_kb(),
+            callback=callback
+        )

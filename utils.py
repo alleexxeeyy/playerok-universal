@@ -1,7 +1,7 @@
 import pytz
 import re
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import Counter
 import base64
 import string
@@ -47,6 +47,24 @@ def get_event_next_time(last_time_iso, interval):
     return (
         datetime.fromisoformat(last_time_iso) + timedelta(seconds=interval)
         if last_time_iso else datetime.now()
+    )
+
+
+def get_tg_log_chats():
+    config = sett.get("config")
+    chat_id = config["playerok"]["notifications"]["chat_id"]
+
+    if not chat_id:
+        return config["telegram"]["bot"]["signed_users"]
+    else:
+        return [chat_id]
+
+
+def github_str_to_dt(date_str: str) -> datetime:
+    return datetime.fromisoformat(
+        date_str.replace("Z", "+00:00")
+    ).replace(tzinfo=timezone.utc).astimezone(
+        pytz.timezone("Europe/Moscow")
     )
 
 

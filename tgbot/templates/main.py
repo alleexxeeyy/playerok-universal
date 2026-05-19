@@ -1,6 +1,7 @@
 import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from utils import github_str_to_dt
 from .. import callback_datas as calls
 
 
@@ -29,6 +30,34 @@ def confirm_kb(confirm_cb: str, cancel_cb: str):
 def destroy_kb():
     rows = [[InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]]
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def new_release_text(release):
+    tag = release["tag_name"]
+    desc = release.get("body", "Без описания")
+    url = release["html_url"]
+    published_at = github_str_to_dt(
+        release["published_at"]
+    ).strftime("%d.%m.%Y %H:%M:%S")
+
+    txt = textwrap.dedent(f"""
+        <b>🚀 Доступна новая версия — <a href="{url}">{tag}</a></b>
+        
+        <b>💎 Изменения:</b>
+        <blockquote>{desc}</blockquote>
+        
+        <b>📅 Дата выхода:</b> {published_at}
+    """)
+    return txt
+
+
+def new_release_kb():
+    rows = [
+        [InlineKeyboardButton(text="⬇️ Установить", callback_data="install_update")],
+        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    return kb
 
 
 def new_sign_text(user):

@@ -45,7 +45,7 @@ def need_new_message(message: Message, bot, send: bool) -> bool:
     return False
 
 
-async def try_edit_message(bot, chat_id, message_id, text, photo, reply_markup, callback):
+async def try_edit_message(bot, chat_id, message_id, text, photo, reply_markup, callback, **kwargs):
     try:
         if photo:
             media = InputMediaPhoto(
@@ -57,14 +57,16 @@ async def try_edit_message(bot, chat_id, message_id, text, photo, reply_markup, 
                 chat_id=chat_id,
                 message_id=message_id,
                 media=media,
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
+                **kwargs
             )
         return await bot.edit_message_text(
             chat_id=chat_id,
             message_id=message_id,
             text=text,
             reply_markup=reply_markup,
-            parse_mode="HTML"
+            parse_mode="HTML",
+            **kwargs
         )
 
     except TelegramAPIError as e:
@@ -84,21 +86,23 @@ async def try_edit_message(bot, chat_id, message_id, text, photo, reply_markup, 
         raise
 
 
-async def send_new_message(bot, chat_id, text, photo, reply_markup, reply_to):
+async def send_new_message(bot, chat_id, text, photo, reply_markup, reply_to, **kwargs):
     if photo:
         return await bot.send_photo(
             chat_id=chat_id,
             photo=FSInputFile(photo),
             caption=text,
             reply_markup=reply_markup,
-            parse_mode="HTML"
+            parse_mode="HTML",
+            **kwargs
         )
     return await bot.send_message(
         chat_id=chat_id,
         text=text,
         reply_markup=reply_markup,
         parse_mode="HTML",
-        reply_to_message_id=reply_to
+        reply_to_message_id=reply_to,
+        **kwargs
     )
 
 
@@ -110,7 +114,8 @@ async def throw_float_message(
     callback: CallbackQuery = None,
     photo: str = None,
     send: bool = False,
-    reply_to: int = None
+    reply_to: int = None,
+    **kwargs
 ) -> Message | None:
     
     if not text and not photo:
@@ -132,7 +137,8 @@ async def throw_float_message(
             text=text,
             photo=photo,
             reply_markup=reply_markup,
-            callback=callback
+            callback=callback,
+            **kwargs
         )
 
         if message.from_user.id != bot.id: 
@@ -151,7 +157,8 @@ async def throw_float_message(
             text=text,
             photo=photo,
             reply_markup=reply_markup,
-            reply_to=reply_to
+            reply_to=reply_to,
+            **kwargs
         )
 
     if callback:

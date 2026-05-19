@@ -20,7 +20,10 @@ from core.modules import (
     connect_modules
 )
 from core.handlers import call_bot_event
-from updater import check_for_updates
+from updater import (
+    check_for_updates, 
+    check_new_releases_task
+)
 from utils import configure_config
 
 
@@ -110,7 +113,9 @@ if __name__ == "__main__":
 
         main_loop.run_until_complete(start_telegram_bot(from_tg))
         main_loop.run_until_complete(start_playerok_bot())
+
         main_loop.create_task(clear_logs_task())
+        main_loop.create_task(check_new_releases_task())
 
         asyncio.run(call_bot_event("ON_INIT"))
         

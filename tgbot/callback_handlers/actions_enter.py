@@ -237,7 +237,7 @@ async def callback_enter_new_included_complete_deal_keyphrases(callback: Callbac
     )
 
 
-@router.callback_query(F.data == "enter_new_excluded_complete_dealm_keyphrases")
+@router.callback_query(F.data == "enter_new_excluded_complete_deal_keyphrases")
 async def callback_enter_new_excluded_complete_deal_keyphrases(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)

@@ -11,7 +11,6 @@ def complete_included_text():
     included_complete_deals = sett.get("auto_complete_deals").get("included")
     txt = textwrap.dedent(f"""
         <b>☑️➕ Включенные</b>
-
         Всего <b>{len(included_complete_deals)}</b> включенных товаров:
     """)
     return txt

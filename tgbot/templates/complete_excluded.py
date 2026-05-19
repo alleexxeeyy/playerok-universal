@@ -11,7 +11,6 @@ def complete_excluded_text():
     excluded_complete_deals = sett.get("auto_complete_deals").get("excluded")
     txt = textwrap.dedent(f"""
         <b>☑️➖ Исключенные</b>
-
         Всего <b>{len(excluded_complete_deals)}</b> исключенных товаров:
     """)
     return txt

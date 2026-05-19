@@ -128,10 +128,15 @@ if ! command -v python3.12 &>/dev/null; then
   apt-get install -y software-properties-common -qq
   add-apt-repository -y ppa:deadsnakes/ppa > /dev/null 2>&1
   apt-get update -qq
-  apt-get install -y python3.12 python3.12-venv python3.12-distutils -qq
+  apt-get install -y python3.12 python3.12-venv python3.12-distutils python3.12-dev -qq
   success "Python 3.12 установлен"
 else
   success "Python $(python3.12 --version | cut -d' ' -f2) уже установлен"
+  # Убеждаемся что venv модуль присутствует
+  if ! python3.12 -m venv --help &>/dev/null; then
+    info "Устанавливаю python3.12-venv..."
+    apt-get install -y python3.12-venv -qq
+  fi
 fi
 
 # ── 5. Виртуальное окружение ─────────────────────────────────

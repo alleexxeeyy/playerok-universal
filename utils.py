@@ -10,7 +10,6 @@ from logging import getLogger
 from colorama import Fore
 
 from playerokapi.account import Account
-from playerokapi.types import Chat
 from playerokapi.exceptions import BotCheckDetectedException
 
 from settings import Settings as sett

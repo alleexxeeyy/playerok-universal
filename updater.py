@@ -131,7 +131,7 @@ def check_for_updates():
 async def check_new_releases_task(interval=180):
     
     while True:
-        #await asyncio.sleep(interval)
+        await asyncio.sleep(interval)
         try:
             global latest_release
 
@@ -164,4 +164,3 @@ async def check_new_releases_task(interval=180):
                 )
         except:
             pass
-        await asyncio.sleep(123)

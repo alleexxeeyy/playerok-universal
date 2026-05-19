@@ -140,7 +140,7 @@ async def check_new_releases_task(interval=180):
             
             if (
                 latest_release and latest_release == release
-                or Version(VERSION) < Version(release["tag_name"])
+                or Version(VERSION) <= Version(release["tag_name"])
             ):
                 continue
 

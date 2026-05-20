@@ -129,7 +129,6 @@ def check_for_updates():
 
 
 async def check_new_releases_task(interval=180):
-    
     while True:
         await asyncio.sleep(interval)
         try:

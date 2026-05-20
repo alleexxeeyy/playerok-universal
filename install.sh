@@ -10,6 +10,7 @@ BOT_NAME="playerokuniversal"
 BOT_DIR="/root/playerokuniversal"
 BOT_FILE="bot.py"
 REPO_URL="https://github.com/alleexxeeyy/playerok-universal"
+RELEASE_URL="https://github.com/alleexxeeyy/playerok-universal/archive/refs/heads/main.zip"
 SERVICE_FILE="/etc/systemd/system/${BOT_NAME}.service"
 PYTHON="python3.12"
 CMD="pluniversal"
@@ -61,13 +62,21 @@ info "Обновление списка пакетов..."
 apt-get update -qq
 success "Система обновлена"
 
-# ── 2. Установка git ─────────────────────────────────────────
-info "Проверка git..."
-if ! command -v git &>/dev/null; then
-  apt-get install -y git -qq
-  success "git установлен"
+# ── 2. Установка curl / unzip ───────────────────────────────
+info "Проверка curl..."
+if ! command -v curl &>/dev/null; then
+  apt-get install -y curl -qq
+  success "curl установлен"
 else
-  success "git уже установлен"
+  success "curl уже установлен"
+fi
+
+info "Проверка unzip..."
+if ! command -v unzip &>/dev/null; then
+  apt-get install -y unzip -qq
+  success "unzip установлен"
+else
+  success "unzip уже установлен"
 fi
 
 # ── 3. Источник файлов бота ──────────────────────────────────
@@ -83,17 +92,18 @@ read -rp "$(echo -e "  ${CYAN}›${NC} Ваш выбор [1/2]: ")" SOURCE_CHOIC
 case "$SOURCE_CHOICE" in
   1)
     echo ""
-    if [[ -d "$BOT_DIR/.git" ]]; then
-      info "Репозиторий найден — получаю обновления..."
-      cd "$BOT_DIR" && git pull -q
-      success "Репозиторий обновлён до последней версии"
-    elif [[ -d "$BOT_DIR" ]]; then
-      error "Папка $BOT_DIR существует, но не является git-репозиторием.\n     Удалите её: rm -rf $BOT_DIR — и запустите снова."
-    else
-      info "Клонирование репозитория..."
-      git clone -q "$REPO_URL" "$BOT_DIR"
-      success "Репозиторий скачан в $BOT_DIR"
-    fi
+    TMP_DIR=$(mktemp -d)
+    ZIP_FILE="$TMP_DIR/bot.zip"
+    info "Скачиваю последнюю версию..."
+    curl -L "$RELEASE_URL" -o "$ZIP_FILE" --silent
+    success "Архив скачан"
+    info "Распаковываю файлы..."
+    unzip -q "$ZIP_FILE" -d "$TMP_DIR"
+    EXTRACTED_DIR=$(find "$TMP_DIR" -maxdepth 1 -type d -name "playerok-universal-*")
+    mkdir -p "$BOT_DIR"
+    cp -rf "$EXTRACTED_DIR/"* "$BOT_DIR/"
+    rm -rf "$TMP_DIR"
+    success "Файлы бота обновлены"
     ;;
   2)
     echo ""
@@ -371,18 +381,31 @@ configure_config()
     echo ""
     ;;
   update)
-    if [[ ! -d "$BOT_DIR/.git" ]]; then
-      echo ""
-      echo -e "  ${YELLOW}⚠${NC}  Бот установлен локально — обновление через git недоступно"
-      echo ""
-      exit 1
-    fi
     echo ""
+
+    TMP_DIR=$(mktemp -d)
+    ZIP_FILE="$TMP_DIR/update.zip"
+
     echo -e "  ${CYAN}⬇${NC}  Получаю обновления с GitHub..."
-    cd "$BOT_DIR" && git pull
+
+    curl -L "$RELEASE_URL" -o "$ZIP_FILE" --silent
+
+    unzip -q "$ZIP_FILE" -d "$TMP_DIR"
+
+    EXTRACTED_DIR=$(find "$TMP_DIR" -maxdepth 1 -type d -name "playerok-universal-*")
+
+    echo -e "  ${CYAN}◈${NC}  Обновляю файлы..."
+
+    cp -rf "$EXTRACTED_DIR/"* "$BOT_DIR/"
+
+    rm -rf "$TMP_DIR"
+
     echo -e "  ${CYAN}◈${NC}  Обновляю зависимости..."
+
     /root/playerokuniversal/venv/bin/pip install -r /root/playerokuniversal/requirements.txt -q
+
     systemctl restart "$SERVICE"
+
     echo ""
     echo -e "  ${GREEN}✔${NC}  Бот обновлён и перезапущен"
     echo -e "  ${GRAY}Логи:${NC} pluniversal log"

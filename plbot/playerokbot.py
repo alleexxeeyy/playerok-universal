@@ -825,7 +825,8 @@ class PlayerokBot:
             user=msg_user_from_chat(event.chat),
             chat=msg_chat(event.chat),
             deal=msg_deal(event.deal),
-            item=msg_item(event.deal.item)
+            item=msg_item(event.deal.item),
+            review_rating=event.deal.review.rating
         ))
 
     async def _on_new_problem(self, event: ItemPaidEvent):
@@ -833,7 +834,6 @@ class PlayerokBot:
             return
 
         self.log_new_problem(event.deal)
-
         self.send_message(event.chat.id, self.msg(
             "deal_has_problem", 
             user=msg_user_from_chat(event.chat),
@@ -856,6 +856,9 @@ class PlayerokBot:
             )
 
     async def _on_deal_confirmed(self, event: DealConfirmedEvent):
+        if event.deal.user.id == self.account.id:
+            return
+        
         self.send_message(event.chat.id, self.msg(
             "deal_confirmed", 
             user=msg_user_from_chat(event.chat),
@@ -865,6 +868,9 @@ class PlayerokBot:
         ))
 
     async def _on_deal_rolled_back(self, event: DealRolledBackEvent):
+        if event.deal.user.id == self.account.id:
+            return
+        
         self.send_message(event.chat.id, self.msg(
             "deal_refunded", 
             user=msg_user_from_chat(event.chat),
@@ -1020,6 +1026,9 @@ class PlayerokBot:
             self.restore_item(item)
 
     async def _on_item_sent(self, event: ItemSentEvent):
+        if event.deal.user.id == self.account.id:
+            return
+        
         self.send_message(event.chat.id, self.msg(
             "deal_sent", 
             user=msg_user_from_chat(event.chat),

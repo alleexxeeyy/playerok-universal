@@ -1,6 +1,7 @@
 from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from packaging.version import Version
 
 from __init__ import VERSION
 from settings import Settings as sett
@@ -29,7 +30,7 @@ async def handler_start(message: types.Message, state: FSMContext):
     )
 
     from updater import latest_release
-    if latest_release and latest_release.get("tag_name") != VERSION:
+    if Version(VERSION) < Version(latest_release["tag_name"]):
         await throw_float_message(
             state=state,
             message=message,

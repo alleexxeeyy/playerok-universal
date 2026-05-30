@@ -23,6 +23,10 @@ def strip_html(text):
     return re.sub(r'<[^>]+>', '', text or '')
 
 
+def escape_html(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 def parse_date(date_str: str) -> datetime | None:
     formats = [
         "%d.%m.%Y",

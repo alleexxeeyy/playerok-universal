@@ -50,21 +50,25 @@ async def callback_auto_delivery_page(callback: CallbackQuery, callback_data: ca
 
 @router.callback_query(calls.MessagePage.filter())
 async def callback_message_page(callback: CallbackQuery, callback_data: calls.MessagePage, state: FSMContext):
-    await state.set_state(None)
-    
-    message_id = callback_data.message_id
-    await state.update_data(message_id=message_id)
-    
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.mess_page_text(message_id),
-        reply_markup=templ.mess_page_kb(message_id, last_page),
-        callback=callback
-    )
+    try:
+        await state.set_state(None)
+        
+        message_id = callback_data.message_id
+        await state.update_data(message_id=message_id)
+        
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+        
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.mess_page_text(message_id),
+            reply_markup=templ.mess_page_kb(message_id, last_page),
+            callback=callback
+        )
+    except:
+        import traceback
+        traceback.print_exc()
 
 
 @router.callback_query(calls.ModulePage.filter())

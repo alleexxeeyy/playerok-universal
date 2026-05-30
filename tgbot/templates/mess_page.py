@@ -2,6 +2,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
+from utils import escape_html
 
 from .. import callback_datas as calls
 
@@ -15,7 +16,7 @@ def mess_page_text(message_id: int):
     txt = textwrap.dedent(f"""
         <b>📄💬 Страница сообщения</b>
         \n<b>🆔 ID:</b> {message_id}\n<b>💡 Включено:</b> {enabled}
-        \n<b>💬 Текст:</b> <blockquote>{message_text}</blockquote>
+        \n<b>💬 Текст:</b> <blockquote>{escape_html(message_text)}</blockquote>
     """)
     return txt
 

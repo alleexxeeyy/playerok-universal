@@ -9,8 +9,7 @@ set -e
 BOT_NAME="playerokuniversal"
 BOT_DIR="/root/playerokuniversal"
 BOT_FILE="bot.py"
-REPO_URL="https://github.com/alleexxeeyy/playerok-universal"
-RELEASE_URL="https://github.com/alleexxeeyy/playerok-universal/archive/refs/heads/main.zip"
+REPO="alleexxeeyy/playerok-universal"
 SERVICE_FILE="/etc/systemd/system/${BOT_NAME}.service"
 PYTHON="python3.12"
 CMD="pluniversal"
@@ -62,22 +61,10 @@ info "Обновление списка пакетов..."
 apt-get update -qq
 success "Система обновлена"
 
-# ── 2. Установка curl / unzip ───────────────────────────────
-info "Проверка curl..."
-if ! command -v curl &>/dev/null; then
-  apt-get install -y curl -qq
-  success "curl установлен"
-else
-  success "curl уже установлен"
-fi
-
-info "Проверка unzip..."
-if ! command -v unzip &>/dev/null; then
-  apt-get install -y unzip -qq
-  success "unzip установлен"
-else
-  success "unzip уже установлен"
-fi
+# ── 2. Установка curl/unzip ──────────────────────────────────
+info "Проверка curl и unzip..."
+apt-get install -y curl unzip -qq
+success "curl и unzip готовы"
 
 # ── 3. Источник файлов бота ──────────────────────────────────
 step "Источник установки"
@@ -92,18 +79,32 @@ read -rp "$(echo -e "  ${CYAN}›${NC} Ваш выбор [1/2]: ")" SOURCE_CHOIC
 case "$SOURCE_CHOICE" in
   1)
     echo ""
-    TMP_DIR=$(mktemp -d)
-    ZIP_FILE="$TMP_DIR/bot.zip"
-    info "Скачиваю последнюю версию..."
-    curl -L "$RELEASE_URL" -o "$ZIP_FILE" --silent
-    success "Архив скачан"
-    info "Распаковываю файлы..."
-    unzip -q "$ZIP_FILE" -d "$TMP_DIR"
-    EXTRACTED_DIR=$(find "$TMP_DIR" -maxdepth 1 -type d -name "playerok-universal-*")
-    mkdir -p "$BOT_DIR"
-    cp -rf "$EXTRACTED_DIR/"* "$BOT_DIR/"
-    rm -rf "$TMP_DIR"
-    success "Файлы бота обновлены"
+    info "Скачиваю последний релиз с GitHub..."
+    LATEST_URL=$(curl -s "https://api.github.com/repos/alleexxeeyy/playerok-universal/releases/latest" | grep '"zipball_url"' | cut -d'"' -f4)
+    if [[ -z "$LATEST_URL" ]]; then
+      # Нет релизов — берём архив main ветки
+      LATEST_URL="https://github.com/alleexxeeyy/playerok-universal/archive/refs/heads/main.zip"
+      info "Релизов нет — скачиваю main ветку..."
+    fi
+    curl -sL "$LATEST_URL" -o /tmp/bot_update.zip
+    # Сохраняем конфиг если он есть
+    if [[ -d "/root/playerokuniversal/bot_settings" ]]; then
+      cp -r "/root/playerokuniversal/bot_settings" /tmp/bot_settings_backup
+    fi
+    # Распаковываем во временную папку
+    rm -rf /tmp/bot_extract
+    unzip -q /tmp/bot_update.zip -d /tmp/bot_extract
+    EXTRACTED=$(ls /tmp/bot_extract | head -1)
+    # Переносим файлы, сохраняя bot_settings
+    rm -rf "/root/playerokuniversal"
+    mv "/tmp/bot_extract/$EXTRACTED" "/root/playerokuniversal"
+    # Восстанавливаем конфиг
+    if [[ -d "/tmp/bot_settings_backup" ]]; then
+      cp -r /tmp/bot_settings_backup "/root/playerokuniversal/bot_settings"
+      rm -rf /tmp/bot_settings_backup
+    fi
+    rm -f /tmp/bot_update.zip
+    success "Бот скачан и установлен в /root/playerokuniversal"
     ;;
   2)
     echo ""
@@ -135,10 +136,18 @@ step "Python 3.12"
 info "Проверка Python 3.12..."
 if ! command -v python3.12 &>/dev/null; then
   info "Устанавливаю Python 3.12..."
-  apt-get install -y software-properties-common -qq
-  add-apt-repository -y ppa:deadsnakes/ppa > /dev/null 2>&1
-  apt-get update -qq
-  apt-get install -y python3.12 python3.12-venv python3.12-distutils python3.12-dev -qq
+  # Определяем версию Ubuntu
+  UBUNTU_VER=$(lsb_release -rs 2>/dev/null | cut -d'.' -f1 || echo "0")
+  if [[ "$UBUNTU_VER" -ge 24 ]]; then
+    # Ubuntu 24+: python3.12 есть в стандартных репах
+    apt-get install -y python3.12 python3.12-venv -qq
+  else
+    # Ubuntu 22 и старше: нужен deadsnakes ppa
+    apt-get install -y software-properties-common -qq
+    add-apt-repository -y ppa:deadsnakes/ppa > /dev/null 2>&1
+    apt-get update -qq
+    apt-get install -y python3.12 python3.12-venv -qq
+  fi
   success "Python 3.12 установлен"
 else
   success "Python $(python3.12 --version | cut -d' ' -f2) уже установлен"
@@ -382,30 +391,28 @@ configure_config()
     ;;
   update)
     echo ""
-
-    TMP_DIR=$(mktemp -d)
-    ZIP_FILE="$TMP_DIR/update.zip"
-
-    echo -e "  ${CYAN}⬇${NC}  Получаю обновления с GitHub..."
-
-    curl -L "$RELEASE_URL" -o "$ZIP_FILE" --silent
-
-    unzip -q "$ZIP_FILE" -d "$TMP_DIR"
-
-    EXTRACTED_DIR=$(find "$TMP_DIR" -maxdepth 1 -type d -name "playerok-universal-*")
-
-    echo -e "  ${CYAN}◈${NC}  Обновляю файлы..."
-
-    cp -rf "$EXTRACTED_DIR/"* "$BOT_DIR/"
-
-    rm -rf "$TMP_DIR"
-
+    echo -e "  ${CYAN}⬇${NC}  Скачиваю последний релиз с GitHub..."
+    LATEST_URL=$(curl -s "https://api.github.com/repos/alleexxeeyy/playerok-universal/releases/latest" | grep '"zipball_url"' | cut -d'"' -f4)
+    if [[ -z "$LATEST_URL" ]]; then
+      LATEST_URL="https://github.com/alleexxeeyy/playerok-universal/archive/refs/heads/main.zip"
+    fi
+    curl -sL "$LATEST_URL" -o /tmp/bot_update.zip
+    if [[ -d "/root/playerokuniversal/bot_settings" ]]; then
+      cp -r "/root/playerokuniversal/bot_settings" /tmp/bot_settings_backup
+    fi
+    rm -rf /tmp/bot_extract
+    unzip -q /tmp/bot_update.zip -d /tmp/bot_extract
+    EXTRACTED=$(ls /tmp/bot_extract | head -1)
+    rm -rf "/root/playerokuniversal"
+    mv "/tmp/bot_extract/$EXTRACTED" "/root/playerokuniversal"
+    if [[ -d "/tmp/bot_settings_backup" ]]; then
+      cp -r /tmp/bot_settings_backup "/root/playerokuniversal/bot_settings"
+      rm -rf /tmp/bot_settings_backup
+    fi
+    rm -f /tmp/bot_update.zip
     echo -e "  ${CYAN}◈${NC}  Обновляю зависимости..."
-
     /root/playerokuniversal/venv/bin/pip install -r /root/playerokuniversal/requirements.txt -q
-
     systemctl restart "$SERVICE"
-
     echo ""
     echo -e "  ${GREEN}✔${NC}  Бот обновлён и перезапущен"
     echo -e "  ${GRAY}Логи:${NC} pluniversal log"

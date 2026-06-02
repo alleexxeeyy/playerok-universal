@@ -118,7 +118,7 @@ class EventListener:
         | DealProblemResolvedEvent
         | DealStatusChangedEvent
     ]:
-        if not message:
+        if not message or not message.text:
             return []
         
         if message.text == "{{ITEM_PAID}}":

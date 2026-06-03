@@ -13,6 +13,7 @@
 - **[Функционал](#-функционал)**
 - **[Установка](#%EF%B8%8F-установка)**
   - **[Windows](#-windows)**
+  - **[macOS](#-macos)**
   - **[Linux](#%EF%B8%8F-linux-ubuntu)**
 - **[Для разработчиков](#-для-разработчиков)**
 - **[Ссылки](#-полезные-ссылки)**
@@ -57,6 +58,16 @@
 5. После первого запуска следуйте действиям в консоли.
 
 [Возникли проблемы с установкой? Нажми на меня](https://telegra.ph/FunPay-Universal--chastye-oshibki-i-ih-resheniya-08-26)
+
+### 🍎 macOS
+1. Установите **Python версии 3.12.x** с [официального сайта](https://www.python.org/downloads/release/python-31210/) или через Homebrew:
+   ```bash
+   brew install python@3.12
+   ```
+2. Скачайте [последнюю Release версию](https://github.com/alleexxeeyy/funpay-universal/releases/latest) и распакуйте в любое удобное место.
+3. Дважды кликните `install_mac.command` — откроется Terminal, дождитесь установки зависимостей.
+4. Запустите бота двойным кликом по `start_mac.command`.
+5. Следуйте инструкциям в консоли.
 
 ### ♨️ Linux (Ubuntu 24)
 1. Выполните команду

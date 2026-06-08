@@ -8,8 +8,7 @@ from .. import callback_datas as calls
 def error_text(placeholder: str):
     txt = textwrap.dedent(f"""
         <b>❌ Ошибка</b>
-
-        <blockquote>{placeholder}</blockquote>
+        \n<blockquote>{placeholder}</blockquote>
     """)
     return txt
 
@@ -42,11 +41,8 @@ def new_release_text(release):
 
     txt = textwrap.dedent(f"""
         <b>🚀 Доступна новая версия — <a href="{url}">{tag}</a></b>
-        
-        <b>💎 Изменения:</b>
-        <blockquote>{desc}</blockquote>
-        
-        <b>📅 Дата выхода:</b> {published_at}
+        \n<b>💎 Изменения:</b>\n<blockquote>{desc}</blockquote>
+        \n<b>📅 Дата выхода:</b> {published_at}
     """)
     return txt
 

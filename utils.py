@@ -159,7 +159,7 @@ def is_proxy_valid(proxy: str) -> bool:
     return False
 
 
-def is_proxy_working(proxy: str, test_url="https://playerok.com", timeout=10) -> bool:
+def is_proxy_working(proxy: str, test_url="https://playerok.com", timeout=30) -> bool:
     proxies = {
         "http": f"http://{proxy}",
         "https": f"http://{proxy}"
@@ -193,7 +193,7 @@ def is_tg_bot_exists() -> bool:
         response = requests.get(
             f"https://api.telegram.org/bot{token}/getMe", 
             proxies=proxies,
-            timeout=5
+            timeout=30
         )
         
         data = response.json()

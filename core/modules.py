@@ -196,14 +196,14 @@ def load_modules() -> list[Module]:
             try:
                 install_requirements(os.path.join(module_path, "requirements.txt"))
                 module = importlib.import_module(f"modules.{name}")
+                
                 if hasattr(module, "BOT_EVENT_HANDLERS"):
-                    for key, funcs in module.BOT_EVENT_HANDLERS.items():
-                        bot_event_handlers.setdefault(key, []).extend(funcs)
+                    register_bot_event_handlers(module.BOT_EVENT_HANDLERS)
                 if hasattr(module, "PLAYEROK_EVENT_HANDLERS"):
-                    for key, funcs in module.PLAYEROK_EVENT_HANDLERS.items():
-                        playerok_event_handlers.setdefault(key, []).extend(funcs)
+                    register_playerok_event_handlers(module.BOT_EVENT_HANDLERS)
                 if hasattr(module, "TELEGRAM_BOT_ROUTERS"):
                     telegram_bot_routers.extend(module.TELEGRAM_BOT_ROUTERS)
+                
                 module_data = Module(
                     uuid.uuid4(),
                     enabled=False,
@@ -229,9 +229,12 @@ def load_modules() -> list[Module]:
 
 def _format_string(count: int):
     last_num = int(str(count)[-1])
-    if last_num == 1: return f"Подключен {Fore.LIGHTWHITE_EX}{count} модуль"
-    elif 2 <= last_num <= 4: return f"Подключено {Fore.LIGHTWHITE_EX}{count} модуля"
-    elif 5 <= last_num <= 9 or last_num == 0: return f"Подключено {Fore.LIGHTWHITE_EX}{count} модулей"
+    if last_num == 1: 
+        return f"Подключен {Fore.LIGHTWHITE_EX}{count} модуль"
+    elif 2 <= last_num <= 4: 
+        return f"Подключено {Fore.LIGHTWHITE_EX}{count} модуля"
+    elif 5 <= last_num <= 9 or last_num == 0: 
+        return f"Подключено {Fore.LIGHTWHITE_EX}{count} модулей"
 
 
 async def connect_modules(modules: list[Module]):

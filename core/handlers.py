@@ -64,8 +64,10 @@ def add_bot_event_handler(event: str, handler: callable, index: int | None = Non
     :type index: `int` or `None`
     """
     global _bot_event_handlers
-    if not index: _bot_event_handlers[event].append(handler)
-    else: _bot_event_handlers[event].insert(index, handler)
+    if not (index or "").isdigit():
+        _bot_event_handlers[event].append(handler)
+    else: 
+        _bot_event_handlers[event].insert(index, handler)
 
 
 def register_bot_event_handlers(handlers: dict[str, list[callable]]):
@@ -131,8 +133,10 @@ def add_playerok_event_handler(event: EventTypes, handler: callable, index: int 
     :type index: `int` or `None`
     """
     global _playerok_event_handlers
-    if not index: _playerok_event_handlers[event].append(handler)
-    else: _playerok_event_handlers[event].insert(index, handler)
+    if not (index or "").isdigit(): 
+        _playerok_event_handlers[event].append(handler)
+    else: 
+        _playerok_event_handlers[event].insert(index, handler)
 
 
 def register_playerok_event_handlers(handlers: dict[EventTypes, list[callable]]):
@@ -198,7 +202,7 @@ async def call_playerok_event(event: EventTypes, args: list = []):
     :param args: Аргументы.
     :type args: `list`
     """
-    handlers = get_playerok_event_handlers().get(event, [])
+    handlers = _playerok_event_handlers.get(event, [])
     for handler in handlers:
         try:
             await handler(*args)

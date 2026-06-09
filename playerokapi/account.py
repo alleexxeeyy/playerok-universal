@@ -151,9 +151,17 @@ class Account:
         self._tmp_cert_path = os.path.join(tempfile.gettempdir(), "cacert.pem")
         shutil.copyfile(self._cert_path, self._tmp_cert_path)
 
+        self.__tls_requests = None
+        self.__curl_session = None
+
         self._refresh_clients()
 
     def _refresh_clients(self):
+        if self.__tls_requests:
+            self.__tls_requests.close()
+        if self.__curl_session:
+            self.__curl_session.close()
+
         self.__tls_requests = tls_requests.Client(
             proxy=self.__proxy_string
         )
@@ -194,8 +202,11 @@ class Account:
         :return: Ответа запроса requests.
         :rtype: `requests.Response`
         """
-        try: x_gql_op = payload.get("operationName", "viewer")
-        except: x_gql_op = "viewer"
+        try: 
+            x_gql_op = payload.get("operationName", "viewer")
+        except: 
+            x_gql_op = "viewer"
+        
         _headers = {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -226,7 +237,7 @@ class Account:
             "x-apollo-operation-name": x_gql_op
         }
         headers = {k: v for k, v in _headers.items() if k not in headers.keys()}
-                
+
         def make_req():
             err = ""
 
@@ -260,7 +271,8 @@ class Account:
                 except Exception as e:
                     err = str(e)
                     logger.debug(f"Ошибка при отправке запроса: {e}")
-                    logger.debug(f"Отправляю запрос повторно...")
+                    logger.debug("Обновляю клиентов и отправляю запрос повторно...")
+                    self._refresh_clients()
                 
             raise RequestSendingError(url, err)
 

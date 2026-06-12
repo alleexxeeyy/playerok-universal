@@ -92,11 +92,11 @@ if __name__ == "__main__":
         patch_requests()
         setup_logger()
         
-        set_title(f"Playerok Universal v{VERSION} by @alleexxeeyy")
+        set_title(f"Playerok Universal v{VERSION} by @friedfluoride")
         print(
             f"\n\n   {Fore.LIGHTYELLOW_EX}┌───────────────────────────────────────┐\n"
             f"\n     {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
-            f"\n       {Fore.WHITE}by {Fore.LIGHTYELLOW_EX}@alleexxeeyy (3xtra)"
+            f"\n       {Fore.WHITE}by {Fore.LIGHTYELLOW_EX}@friedfluoride (3xtra)"
             f"\n"
             f"\n     {Fore.WHITE}· GitHub: {Fore.LIGHTWHITE_EX}github.com/alleexxeeyy/playerok-universal"
             f"\n     {Fore.WHITE}· Новости: {Fore.LIGHTWHITE_EX}t.me/alexeyproduction"

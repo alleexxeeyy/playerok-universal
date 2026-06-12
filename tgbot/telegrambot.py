@@ -51,6 +51,8 @@ class TelegramBot:
         self.bot = Bot(token=self.token, session=session)
         self.dp = Dispatcher()
 
+        self.me = None
+
         for module in get_modules():
             for router in module.telegram_bot_routers:
                 main_router.include_router(router)
@@ -117,9 +119,9 @@ class TelegramBot:
 
         await call_bot_event("ON_TELEGRAM_BOT_INIT", [self])
         
-        me = await self.bot.get_me()
+        self.me = await self.bot.get_me()
         logger.info("")
-        logger.info(f"{Fore.LIGHTBLUE_EX}Telegram бот {Fore.LIGHTWHITE_EX}@{me.username} {Fore.LIGHTBLUE_EX}запущен и активен")
+        logger.info(f"{Fore.LIGHTBLUE_EX}Telegram бот {Fore.LIGHTWHITE_EX}@{self.me.username} {Fore.LIGHTBLUE_EX}запущен и активен")
         
         if self.proxy:
             if "@" in self.proxy:

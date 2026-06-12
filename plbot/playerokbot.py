@@ -655,6 +655,15 @@ class PlayerokBot:
         logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
 
 
+    def _event_datetime(self, latest_event_time, event_interval):
+        if latest_event_time:
+            return (
+                datetime.fromisoformat(latest_event_time) 
+                + timedelta(seconds=event_interval)
+            )
+        else:
+            return datetime.now()
+
     async def _on_playerok_bot_init(self):
         def endless_loop():
             while True:

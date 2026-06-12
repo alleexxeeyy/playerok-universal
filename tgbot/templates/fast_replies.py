@@ -3,6 +3,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
+from utils import escape_html
 
 from .. import callback_datas as calls
 
@@ -32,7 +33,7 @@ def fast_replies_kb(page=0):
 
     for reply in list(fast_replies)[start_offset:end_offset]:
         rows.append([
-            InlineKeyboardButton(text=reply, callback_data=calls.EnterFastReplyText(index=fast_replies.index(reply)).pack()),
+            InlineKeyboardButton(text=escape_html(reply), callback_data=calls.EnterFastReplyText(index=fast_replies.index(reply)).pack()),
             InlineKeyboardButton(text=f"🗑️", callback_data=calls.DeleteFastReply(index=fast_replies.index(reply)).pack())
         ])
 

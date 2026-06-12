@@ -3,6 +3,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
+from utils import escape_html
 
 from .. import callback_datas as calls
 
@@ -32,7 +33,7 @@ def deliv_goods_kb(index=0, page=0):
 
     for good in list(goods)[start_offset:end_offset]:
         rows.append([
-            InlineKeyboardButton(text=str(good), callback_data="null_answer"),
+            InlineKeyboardButton(text=escape_html(good), callback_data="null_answer"),
             InlineKeyboardButton(text="🗑️", callback_data=calls.DeleteDelivGood(index=goods.index(good)).pack()),
         ])
 

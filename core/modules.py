@@ -187,8 +187,8 @@ def load_modules() -> list[Module]:
     os.makedirs(modules_path, exist_ok=True)
 
     for name in os.listdir(modules_path):
-        bot_event_handlers = []
-        playerok_event_handlers = []
+        bot_event_handlers = {}
+        playerok_event_handlers = {}
         telegram_bot_routers = []
         module_path = os.path.join(modules_path, name)
         
@@ -250,7 +250,7 @@ async def connect_modules(modules: list[Module]):
         try:
             await _enable_module(module)
         except Exception as e:
-            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при подключении модуля {module.meta.name}: {Fore.WHITE}{e}")
+            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при подключении модуля {module.meta.name}: {Fore.WHITE}{traceback.format_exc()}")
     
     connected_modules = [module for module in loaded_modules if module.enabled]
     names = [f"{Fore.YELLOW}{module.meta.name} {Fore.LIGHTWHITE_EX}{module.meta.version}" for module in connected_modules]

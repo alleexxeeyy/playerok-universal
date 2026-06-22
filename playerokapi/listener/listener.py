@@ -5,7 +5,7 @@ import traceback
 from datetime import datetime, timezone
 from logging import getLogger
 from typing import Generator
-from threading import Thread
+from threading import Thread, Lock, RLock
 from queue import Queue
 from threading import Event as ThreadingEvent
 from collections import deque
@@ -56,6 +56,13 @@ class EventListener:
         self._possible_new_chat = ThreadingEvent()
         self._last_chats_check = 0
 
+        self._state_lock = RLock()
+        self._send_lock = Lock()
+
+        self.ws_workers = 12
+        self._ws_queue = Queue()
+        self._ws_workers_started = False
+
     def _parse_iso(self, iso_dt: str):
         if iso_dt.endswith("Z"):
             iso_dt = iso_dt[:-1] + "+00:00"
@@ -85,25 +92,27 @@ class EventListener:
     def _set_active_deal(
         self, chat: Chat, deal: ItemDeal, status_date: datetime
     ):
-        if chat.id not in self.active_deals:
-            self.active_deals[chat.id] = []
-        
-        try: deal_tuple = [tuple for tuple in self.active_deals[chat.id] if deal.id in tuple][0]
-        except: deal_tuple = ()
-        
-        if not deal_tuple:
-            self.active_deals[chat.id].append((deal.id, deal.status, status_date))
-        else:
-            indx = self.active_deals[chat.id].index(deal_tuple)
-            self.active_deals[chat.id][indx] = (deal.id, deal.status, status_date)
+        with self._state_lock:
+            if chat.id not in self.active_deals:
+                self.active_deals[chat.id] = []
+
+            try: deal_tuple = [tuple for tuple in self.active_deals[chat.id] if deal.id in tuple][0]
+            except: deal_tuple = ()
+
+            if not deal_tuple:
+                self.active_deals[chat.id].append((deal.id, deal.status, status_date))
+            else:
+                indx = self.active_deals[chat.id].index(deal_tuple)
+                self.active_deals[chat.id][indx] = (deal.id, deal.status, status_date)
 
     def _is_msg_processed(
         self, message_id: str
     ):
-        return any((
-            msg for msg, _ in self.processed_msgs
-            if msg.id == message_id
-        ))
+        with self._state_lock:
+            return any((
+                msg for msg, _ in self.processed_msgs
+                if msg.id == message_id
+            ))
     
     def _parse_message_events(
         self, message: ChatMessage, chat: Chat
@@ -129,14 +138,15 @@ class EventListener:
                 deal_id = actual_deal.id
                 #status_date = self._parse_iso(actual_msg.created_at)
                 #self._set_active_deal(chat, actual_deal, status_date)
-                if deal_id not in self.review_check_deals:
-                    self.review_check_deals.append(deal_id)
-                if deal_id not in self.processed_deals:
-                    self.processed_deals.append(deal_id)
-                else:
-                    return []
+                with self._state_lock:
+                    if deal_id not in self.review_check_deals:
+                        self.review_check_deals.append(deal_id)
+                    if deal_id not in self.processed_deals:
+                        self.processed_deals.append(deal_id)
+                    else:
+                        return []
                 return [
-                    NewDealEvent(actual_deal, chat), 
+                    NewDealEvent(actual_deal, chat),
                     ItemPaidEvent(actual_deal, chat)
                 ]
         
@@ -203,117 +213,126 @@ class EventListener:
         return [NewMessageEvent(message, chat)]
     
     def _send_connection_init(self):
-        self.ws.send(json.dumps({
-            "type": "connection_init", 
-            "payload": {
-                "x-gql-op": "ws-subscription",
-                "x-gql-path": "/chats/[id]",
-                "x-timezone-offset": -180
-            }
-        }))
+        with self._send_lock:
+            self.ws.send(json.dumps({
+                "type": "connection_init",
+                "payload": {
+                    "x-gql-op": "ws-subscription",
+                    "x-gql-path": "/chats/[id]",
+                    "x-timezone-offset": -180
+                }
+            }))
 
     def _subscribe_chat_updated(self):
-        self.ws.send(json.dumps({
-            "id": str(uuid.uuid4()), 
-            "type": "subscribe",
-            "payload": {
-                "extensions": {},
-                "operationName": "chatUpdated",
-                "query": QUERIES.get("chatUpdated"),
-                "variables": {
-                    "filter": {
-                        "userId": self.account.id
-                    },
-                    "showForbiddenImage": True
-                }
-            },
-        }))
+        with self._send_lock:
+            self.ws.send(json.dumps({
+                "id": str(uuid.uuid4()),
+                "type": "subscribe",
+                "payload": {
+                    "extensions": {},
+                    "operationName": "chatUpdated",
+                    "query": QUERIES.get("chatUpdated"),
+                    "variables": {
+                        "filter": {
+                            "userId": self.account.id
+                        },
+                        "showForbiddenImage": True
+                    }
+                },
+            }))
 
     def _subscribe_chat_marked_as_read(self):
-        self.ws.send(json.dumps({
-            "id": str(uuid.uuid4()), 
-            "type": "subscribe",
-            "payload": {
-                "extensions": {},
-                "operationName": "chatMarkedAsRead",
-                "query": QUERIES.get("chatMarkedAsRead"),
-                "variables": {
-                    "filter": {
-                        "userId": self.account.id
-                    },
-                    "showForbiddenImage": True
+        with self._send_lock:
+            self.ws.send(json.dumps({
+                "id": str(uuid.uuid4()),
+                "type": "subscribe",
+                "payload": {
+                    "extensions": {},
+                    "operationName": "chatMarkedAsRead",
+                    "query": QUERIES.get("chatMarkedAsRead"),
+                    "variables": {
+                        "filter": {
+                            "userId": self.account.id
+                        },
+                        "showForbiddenImage": True
+                    }
                 }
-            }
-        }))
+            }))
 
     def _subscribe_user_updated(self):
-        self.ws.send(json.dumps({
-            "id": str(uuid.uuid4()), 
-            "type": "subscribe",
-            "payload": {
-                "extensions": {},
-                "operationName": "userUpdated",
-                "query": QUERIES.get("userUpdated"),
-                "variables": {
-                    "userId": self.account.id
+        with self._send_lock:
+            self.ws.send(json.dumps({
+                "id": str(uuid.uuid4()),
+                "type": "subscribe",
+                "payload": {
+                    "extensions": {},
+                    "operationName": "userUpdated",
+                    "query": QUERIES.get("userUpdated"),
+                    "variables": {
+                        "userId": self.account.id
+                    }
                 }
-            }
-        }))
+            }))
 
     def _subscribe_chat_message_created(self, chat_id):
         _uuid = str(uuid.uuid4())
-        self.chat_subscriptions[_uuid] = chat_id
-        self.ws.send(json.dumps({
-            "id": _uuid, 
-            "type": "subscribe",
-            "payload": {
-                "extensions": {},
-                "operationName": "chatMessageCreated",
-                "query": QUERIES.get("chatMessageCreated"),
-                "variables": {
-                    "filter": {
-                        "chatId": chat_id
+        with self._state_lock:
+            self.chat_subscriptions[_uuid] = chat_id
+        with self._send_lock:
+            self.ws.send(json.dumps({
+                "id": _uuid,
+                "type": "subscribe",
+                "payload": {
+                    "extensions": {},
+                    "operationName": "chatMessageCreated",
+                    "query": QUERIES.get("chatMessageCreated"),
+                    "variables": {
+                        "filter": {
+                            "chatId": chat_id
+                        }
                     }
                 }
-            }
-        }))
+            }))
 
     def _is_chat_subscribed(self, chat_id):
-        for _, sub_chat_id in self.chat_subscriptions.items():
-            if chat_id == sub_chat_id:
-                return True
-        return False
+        with self._state_lock:
+            for _, sub_chat_id in self.chat_subscriptions.items():
+                if chat_id == sub_chat_id:
+                    return True
+            return False
     
     def _proccess_new_chat_message(self, chat, message):
         events = []
-        is_new_chat = chat.id not in [chat_.id for chat_ in self.chats]
+        with self._state_lock:
+            is_new_chat = chat.id not in [chat_.id for chat_ in self.chats]
 
-        if is_new_chat:
-            self.chats.append(chat)
-        else:
-            for old_chat in list(self.chats):
-                if old_chat.id == chat.id:
-                    self.chats.remove(old_chat)
-                    self.chats.append(chat)
-                    break
+            if is_new_chat:
+                self.chats.append(chat)
+            else:
+                for old_chat in list(self.chats):
+                    if old_chat.id == chat.id:
+                        self.chats.remove(old_chat)
+                        self.chats.append(chat)
+                        break
 
-        if not self._is_msg_processed(message.id):
-            self.processed_msgs.append((message, chat.id))
-        
+            if not self._is_msg_processed(message.id):
+                self.processed_msgs.append((message, chat.id))
+
         events.extend(self._parse_message_events(message, chat))
         return events
-    
+
     def _process_chats_last_messages(self, chats):
         now = datetime.now(timezone.utc)
-        
-        for chat in chats:
-            msg = chat.last_message
-            if (
-                msg
-                and (now - self._parse_iso(msg.created_at).astimezone(timezone.utc)).total_seconds() > 90
-                and not self._is_msg_processed(msg.id)
-            ):
-                self.processed_msgs.append((msg, chat.id))
+
+        with self._state_lock:
+            for chat in chats:
+                msg = chat.last_message
+                if (
+                    msg
+                    and (now - self._parse_iso(msg.created_at).astimezone(timezone.utc)).total_seconds() > 90
+                    and not self._is_msg_processed(msg.id)
+                ):
+                    self.processed_msgs.append((msg, chat.id))
     
     def proccess_ws_message(self, msg):
         try:
@@ -325,8 +344,10 @@ class EventListener:
             if msg_data["type"] == "connection_ack":
                 self._subscribe_chat_updated()
                 self._subscribe_user_updated()
-                
-                for chat_ in self.chats:
+
+                with self._state_lock:
+                    chats_snapshot = list(self.chats)
+                for chat_ in chats_snapshot:
                     self._subscribe_chat_message_created(chat_.id)
             else:
                 payload_data = (msg_data.get("payload") or {}).get("data") or {}
@@ -351,8 +372,11 @@ class EventListener:
 
                 if "chatMessageCreated" in payload_data:
                     chat_id = self.chat_subscriptions.get(msg_data["id"])
-                    try: _chat = [chat_ for chat_ in self.chats if chat_.id == chat_id][0]
-                    except: return
+                    with self._state_lock:
+                        _chat = next((chat_ for chat_ in self.chats if chat_.id == chat_id), None)
+                    if _chat is None:
+                        logger.debug(f"Чат {chat_id} ещё не в self.chats — пропуск chatMessageCreated")
+                        return
                     _message = chat_message(payload_data["chatMessageCreated"])
 
                     events = self._proccess_new_chat_message(_chat, _message)
@@ -361,7 +385,23 @@ class EventListener:
                         self.q.put(event)
         except Exception:
             logger.debug(f"Ошибка обработки сообщения в WebSocket`е: {traceback.format_exc()}")
-        
+
+    def _ws_worker(self):
+        while True:
+            msg = self._ws_queue.get()
+            try:
+                self.proccess_ws_message(msg)
+            except Exception:
+                logger.debug(f"Ошибка обработки сообщения в WebSocket`е: {traceback.format_exc()}")
+
+    def _start_ws_workers(self):
+        with self._state_lock:
+            if self._ws_workers_started:
+                return
+            self._ws_workers_started = True
+        for _ in range(self.ws_workers):
+            Thread(target=self._ws_worker, daemon=True).start()
+
     def listen_new_messages(self):
         headers = {
             "accept-encoding": "gzip, deflate, br, zstd",
@@ -399,9 +439,13 @@ class EventListener:
         except: self.chats = []
 
         self._process_chats_last_messages(self.chats)
-        
-        for chat_ in self.chats:
+
+        with self._state_lock:
+            chats_snapshot = list(self.chats)
+        for chat_ in chats_snapshot:
             yield ChatInitializedEvent(chat_)
+
+        self._start_ws_workers()
 
         while True:
             try:
@@ -420,30 +464,31 @@ class EventListener:
 
                 while True:
                     msg = self.ws.recv()
-                    Thread(target=self.proccess_ws_message, args=(msg,), daemon=True).start()
+                    self._ws_queue.put(msg)
             except websocket._exceptions.WebSocketException:
                 time.sleep(3)
                 pass
 
     def _should_check_review_deal(self, deal_id, delay=30, max_tries=30) -> bool:
-        now = time.time()
-        info = self.review_deal_times.get(deal_id, {"last": 0, "tries": 0})
-        
-        last_time = info["last"]
-        tries = info["tries"]
-        
-        if now - last_time > delay:
-            self.review_deal_times[deal_id] = {
-                "last": now,
-                "tries": tries+1
-            }
-            return True
-        elif tries >= max_tries:
-            if deal_id in self.review_check_deals:
-                self.review_check_deals.remove(deal_id)
-            del self.review_deal_times[deal_id]
+        with self._state_lock:
+            now = time.time()
+            info = self.review_deal_times.get(deal_id, {"last": 0, "tries": 0})
 
-        return False
+            last_time = info["last"]
+            tries = info["tries"]
+
+            if now - last_time > delay:
+                self.review_deal_times[deal_id] = {
+                    "last": now,
+                    "tries": tries+1
+                }
+                return True
+            elif tries >= max_tries:
+                if deal_id in self.review_check_deals:
+                    self.review_check_deals.remove(deal_id)
+                del self.review_deal_times[deal_id]
+
+            return False
     
     def listen_new_reviews(self):
         while True:
@@ -456,12 +501,14 @@ class EventListener:
                     except: continue
                     
                     if deal.review:
-                        if deal_id in self.review_check_deals:
-                            self.review_check_deals.remove(deal_id)
-                        
-                        try: 
-                            deal.chat = [chat_ for chat_ in self.chats if chat_.id == deal.chat.id][0]
-                        except: 
+                        with self._state_lock:
+                            if deal_id in self.review_check_deals:
+                                self.review_check_deals.remove(deal_id)
+
+                        try:
+                            with self._state_lock:
+                                deal.chat = [chat_ for chat_ in self.chats if chat_.id == deal.chat.id][0]
+                        except:
                             try: deal.chat = self.account.get_chat(deal.chat.id)
                             except: pass
                         
@@ -491,12 +538,15 @@ class EventListener:
                         if by_event:
                             time.sleep(8) # плеерок может не сразу отобразить актуальные чаты
                         
-                        chats = self.account.get_chats(count=5, type=ChatTypes.PM).chats
+                        chats = self.account.get_chats(count=15, type=ChatTypes.PM).chats
                         for chat in chats:
                             last_msg = chat.last_message
+                            if not last_msg:
+                                continue
                             is_msg_processed = self._is_msg_processed(last_msg.id)
-                            is_chat_processed = any((_chat for _chat in self.chats if _chat.id == chat.id))
-                            
+                            with self._state_lock:
+                                is_chat_processed = any(_chat.id == chat.id for _chat in self.chats)
+
                             if (
                                 not is_chat_processed
                                 or not is_msg_processed or (
@@ -504,9 +554,9 @@ class EventListener:
                                     and (now - self._parse_iso(last_msg.created_at).astimezone(timezone.utc)).total_seconds() <= 90
                                 )
                             ):
-                                possible_chats.append(chat)
-                                break
-                                    
+                                if chat.id not in [c.id for c in possible_chats]:
+                                    possible_chats.append(chat)
+
                         if possible_chats:
                             break # если найдены чаты с возможными новыми сделками - останавливаем цикл
 

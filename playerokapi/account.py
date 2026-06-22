@@ -3,8 +3,8 @@ from typing import *
 from logging import getLogger
 from typing import Literal
 from datetime import datetime
+from threading import RLock
 import json
-import time
 import os
 import tempfile
 import shutil
@@ -153,6 +153,7 @@ class Account:
 
         self.__tls_requests = None
         self.__curl_session = None
+        self.__request_lock = RLock()
 
         self._refresh_clients()
 
@@ -285,7 +286,8 @@ class Account:
             "Cloudflare Ray ID"
         ]
         
-        resp = make_req()
+        with self.__request_lock:
+            resp = make_req()
         if any(sig in resp.text for sig in sigs):
             raise BotCheckDetectedException()
 

@@ -19,3 +19,4 @@ setuptools==75.8.0
 tqdm==4.67.1
 pytz==2025.2
 rarfile==4.2
+python-certifi-win32

@@ -182,14 +182,14 @@ class PlayerokBot:
         return False
 
 
-    def send_message(self, chat_id: str, text: str | None = None, photo_file_paths: list[str] = [],
+    def send_message(self, chat_id: str, text: str | None = None, images: list[str | bytes] = [],
                      mark_chat_as_read: bool = None, exclude_watermark: bool = False, max_attempts: int = 3) -> ChatMessage | None:
         """
         Кастомный метод отправки сообщения в чат Playerok.
         Пытается отправить за N попыток, если не удалось - выдаёт ошибку в консоль.
         """
         
-        if not any((text, photo_file_paths)): 
+        if not any((text, images)): 
             return
         
         for _ in range(max_attempts):
@@ -205,7 +205,7 @@ class PlayerokBot:
                 mess = self.account.send_message(
                     chat_id=chat_id, 
                     text=text, 
-                    photo_file_paths=photo_file_paths, 
+                    images=images, 
                     mark_chat_as_read=mark_chat_as_read
                 )
                 
@@ -219,8 +219,8 @@ class PlayerokBot:
         msg = ""
         if text: 
             msg += text.replace('\n', ' ').strip()
-        if photo_file_paths:
-            msg += f", Изображения ({len(photo_file_paths)})"
+        if images:
+            msg += f", Изображения ({len(images)})"
         
         logger.error(
             f"{Fore.LIGHTRED_EX}Ошибка при отправке сообщения «{msg}» "

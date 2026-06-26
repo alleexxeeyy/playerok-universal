@@ -6,6 +6,7 @@ from datetime import datetime
 from threading import RLock
 import json
 import os
+import io
 import tempfile
 import shutil
 import uuid
@@ -1075,20 +1076,40 @@ class Account:
         r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
         return chat(r["data"]["markChatAsRead"])
 
+    def _resolve_image_file(self, image: str | bytes) -> tuple[object, str]:
+        if isinstance(image, (bytes, bytearray)):
+            sig = image[:12]
+            if sig[:8] == b'\x89PNG\r\n\x1a\n':
+                ext = "png"
+            elif sig[:3] == b'\xff\xd8\xff':
+                ext = "jpg"
+            elif sig[:6] in (b'GIF87a', b'GIF89a'):
+                ext = "gif"
+            elif sig[:4] == b'RIFF' and sig[8:12] == b'WEBP':
+                ext = "webp"
+            else:
+                ext = "bin"
+            return io.BytesIO(image), f"image.{ext}"
+        else:
+            return open(image, "rb"), os.path.basename(image)
+
     def upload_chat_image_into_temporary_store(
-        self, 
-        photo_file_path: str,
+        self,
+        image: str | bytes,
         chat_id: str
     ) -> types.Chat:
         """
         Выкладывает изображение чата во временное хранилище
         (перед отправкой сообщения с изображением).
 
+        :param image: Путь к изображению или байты изображения.
+        :type image: `str` or `bytes`
+
         :param chat_id: ID чата.
         :type chat_id: `str`
 
-        :return: Объект чата с обновлёнными данными.
-        :rtype: `playerokapi.types.Chat`
+        :return: Объект временного вложения.
+        :rtype: `playerokapi.types.TemporaryAttachmentUploadOutput`
         """
 
         headers = {"accept": "*/*"}
@@ -1103,27 +1124,28 @@ class Account:
                 }
             }
         }
-        
-        files = {"1": open(photo_file_path, "rb")}
-        map = {"1": ["variables.file"]} if photo_file_path else None
+
+        file_obj, filename = self._resolve_image_file(image)
+        files = {"1": (filename, file_obj)}
+        map = {"1": ["variables.file"]}
         payload = {
-            "operations": json.dumps(operations), 
+            "operations": json.dumps(operations),
             "map": json.dumps(map)
         }
-        
+
         r = self.request("post", f"{self.base_url}/graphql", headers, payload, files).json()
         return temporary_attachment_upload_output(r["data"]["uploadChatImageIntoTemporaryStore"])
 
     def send_message(
-        self, 
-        chat_id: str, 
+        self,
+        chat_id: str,
         text: str | None = None,
-        photo_file_paths: list[str] = [], 
+        images: list[str | bytes] = [],
         mark_chat_as_read: bool = False
     ) -> types.ChatMessage:
         """
-        Отправляет сообщение в чат.\n
-        Можно отправить текстовое сообщение `text` или фотографии `photo_file_paths`.
+        Отправляет сообщение в чат.
+        Можно отправить текстовое сообщение `text` или изображения `images`.
 
         :param chat_id: ID чата, в который нужно отправить сообщение.
         :type chat_id: `str`
@@ -1131,22 +1153,22 @@ class Account:
         :param text: Текст сообщения, _опционально_.
         :type text: `str` or `None`
 
-        :param photo_file_paths: Массив путей к файлам фотографий, _опционально_.
-        :type photo_file_paths: `list` of `str`
+        :param images: Список изображений — пути к файлам или байты, _опционально_.
+        :type images: `list[str | bytes]`
 
-        :param mark_chat_as_read: Пометить чат, как прочитанный перед отправкой, _опционально_.
+        :param mark_chat_as_read: Пометить чат как прочитанный перед отправкой, _опционально_.
         :type mark_chat_as_read: `bool`
 
         :return: Объект отправленного сообщения.
         :rtype: `playerokapi.types.ChatMessage`
         """
 
-        if not any((text, photo_file_paths)):
-            raise TypeError("Не был передан ни один из обязательных аргументов: text, photo_file_paths")
-        
+        if not any((text, images)):
+            raise TypeError("Не был передан ни один из обязательных аргументов: text, images")
+
         if mark_chat_as_read:
             self.mark_chat_as_read(chat_id=chat_id)
-        
+
         headers = {"accept": "*/*"}
         payload = {
             "operationName": "createChatMessage",
@@ -1159,12 +1181,12 @@ class Account:
                 }
             }
         }
-        
-        for file_path in photo_file_paths:
-            image = self.upload_chat_image_into_temporary_store(file_path, chat_id)
-            if image:
-                payload["variables"]["input"]["imagesIds"].append(image.id)
-        
+
+        for image in images:
+            uploaded = self.upload_chat_image_into_temporary_store(image, chat_id)
+            if uploaded:
+                payload["variables"]["input"]["imagesIds"].append(uploaded.id)
+
         r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
         return chat_message(r["data"]["createChatMessage"])
  
@@ -1177,7 +1199,7 @@ class Account:
         description: str, 
         options: list[GameCategoryOption], 
         data_fields: list[GameCategoryDataField],
-        attachments: list[str]
+        attachments: list[str | bytes]  # ← было: list[str]
     ) -> types.Item:
         """
         Создаёт предмет (после создания помещается в черновик, а не сразу выставляется на продажу).
@@ -1205,8 +1227,8 @@ class Account:
             Поля с типом `OBTAINING_DATA` **заполнять и передавать не нужно**, так как эти данные будет указывать сам покупатель при оформлении предмета.
         :type data_fields: `list[playerokapi.types.GameCategoryDataField]`
 
-        :param attachments: Массив файлов-приложений предмета. Указываются пути к файлам.
-        :type attachments: `list[str]`
+        :param attachments: Массив файлов-приложений предмета. Пути к файлам или байты.
+        :type attachments: `list[str | bytes]`
 
         :return: Объект созданного предмета.
         :rtype: `playerokapi.types.Item`
@@ -1236,8 +1258,9 @@ class Account:
         files = {}
         
         for i, att in enumerate(attachments, start=1):
+            file_obj, filename = self._resolve_image_file(att)
             map[str(i)] = [f"variables.attachments.{i-1}"]
-            files[str(i)] = open(att, "rb")
+            files[str(i)] = (filename, file_obj)
         
         payload = {
             "operations": json.dumps(operations),
@@ -1256,7 +1279,7 @@ class Account:
         options: list[GameCategoryOption] | None = None, 
         data_fields: list[GameCategoryDataField] | None = None, 
         remove_attachments: list[str] | None = None, 
-        add_attachments: list[str] | None = None
+        add_attachments: list[str | bytes] | None = None  # ← было: list[str] | None
     ) -> types.Item:
         """
         Обновляет предмет аккаунта.
@@ -1284,8 +1307,8 @@ class Account:
         :param remove_attachments: Массив ID файлов-приложений предмета, которые нужно удалить.
         :type remove_attachments: `list[str]` or `None`
 
-        :param add_attachments: Массив файлов-приложений предмета, которые нужно добавить. Указываются пути к файлам.
-        :type add_attachments: `list[str]` or `None`
+        :param add_attachments: Массив файлов-приложений предмета, которые нужно добавить. Пути к файлам или байты.
+        :type add_attachments: `list[str | bytes]` or `None`
 
         :return: Объект обновлённого предмета.
         :rtype: `playerokapi.types.Item`
@@ -1316,8 +1339,9 @@ class Account:
         
         if add_attachments:
             for i, att in enumerate(add_attachments, start=1):
+                file_obj, filename = self._resolve_image_file(att)
                 map[str(i)] = [f"variables.addedAttachments.{i-1}"]
-                files[str(i)] = open(att, "rb")
+                files[str(i)] = (filename, file_obj)
         
         payload = {
             "operations": json.dumps(operations),

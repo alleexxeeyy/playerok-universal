@@ -67,7 +67,7 @@ async def _send_mess(message: types.Message, state: FSMContext):
     acc.send_message(
         chat_id=chat.id, 
         text=text,
-        photo_file_paths=photo_paths
+        images=photo_paths
     )
     
     for path in photo_paths:

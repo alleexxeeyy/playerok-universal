@@ -530,8 +530,7 @@ class PlayerokBot:
             
             self.account = self.account.get()
 
-            balance = 0
-            balance = self.account.profile.balance.withdrawable
+            balance = self.account.profile.balance.withdrawable if self.account.profile.balance else 0
             if balance <= 500:
                 raise Exception("Слишком маленький баланс. Транзакция должна быть на сумму от 500₽")
             

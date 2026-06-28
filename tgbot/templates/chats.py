@@ -28,38 +28,41 @@ def _get_chat_info(chat: Chat):
     msg = chat.last_message
     msg_text = ""
 
-    if msg and msg.deal:
-        if msg.deal.status == ItemDealStatuses.PAID:
-            msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Сделка оплачена*</i></a>'
-        elif msg.deal.status == ItemDealStatuses.PENDING:
-            msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Товар в ожидании*</i></a>'
-        elif msg.deal.status == ItemDealStatuses.SENT:
-            msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Продавец подтвердил сделку*</i></a>'
-        elif msg.deal.status == ItemDealStatuses.CONFIRMED:
-            msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Покупатель подтвердил выполнение*</i></a>'
-        elif msg.deal.status == ItemDealStatuses.CONFIRMED_AUTOMATICALLY:
-            msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Выполнение подтверждение автоматически*</i></a>'
-        elif msg.deal.status == ItemDealStatuses.ROLLED_BACK:
-            msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Оформлен возврат*</i></a>'
-        elif msg.deal.status == ItemDealStatuses.HAS_PROBLEM:
-            msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Покупатель сообщил о проблеме*</i></a>'
-    elif msg and msg.text:
-        msg_text = strip_html(msg.text.replace("\n", " "))
-        msg_text = msg_text[:48] + ("..." if len(msg_text) > 48 else "")
-    elif not all((msg.text, msg.images)):
-        msg_text = "<i>*Без сообщения*</i>"
-    
-    if msg.images:
-        msg_text = f"<i>*Изображения ({len(msg.images)})*</i> " + msg_text
+    if msg:
+        if msg.deal:
+            if msg.deal.status == ItemDealStatuses.PAID:
+                msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Сделка оплачена*</i></a>'
+            elif msg.deal.status == ItemDealStatuses.PENDING:
+                msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Товар в ожидании*</i></a>'
+            elif msg.deal.status == ItemDealStatuses.SENT:
+                msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Продавец подтвердил сделку*</i></a>'
+            elif msg.deal.status == ItemDealStatuses.CONFIRMED:
+                msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Покупатель подтвердил выполнение*</i></a>'
+            elif msg.deal.status == ItemDealStatuses.CONFIRMED_AUTOMATICALLY:
+                msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Выполнение подтверждение автоматически*</i></a>'
+            elif msg.deal.status == ItemDealStatuses.ROLLED_BACK:
+                msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Оформлен возврат*</i></a>'
+            elif msg.deal.status == ItemDealStatuses.HAS_PROBLEM:
+                msg_text = f'<a href="https://playerok.com/deal/{msg.deal.id}"><i>*Покупатель сообщил о проблеме*</i></a>'
+        elif msg.text:
+            msg_text = strip_html(msg.text.replace("\n", " "))
+            msg_text = msg_text[:48] + ("..." if len(msg_text) > 48 else "")
+        elif not all((msg.text, msg.images)):
+            msg_text = "<i>*Без сообщения*</i>"
+        
+        if msg.images:
+            msg_text = f"<i>*Изображения ({len(msg.images)})*</i> " + msg_text
 
-    iso_dt = msg.created_at
-    if iso_dt.endswith("Z"):
-        iso_dt = iso_dt[:-1] + "+00:00"
+        iso_dt = msg.created_at
+        if iso_dt.endswith("Z"):
+            iso_dt = iso_dt[:-1] + "+00:00"
 
-    now = datetime.now().astimezone(pytz.timezone("Europe/Moscow"))
-    dt = datetime.fromisoformat(iso_dt).astimezone(pytz.timezone("Europe/Moscow"))
-    strf = "%H:%M:%S" if now - dt <= timedelta(days=1) else "%d.%m %H:%M:%S"
-    msg_date = dt.strftime(strf)
+        now = datetime.now().astimezone(pytz.timezone("Europe/Moscow"))
+        dt = datetime.fromisoformat(iso_dt).astimezone(pytz.timezone("Europe/Moscow"))
+        strf = "%H:%M:%S" if now - dt <= timedelta(days=1) else "%d.%m %H:%M:%S"
+        msg_date = dt.strftime(strf)
+    else:
+        return username, "<i>*Без сообщения*</i>", "??.??.??"
 
     return username, msg_text, msg_date
 

@@ -212,7 +212,6 @@ class PlayerokBot:
                 return mess
             except Exception as e:
                 err = e
-                break
         else:
             err = "Не удалось отправить сообщение"
         

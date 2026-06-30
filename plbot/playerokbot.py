@@ -1020,7 +1020,11 @@ class PlayerokBot:
                 try: 
                     items = self.get_my_items(count=12, statuses=[ItemStatuses.SOLD])
                     
-                    item = next((i for i in items if i.name == event.deal.item.name), None)
+                    item = next((
+                        i for i in items 
+                        if i.name == event.deal.item.name
+                        and (event.deal.item.priority and i.priority == event.deal.item.priority)
+                    ), None)
                     if not item:
                         raise
 

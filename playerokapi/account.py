@@ -4,12 +4,14 @@ from logging import getLogger
 from typing import Literal
 from datetime import datetime
 from threading import RLock
+
 import json
 import os
-import io
 import tempfile
 import shutil
 import uuid
+import mimetypes
+import traceback
 
 import tls_requests
 import curl_cffi
@@ -271,8 +273,8 @@ class Account:
                             )
                     return r
                 except Exception as e:
-                    err = str(e)
-                    logger.debug(f"Ошибка при отправке запроса: {e}")
+                    err = str(e).strip() or traceback.format_exc()
+                    logger.debug(f"Ошибка при отправке запроса: {err}")
                     logger.debug("Обновляю клиентов и отправляю запрос повторно...")
                     self._refresh_clients()
                 
@@ -1076,22 +1078,24 @@ class Account:
         r = self.request("post", f"{self.base_url}/graphql", headers, payload).json()
         return chat(r["data"]["markChatAsRead"])
 
-    def _resolve_image_file(self, image: str | bytes) -> tuple[object, str]:
+    def _resolve_image_file(self, image: str | bytes) -> tuple[str, object, str]:
         if isinstance(image, (bytes, bytearray)):
-            sig = image[:12]
+            sig = bytes(image[:12])
             if sig[:8] == b'\x89PNG\r\n\x1a\n':
-                ext = "png"
+                ext, content_type = "png", "image/png"
             elif sig[:3] == b'\xff\xd8\xff':
-                ext = "jpg"
+                ext, content_type = "jpg", "image/jpeg"
             elif sig[:6] in (b'GIF87a', b'GIF89a'):
-                ext = "gif"
+                ext, content_type = "gif", "image/gif"
             elif sig[:4] == b'RIFF' and sig[8:12] == b'WEBP':
-                ext = "webp"
+                ext, content_type = "webp", "image/webp"
             else:
-                ext = "bin"
-            return io.BytesIO(image), f"image.{ext}"
+                ext, content_type = "bin", "application/octet-stream"
+            return f"image.{ext}", bytes(image), content_type
         else:
-            return open(image, "rb"), os.path.basename(image)
+            filename = os.path.basename(image)
+            content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+            return filename, open(image, "rb"), content_type
 
     def upload_chat_image_into_temporary_store(
         self,
@@ -1125,8 +1129,8 @@ class Account:
             }
         }
 
-        file_obj, filename = self._resolve_image_file(image)
-        files = {"1": (filename, file_obj)}
+        filename, file_obj, content_type = self._resolve_image_file(image)
+        files = {"1": (filename, file_obj, content_type)}
         map = {"1": ["variables.file"]}
         payload = {
             "operations": json.dumps(operations),
@@ -1258,9 +1262,9 @@ class Account:
         files = {}
         
         for i, att in enumerate(attachments, start=1):
-            file_obj, filename = self._resolve_image_file(att)
+            filename, file_obj, content_type = self._resolve_image_file(att)
             map[str(i)] = [f"variables.attachments.{i-1}"]
-            files[str(i)] = (filename, file_obj)
+            files[str(i)] = (filename, file_obj, content_type)
         
         payload = {
             "operations": json.dumps(operations),
@@ -1337,11 +1341,10 @@ class Account:
         map = {}
         files = {}
         
-        if add_attachments:
-            for i, att in enumerate(add_attachments, start=1):
-                file_obj, filename = self._resolve_image_file(att)
-                map[str(i)] = [f"variables.addedAttachments.{i-1}"]
-                files[str(i)] = (filename, file_obj)
+        for i, att in enumerate(add_attachments or [], start=1):
+            filename, file_obj, content_type = self._resolve_image_file(att)
+            map[str(i)] = [f"variables.attachments.{i-1}"]
+            files[str(i)] = (filename, file_obj, content_type)
         
         payload = {
             "operations": json.dumps(operations),

@@ -72,7 +72,7 @@ echo ""
 echo -e "  ${WHITE}Откуда установить бота?${NC}"
 echo ""
 echo -e "  ${CYAN}${BOLD}1${NC}  ${WHITE}Скачать с GitHub${NC}  ${GRAY}(рекомендуется)${NC}"
-echo -e "  ${CYAN}${BOLD}2${NC}  ${WHITE}Использовать локальные файлы${NC}  ${GRAY}(бот уже загружен вручную)${NC}"
+echo -e "  ${CYAN}${BOLD}2${NC}  ${WHITE}Использовать файлы с сервера${NC}  ${GRAY}(уже загружены вручную)${NC}"
 echo ""
 read -rp "$(echo -e "  ${CYAN}›${NC} Ваш выбор [1/2]: ")" SOURCE_CHOICE
 
@@ -151,11 +151,8 @@ if ! command -v python3.12 &>/dev/null; then
   success "Python 3.12 установлен"
 else
   success "Python $(python3.12 --version | cut -d' ' -f2) уже установлен"
-  # Убеждаемся что venv модуль присутствует
-  if ! python3.12 -m venv --help &>/dev/null; then
-    info "Устанавливаю python3.12-venv..."
-    apt-get install -y python3.12-venv -qq
-  fi
+  # Всегда доставляем python3.12-venv — он может отсутствовать даже если python есть
+  apt-get install -y python3.12-venv -qq
 fi
 
 # ── 5. Виртуальное окружение ─────────────────────────────────
@@ -180,8 +177,10 @@ fi
 step "Зависимости"
 if [[ -f "$BOT_DIR/requirements.txt" ]]; then
   info "Устанавливаю пакеты из requirements.txt..."
-  "$BOT_DIR/venv/bin/pip" install --upgrade pip -q
-  "$BOT_DIR/venv/bin/pip" install -r "$BOT_DIR/requirements.txt" -q
+  # Убираем кастомные индексы из requirements.txt (китайские зеркала и т.д.)
+  sed -i '/^-i /d; /^--index-url/d; /^--extra-index-url/d; / -i http/d' "$BOT_DIR/requirements.txt"
+  "$BOT_DIR/venv/bin/pip" install --upgrade pip -q -i https://pypi.org/simple
+  "$BOT_DIR/venv/bin/pip" install -r "$BOT_DIR/requirements.txt" -q -i https://pypi.org/simple
   success "Все зависимости установлены"
 else
   warn "requirements.txt не найден — пропускаю"

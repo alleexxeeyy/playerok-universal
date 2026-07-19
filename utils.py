@@ -181,7 +181,19 @@ def is_tg_bot_exists() -> bool:
         config = sett.get("config")
         token = config["telegram"]["api"]["token"]
         proxy = config["telegram"]["api"]["proxy"]
-        
+        custom_api_url = config["telegram"]["api"].get("custom_api_url", "")
+
+        if custom_api_url:
+            if not (custom_api_url.startswith("http://")
+                    or custom_api_url.startswith("https://")):
+                custom_api_url = "https://" + custom_api_url
+
+        tg_bot_api_url = (
+            custom_api_url.rstrip("/")
+            if custom_api_url
+            else "https://api.telegram.org"
+        )
+
         if proxy:
             proxies = {
                 "http": f"http://{proxy}",
@@ -189,9 +201,9 @@ def is_tg_bot_exists() -> bool:
             }
         else:
             proxies = None
-        
+
         response = requests.get(
-            f"https://api.telegram.org/bot{token}/getMe", 
+            f"{tg_bot_api_url}/bot{token}/getMe",
             proxies=proxies,
             timeout=30
         )
@@ -319,6 +331,34 @@ def configure_config():
                 config["telegram"]["api"]["token"] = token
                 sett.set("config", config)
                 print(f"\n{Fore.YELLOW}Токен Telegram бота успешно сохранён в конфиг.")
+
+                # Кастомный URL Telegram API (Cloudflare Worker и т.п.)
+                print(
+                    f"\n{Fore.LIGHTYELLOW_EX}┌────┤ "
+                    f"{Fore.LIGHTGREEN_EX}Кастомный URL Telegram API "
+                    f"{Fore.LIGHTYELLOW_EX}(опционально) ├──────┐{Fore.WHITE}"
+                    f"\n\n  Если Telegram заблокирован, можно указать URL "
+                    f"Cloudflare Worker-прокси"
+                    f"\n  (или другого reverse-proxy) вместо api.telegram.org"
+                    f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}"
+                    f"https://tg-proxy.ваш-поддомен.workers.dev"
+                    f"\n  {Fore.LIGHTWHITE_EX}· Или пропустите, нажав Enter"
+                )
+                cust_api_url = input(
+                    f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}"
+                ).strip()
+                if cust_api_url:
+                    if not (cust_api_url.startswith("http://")
+                            or cust_api_url.startswith("https://")):
+                        cust_api_url = "https://" + cust_api_url
+                    config["telegram"]["api"]["custom_api_url"] = (
+                        cust_api_url.rstrip("/")
+                    )
+                    sett.set("config", config)
+                    print(
+                        f"\n{Fore.YELLOW}Кастомный URL Telegram API "
+                        f"сохранён."
+                    )
             else:
                 print(
                     f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
@@ -434,8 +474,9 @@ def configure_config():
         )
         config["telegram"]["api"]["token"] = ""
         config["telegram"]["api"]["proxy"] = ""
+        config["telegram"]["api"]["custom_api_url"] = ""
         sett.set("config", config)
-        
+
         return configure_config()
     else:
         logger.info(f"{Fore.LIGHTYELLOW_EX}Telegram бот успешно работает.")

@@ -15,6 +15,7 @@
   - **[Windows](#-windows)**
   - **[macOS](#-macos)**
   - **[Linux](#%EF%B8%8F-linux-ubuntu)**
+  - **[🌐 Cloudflare Workers](#-блокировка-telegram-используйте-cloudflare-workers)**
 - **[Для разработчиков](#-для-разработчиков)**
 - **[Ссылки](#-полезные-ссылки)**
 
@@ -92,6 +93,49 @@ bash <(curl -s https://raw.githubusercontent.com/alleexxeeyy/playerok-universal/
 | `pluniversal update`  | **🔵 Обновление бота**              | 
 | `pluniversal enable`  | **☑️ Включить авто-запуск бота**  |
 | `pluniversal disable` | **❌ Выключить авто-запуск бота** |
+
+## 🌐 Блокировка Telegram? Используйте Cloudflare Workers
+
+Если Telegram заблокирован в вашем регионе (Россия, Иран и т.д.), бот не сможет подключиться к `api.telegram.org`. Решение — бесплатный прокси-воркер на Cloudflare. Всё настраивается за 2 минуты.
+
+### 🚀 Быстрый старт
+
+1. Зайдите в [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **Create application** → **Create Worker**
+2. Назовите воркер, например `tg-proxy`
+3. **Полностью удалите** шаблонный код из редактора и вставьте этот:
+
+```javascript
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const tgUrl = `https://api.telegram.org${url.pathname}${url.search}`;
+    const headers = new Headers(request.headers);
+    headers.set('Host', 'api.telegram.org');
+    return fetch(new Request(tgUrl, {
+      method: request.method, headers, body: request.body
+    }));
+  }
+}
+```
+
+4. Нажмите **Save and Deploy** ✅
+5. Скопируйте URL воркера — выглядит так: `https://tg-proxy.ваш-поддомен.workers.dev`
+
+### 🔧 Как использовать в боте
+
+При первом запуске бота, после ввода токена появится новый пункт:
+
+```
+┌────┤ Кастомный URL Telegram API (опционально) ├──────┐
+  Если Telegram заблокирован, можно указать URL
+  Cloudflare Worker-прокси вместо api.telegram.org
+  · Пример: https://tg-proxy.ваш-поддомен.workers.dev
+  · Или пропустите, нажав Enter
+```
+
+Вставьте URL вашего воркера → **Enter**. Прокси для Telegram можно пропустить (тоже Enter). Готово! 🚀
+
+> **Важно:** URL можно указать и без `https://` — бот сам допишет. Достаточно просто `tg-proxy.ваш-поддомен.workers.dev`.
 
 ## 📚 Для разработчиков
 

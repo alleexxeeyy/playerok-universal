@@ -74,7 +74,8 @@ CONFIG = SettingsFile(
         "telegram": {
             "api": {
                 "token": "",
-                "proxy": ""
+                "proxy": "",
+                "custom_api_url": ""
             },
             "bot": {
                 "password": "",

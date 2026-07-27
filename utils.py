@@ -471,7 +471,7 @@ def configure_config():
             print(
                 f"\n{Fore.LIGHTYELLOW_EX}┌────┤ "
                 f"Введите {Fore.LIGHTGREEN_EX}Кастомный URL Telegram API "
-                f"{Fore.LIGHTYELLOW_EX}(опционально) ├──────┐{Fore.WHITE}"
+                f"{Fore.LIGHTYELLOW_EX}(опционально) ├────┐{Fore.WHITE}"
                 f"\n\n  Если Telegram заблокирован, можно указать URL Cloudflare Worker-прокси"
                 f"\n  (или другого reverse-proxy) вместо api.telegram.org"
                 f"\n  {Fore.LIGHTWHITE_EX}Или пропустите эту настройку, нажав Enter"

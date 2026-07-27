@@ -48,6 +48,25 @@ async def callback_auto_delivery_page(callback: CallbackQuery, callback_data: ca
     )
     
 
+@router.callback_query(calls.DataReplacementPage.filter())
+async def callback_data_replacement(callback: CallbackQuery, callback_data: calls.DataReplacementPage, state: FSMContext):
+    await state.set_state(None)
+
+    index = callback_data.index
+    await state.update_data(data_replacement_index=index)
+
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.data_replacement_text(index),
+        reply_markup=templ.data_replacement_kb(index, last_page),
+        callback=callback
+    )
+
+
 @router.callback_query(calls.MessagePage.filter())
 async def callback_message_page(callback: CallbackQuery, callback_data: calls.MessagePage, state: FSMContext):
     try:

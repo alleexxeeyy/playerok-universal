@@ -20,7 +20,7 @@ from settings import Settings as sett
 from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states
-from ..helpful import throw_float_message, do_auth
+from ..helpful import throw_float_message, do_auth, notify, answer_callback
 from .navigation import *
 from .pagination import *
 from .page import *
@@ -38,7 +38,7 @@ async def callback_destroy(callback: CallbackQuery):
 
 @router.callback_query(F.data == "null_answer")
 async def callback_null_answer(callback: CallbackQuery):
-    await callback.bot.answer_callback_query(callback.id)
+    await answer_callback(callback.bot, callback)
 
 
 @router.callback_query(calls.DeleteSignedUser.filter())
@@ -53,6 +53,7 @@ async def callback_delete_signed_user(callback: CallbackQuery, callback_data: ca
         config = sett.get("config")
         config["telegram"]["bot"]["signed_users"].remove(id)
         sett.set("config", config)
+        await notify(callback, "🗑️ Пользователь удалён из доступа")
         
         if callback.from_user.id == id:
             return await do_auth(callback.message, state)
@@ -108,6 +109,7 @@ async def callback_delete_included_restore_item(callback: CallbackQuery, callbac
         auto_restore_items = sett.get("auto_restore_items")
         auto_restore_items["included"].pop(index)
         sett.set("auto_restore_items", auto_restore_items)
+        await notify(callback, "🗑️ Товар убран из включенных")
         
         return await callback_included_restore_items_pagination(
             callback, calls.IncludedRestoreItemsPagination(page=last_page), state
@@ -138,6 +140,7 @@ async def callback_delete_excluded_restore_item(callback: CallbackQuery, callbac
         auto_restore_items = sett.get("auto_restore_items")
         auto_restore_items["excluded"].pop(index)
         sett.set("auto_restore_items", auto_restore_items)
+        await notify(callback, "🗑️ Товар убран из исключений")
         
         return await callback_excluded_restore_items_pagination(
             callback, calls.ExcludedRestoreItemsPagination(page=last_page), state
@@ -146,8 +149,8 @@ async def callback_delete_excluded_restore_item(callback: CallbackQuery, callbac
         await throw_float_message(
             state=state,
             message=callback.message,
-            text=templ.restore_included_float_text(e),
-            reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
+            text=templ.restore_excluded_float_text(e),
+            reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
         )
 
 
@@ -162,12 +165,13 @@ async def callback_delete_included_complete_deal(callback: CallbackQuery, callba
         index = callback_data.index
         if index is None:
             return await callback_included_complete_deals_pagination(
-                callback, calls.IncludedRestoreItemsPagination(page=last_page), state
+                callback, calls.IncludedCompleteDealsPagination(page=last_page), state
             )
         
         auto_complete_deals = sett.get("auto_complete_deals")
         auto_complete_deals["included"].pop(index)
         sett.set("auto_complete_deals", auto_complete_deals)
+        await notify(callback, "🗑️ Товар убран из включенных")
         
         return await callback_included_complete_deals_pagination(
             callback, calls.IncludedCompleteDealsPagination(page=last_page), state
@@ -192,13 +196,14 @@ async def callback_delete_excluded_complete_deal(callback: CallbackQuery, callba
         index = callback_data.index
         if index is None:
             return await callback_excluded_complete_deals_pagination(
-                callback, calls.ExcludedRestoreItemsPagination(page=last_page), state
+                callback, calls.ExcludedCompleteDealsPagination(page=last_page), state
             )
-        
+
         auto_complete_deals = sett.get("auto_complete_deals")
         auto_complete_deals["excluded"].pop(index)
         sett.set("auto_complete_deals", auto_complete_deals)
-        
+        await notify(callback, "🗑️ Товар убран из исключений")
+
         return await callback_excluded_complete_deals_pagination(
             callback, calls.ExcludedCompleteDealsPagination(page=last_page), state
         )
@@ -206,8 +211,8 @@ async def callback_delete_excluded_complete_deal(callback: CallbackQuery, callba
         await throw_float_message(
             state=state,
             message=callback.message,
-            text=templ.complete_included_float_text(e),
-            reply_markup=templ.back_kb(calls.IncludedCompleteDealsPagination(page=last_page).pack())
+            text=templ.complete_excluded_float_text(e),
+            reply_markup=templ.back_kb(calls.ExcludedCompleteDealsPagination(page=last_page).pack())
         )
 
 
@@ -228,6 +233,7 @@ async def callback_delete_included_bump_item(callback: CallbackQuery, callback_d
         auto_bump_items = sett.get("auto_bump_items")
         auto_bump_items["included"].pop(index)
         sett.set("auto_bump_items", auto_bump_items)
+        await notify(callback, "🗑️ Товар убран из включенных")
         
         return await callback_included_bump_items_pagination(
             callback, calls.IncludedBumpItemsPagination(page=last_page), state
@@ -258,6 +264,7 @@ async def callback_delete_excluded_bump_item(callback: CallbackQuery, callback_d
         auto_bump_items = sett.get("auto_bump_items")
         auto_bump_items["excluded"].pop(index)
         sett.set("auto_bump_items", auto_bump_items)
+        await notify(callback, "🗑️ Товар убран из исключений")
         
         return await callback_excluded_bump_items_pagination(
             callback, calls.ExcludedBumpItemsPagination(page=last_page), state
@@ -368,7 +375,8 @@ async def callback_set_new_deliv_piece(callback: CallbackQuery, callback_data: c
             state=state,
             message=callback.message,
             text=templ.new_deliv_float_text(
-                f"📦 Отправьте <b>товары</b> для поштучной выдачи (1 строка = 1 товар, можно прислать .txt файл с товарами):"
+                f"📦 Отправьте <b>товары</b> для поштучной выдачи (1 строка = 1 товар):"
+                f"\n\n📄 Можно прислать <b>.txt файл</b>"
             ),
             reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack()),
             callback=callback
@@ -403,6 +411,7 @@ async def callback_delete_fast_reply(callback: CallbackQuery, callback_data: cal
         fast_replies = sett.get("fast_replies")
         fast_replies.pop(index)
         sett.set("fast_replies", fast_replies)
+        await notify(callback, "🗑️ Быстрый ответ удалён")
         
         return await callback_fast_replies_pagination(
             callback, calls.FastRepliesPagination(page=last_page), state
@@ -532,8 +541,8 @@ async def callback_request_withdrawal(callback: CallbackQuery, state: FSMContext
         )
 
 
-@router.callback_query(F.data == "clean_fp_proxy")
-async def callback_clean_fp_proxy(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "clean_pl_proxy")
+async def callback_clean_pl_proxy(callback: CallbackQuery, state: FSMContext):
     await state.set_state(None)
     
     config = sett.get("config")
@@ -558,6 +567,19 @@ async def callback_clean_tg_proxy(callback: CallbackQuery, state: FSMContext):
     )
 
 
+@router.callback_query(F.data == "clean_tg_custom_api_url")
+async def callback_clean_tg_custom_api_url(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(None)
+
+    config = sett.get("config")
+    config["telegram"]["api"]["custom_api_url"] = ""
+    sett.set("config", config)
+
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="conn"), state
+    )
+
+
 @router.callback_query(F.data == "clean_notifications_chat_id")
 async def callback_clean_notifications_chat_id(callback: CallbackQuery, state: FSMContext):
     await state.set_state(None)
@@ -568,108 +590,6 @@ async def callback_clean_notifications_chat_id(callback: CallbackQuery, state: F
     
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
-    )
-
-
-@router.callback_query(F.data == "send_new_included_restore_items_keyphrases_file")
-async def callback_send_new_included_restore_items_keyphrases_file(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.RestoreItemsStates.waiting_for_new_included_restore_items_keyphrases_file)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.new_restore_included_float_text(
-            "📄 Отправьте <b>.txt</b> файл с <b>ключевыми фразами</b>, по одной записи в строке "
-            "(для каждого товара указываются через запятую, например, \"samp аккаунт, со всеми данными\")"
-        ),
-        reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
-    )
-
-
-@router.callback_query(F.data == "send_new_excluded_restore_items_keyphrases_file")
-async def callback_send_new_excluded_restore_items_keyphrases_file(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.RestoreItemsStates.waiting_for_new_excluded_restore_items_keyphrases_file)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.new_restore_excluded_float_text(
-            "📄 Отправьте <b>.txt</b> файл с <b>ключевыми фразами</b>, по одной записи в строке "
-            "(для каждого товара указываются через запятую, например, \"samp аккаунт, со всеми данными\")"
-        ),
-        reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
-    )
-
-
-@router.callback_query(F.data == "send_new_included_complete_deals_keyphrases_file")
-async def callback_send_new_included_complete_deals_keyphrases_file(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.CompleteDealsStates.waiting_for_new_included_complete_deals_keyphrases_file)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.new_complete_included_float_text(
-            "📄 Отправьте <b>.txt</b> файл с <b>ключевыми фразами</b>, по одной записи в строке "
-            "(для каждого товара указываются через запятую, например, \"samp аккаунт, со всеми данными\")"
-        ),
-        reply_markup=templ.back_kb(calls.IncludedCompleteDealsPagination(page=last_page).pack())
-    )
-
-
-@router.callback_query(F.data == "send_new_excluded_complete_deals_keyphrases_file")
-async def callback_send_new_excluded_complete_deals_keyphrases_file(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.CompleteDealsStates.waiting_for_new_excluded_complete_deals_keyphrases_file)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.new_complete_excluded_float_text(
-            "📄 Отправьте <b>.txt</b> файл с <b>ключевыми фразами</b>, по одной записи в строке "
-            "(для каждого товара указываются через запятую, например, \"samp аккаунт, со всеми данными\")"
-        ),
-        reply_markup=templ.back_kb(calls.ExcludedCompleteDealsPagination(page=last_page).pack())
-    )
-
-
-@router.callback_query(F.data == "send_new_included_bump_items_keyphrases_file")
-async def callback_send_new_included_bump_items_keyphrases_file(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.BumpItemsStates.waiting_for_new_included_bump_items_keyphrases_file)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.new_bump_included_float_text(
-            "📄 Отправьте <b>.txt</b> файл с <b>ключевыми фразами</b>, по одной записи в строке "
-            "(для каждого товара указываются через запятую, например, \"samp аккаунт, со всеми данными\")"
-        ),
-        reply_markup=templ.back_kb(calls.IncludedBumpItemsPagination(page=last_page).pack())
-    )
-
-
-@router.callback_query(F.data == "send_new_excluded_bump_items_keyphrases_file")
-async def callback_send_new_excluded_bump_items_keyphrases_file(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.BumpItemsStates.waiting_for_new_excluded_bump_items_keyphrases_file)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.new_bump_excluded_float_text(
-            "📄 Отправьте <b>.txt</b> файл с <b>ключевыми фразами</b>, по одной записи в строке "
-            "(для каждого товара указываются через запятую, например, \"samp аккаунт, со всеми данными\")"
-        ),
-        reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
     )
 
 
@@ -692,6 +612,7 @@ async def callback_add_new_custom_command(callback: CallbackQuery, state: FSMCon
 
         custom_commands[command] = answer.splitlines()
         sett.set("custom_commands", custom_commands)
+        await notify(callback, f"✅ Команда {command} добавлена")
         
         await throw_float_message(
             state=state,
@@ -757,6 +678,7 @@ async def callback_delete_custom_command(callback: CallbackQuery, state: FSMCont
         custom_commands = sett.get("custom_commands")
         del custom_commands[command]
         sett.set("custom_commands", custom_commands)
+        await notify(callback, f"🗑️ Команда {command} удалена")
         
         await throw_float_message(
             state=state,
@@ -804,6 +726,7 @@ async def callback_add_new_auto_delivery(callback: CallbackQuery, state: FSMCont
             "goods": goods if goods and piece else [],
         })
         sett.set("auto_deliveries", auto_deliveries)
+        await notify(callback, "✅ Авто-выдача добавлена")
         
         await throw_float_message(
             state=state,
@@ -871,6 +794,7 @@ async def callback_delete_auto_delivery(callback: CallbackQuery, state: FSMConte
         auto_deliveries = sett.get("auto_deliveries")
         del auto_deliveries[index]
         sett.set("auto_deliveries", auto_deliveries)
+        await notify(callback, "🗑️ Авто-выдача удалена")
         
         await throw_float_message(
             state=state,
@@ -905,6 +829,7 @@ async def callback_delete_deliv_good(callback: CallbackQuery, callback_data: cal
         auto_deliveries = sett.get("auto_deliveries")
         auto_deliveries[deliv_index]["goods"].pop(index)
         sett.set("auto_deliveries", auto_deliveries)
+        await notify(callback, "🗑️ Товар удалён из выдачи")
         
         return await callback_deliv_goods_pagination(
             callback, calls.DelivGoodsPagination(page=last_page), state
@@ -915,6 +840,149 @@ async def callback_delete_deliv_good(callback: CallbackQuery, callback_data: cal
             message=callback.message,
             text=templ.deliv_goods_float_text(e),
             reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
+        )
+
+
+@router.callback_query(F.data == "add_new_data_replacement")
+async def callback_add_new_data_replacement(callback: CallbackQuery, state: FSMContext):
+    try:
+        await state.set_state(None)
+
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+
+        keyphrases = data.get("new_data_replacement_keyphrases")
+        values = data.get("new_data_replacement_values")
+
+        if not keyphrases or not values:
+            return await callback_data_replacements_pagination(
+                callback, calls.DataReplacementsPagination(page=last_page), state
+            )
+
+        data_replacement = sett.get("data_replacement")
+        data_replacement.append({
+            "enabled": True,
+            "keyphrases": keyphrases,
+            "separator": ":",
+            "data": values
+        })
+        sett.set("data_replacement", data_replacement)
+        await notify(callback, "✅ Замена данных добавлена")
+
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.new_data_replacement_float_text(f"✅ <b>Замена данных</b> была успешно добавлена"),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.new_data_replacement_float_text(e),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+        )
+
+
+@router.callback_query(F.data == "confirm_deleting_data_replacement")
+async def callback_confirm_deleting_data_replacement(callback: CallbackQuery, state: FSMContext):
+    try:
+        await state.set_state(None)
+
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+        index = data.get("data_replacement_index")
+
+        if index is None:
+            return await callback_data_replacements_pagination(
+                callback, calls.DataReplacementsPagination(page=last_page), state
+            )
+
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_float_text(
+                "🗑️ Подтвердите <b>удаление замены данных</b>:"
+            ),
+            reply_markup=templ.confirm_kb(
+                confirm_cb="delete_data_replacement",
+                cancel_cb=calls.DataReplacementPage(index=index).pack()
+            )
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_float_text(e),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+        )
+
+
+@router.callback_query(F.data == "delete_data_replacement")
+async def callback_delete_data_replacement(callback: CallbackQuery, state: FSMContext):
+    try:
+        await state.set_state(None)
+
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+
+        index = data.get("data_replacement_index")
+        if index is None:
+            return await callback_data_replacements_pagination(
+                callback, calls.DataReplacementsPagination(page=last_page), state
+            )
+
+        data_replacement = sett.get("data_replacement")
+        del data_replacement[index]
+        sett.set("data_replacement", data_replacement)
+        await notify(callback, "🗑️ Замена данных удалена")
+
+        await state.update_data(data_replacement_index=None)
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_float_text("✅ <b>Замена данных</b> была удалена"),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_float_text(e),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+        )
+
+
+@router.callback_query(calls.DeleteDataReplacementValue.filter())
+async def callback_delete_data_replacement_value(callback: CallbackQuery, callback_data: calls.DeleteDataReplacementValue, state: FSMContext):
+    try:
+        await state.set_state(None)
+        index = callback_data.index
+
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+        values_page = data.get("data_replacement_values_page", 0)
+        repl_index = data.get("data_replacement_index")
+
+        if repl_index is None:
+            return await callback_data_replacements_pagination(
+                callback, calls.DataReplacementsPagination(page=last_page), state
+            )
+
+        data_replacement = sett.get("data_replacement")
+        data_replacement[repl_index]["data"].pop(index)
+        sett.set("data_replacement", data_replacement)
+        await notify(callback, "🗑️ Строка данных удалена")
+
+        return await callback_data_replacement_values_pagination(
+            callback, calls.DataReplacementValuesPagination(page=values_page), state
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_values_float_text(e),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
         )
 
 
@@ -950,7 +1018,7 @@ async def callback_reload_module(callback: CallbackQuery, state: FSMContext):
         
         from core.modules import reload_module
         await reload_module(uuid)
-        
+
         return await callback_module_page(
             callback, calls.ModulePage(uuid=uuid), state
         )
@@ -979,28 +1047,25 @@ async def callback_send_logs_file(callback: CallbackQuery, callback_data: calls.
     await state.set_state(None)
     
     lines = callback_data.lines
-    
+
+    src_dir = Path(__file__).resolve().parents[2]
+    logs_file = os.path.join(src_dir, "logs", "latest.log")
+    log_file = os.path.join(src_dir, "logs", "logs.log")
+
     try:
-        src_dir = Path(__file__).resolve().parents[2]
-        logs_file = os.path.join(src_dir, "logs", "latest.log")
-        txt_file = os.path.join(src_dir, "logs", "Лог работы.txt")
-        
         if lines > 0:
             with open(logs_file, 'r', encoding='utf-8') as f:
                 last_lines = deque(f, lines)
-            with open(txt_file, 'w', encoding='utf-8') as f:
+            with open(log_file, 'w', encoding='utf-8') as f:
                 f.writelines(last_lines)
         else:
-            shutil.copy(logs_file, txt_file)
-        
+            shutil.copy(logs_file, log_file)
+
         await callback.message.answer_document(
-            document=FSInputFile(txt_file),
+            document=FSInputFile(log_file),
             reply_markup=templ.destroy_kb()
         )
-        try:
-            await callback.bot.answer_callback_query(callback.id, cache_time=0)
-        except:
-            pass
+        await answer_callback(callback.bot, callback)
 
         await throw_float_message(
             state=state,
@@ -1010,7 +1075,7 @@ async def callback_send_logs_file(callback: CallbackQuery, callback_data: calls.
         )
     finally:
         try:
-            os.remove(txt_file)
+            os.remove(log_file)
         except:
             pass
 
@@ -1083,7 +1148,7 @@ async def callback_change_deals_filter(callback: CallbackQuery, callback_data: c
         filter["statuses"] = []
 
     await state.update_data(deals_filter=filter)
-    await callback.bot.answer_callback_query(callback.id)
+    await answer_callback(callback.bot, callback)
 
     await callback_deals_filter(callback, state)
 
@@ -1177,7 +1242,7 @@ async def callback_change_items_filter(callback: CallbackQuery, callback_data: c
         filter["category_name"] = cat.name
 
     await state.update_data(items_filter=filter)
-    await callback.bot.answer_callback_query(callback.id)
+    await answer_callback(callback.bot, callback)
 
     await callback_items_filter(callback, state)
 
@@ -1328,7 +1393,7 @@ async def callback_change_transactions_filter(callback: CallbackQuery, callback_
         filter["to_date"] = None
 
     await state.update_data(transactions_filter=filter)
-    await callback.bot.answer_callback_query(callback.id)
+    await answer_callback(callback.bot, callback)
 
     await callback_transactions_filter(callback, state)
 
@@ -1404,7 +1469,7 @@ async def callback_change_reviews_filter(callback: CallbackQuery, callback_data:
         filter["max_item_price"] = max_pr or None
 
     await state.update_data(reviews_filter=filter)
-    await callback.bot.answer_callback_query(callback.id)
+    await answer_callback(callback.bot, callback)
 
     await callback_reviews_filter(callback, state)
 

@@ -1,13 +1,11 @@
-bs4==0.0.2
 curl-cffi==0.13.0
 wrapper-tls-requests==1.1.4
 websocket-client==1.8.0
-requests==2.32.3
-requests[socks]
+requests[socks]==2.32.3
 requests-toolbelt==0.10.1
 validators==0.34.0
-asyncio==3.4.3
-aiogram>=3.11
+aiogram>=3.11,<4
+aiohttp>=3.12.2,<3.14
 aiohttp-socks
 lxml==5.2.2
 certifi==2025.1.31
@@ -19,4 +17,4 @@ setuptools==75.8.0
 tqdm==4.67.1
 pytz==2025.2
 rarfile==4.2
-python-certifi-win32
+python-certifi-win32; sys_platform == "win32"

@@ -5,6 +5,7 @@ from .module_page import *
 from .profile import *
 from .notifications import *
 from .logs import *
+from .configs import *
 from .updates import *
 from .signed_users import *
 
@@ -28,6 +29,10 @@ from .restore import *
 from .restore_included import *
 from .restore_excluded import *
 
+from .data_replacements import *
+from .data_replacement import *
+from .data_replacement_values import *
+
 from .complete import *
 from .complete_included import *
 from .complete_excluded import *
@@ -35,6 +40,7 @@ from .complete_excluded import *
 from .bump import *
 from .bump_included import *
 from .bump_excluded import *
+from .bump_positions import *
 
 from .withdrawal import *
 from .withdrawal_cards import *

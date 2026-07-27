@@ -126,6 +126,22 @@ async def callback_excluded_bump_items_pagination(callback: CallbackQuery, callb
     )
 
 
+@router.callback_query(calls.BumpItemsPositionsPagination.filter())
+async def callback_bump_items_positions_pagination(callback: CallbackQuery, callback_data: calls.BumpItemsPositionsPagination, state: FSMContext):
+    await state.set_state(None)
+
+    page = callback_data.page
+    await state.update_data(last_page=page)
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.bump_positions_text(),
+        reply_markup=templ.bump_positions_kb(page),
+        callback=callback
+    )
+
+
 @router.callback_query(calls.CustomCommandsPagination.filter())
 async def callback_custom_commands_pagination(callback: CallbackQuery, callback_data: calls.CustomCommandsPagination, state: FSMContext):
     await state.set_state(None)
@@ -173,6 +189,41 @@ async def callback_deliv_goods_pagination(callback: CallbackQuery, callback_data
         message=callback.message,
         text=templ.deliv_goods_text(index),
         reply_markup=templ.deliv_goods_kb(index, page),
+        callback=callback
+    )
+
+
+@router.callback_query(calls.DataReplacementsPagination.filter())
+async def callback_data_replacements_pagination(callback: CallbackQuery, callback_data: calls.DataReplacementsPagination, state: FSMContext):
+    await state.set_state(None)
+
+    page = callback_data.page
+    await state.update_data(last_page=page)
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.data_replacements_text(),
+        reply_markup=templ.data_replacements_kb(page),
+        callback=callback
+    )
+
+
+@router.callback_query(calls.DataReplacementValuesPagination.filter())
+async def callback_data_replacement_values_pagination(callback: CallbackQuery, callback_data: calls.DataReplacementValuesPagination, state: FSMContext):
+    await state.set_state(None)
+
+    data = await state.get_data()
+    index = data.get("data_replacement_index")
+
+    page = callback_data.page
+    await state.update_data(data_replacement_values_page=page)
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.data_replacement_values_text(index),
+        reply_markup=templ.data_replacement_values_kb(index, page),
         callback=callback
     )
 

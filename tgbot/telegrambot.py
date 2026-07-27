@@ -12,6 +12,7 @@ import logging
 from settings import Settings as sett
 from core.modules import get_modules
 from core.handlers import call_bot_event
+from utils import normalize_custom_api_url
 
 from . import router as main_router
 from . import templates as templ
@@ -44,7 +45,7 @@ class TelegramBot:
         config = sett.get("config")
         self.token = config["telegram"]["api"]["token"]
         self.proxy = config["telegram"]["api"]["proxy"]
-        self.custom_api_url = config["telegram"]["api"].get("custom_api_url", "")
+        self.custom_api_url = config["telegram"]["api"]["custom_api_url"]
 
         if self.proxy:
             session = AiohttpSession(proxy=f"http://{self.proxy}")
@@ -56,14 +57,10 @@ class TelegramBot:
         # Кастомный URL Telegram API — ставим на session.api,
         # т.к. Bot() в aiogram 3.30 не принимает server=
         if self.custom_api_url:
-            if not (self.custom_api_url.startswith("http://")
-                    or self.custom_api_url.startswith("https://")):
-                self.custom_api_url = "https://" + self.custom_api_url
-            self.bot.session.api = TelegramAPIServer.from_base(
-                self.custom_api_url.rstrip("/")
-            )
-        self.dp = Dispatcher()
+            self.custom_api_url = normalize_custom_api_url(self.custom_api_url)
+            self.bot.session.api = TelegramAPIServer.from_base(self.custom_api_url)
 
+        self.dp = Dispatcher()
         self.me = None
 
         for module in get_modules():

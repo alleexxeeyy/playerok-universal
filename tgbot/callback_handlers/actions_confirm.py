@@ -18,10 +18,20 @@ router = Router()
 @router.callback_query(F.data == "confirm_bump_items")
 async def callback_confirm_bump_items(callback: CallbackQuery, state: FSMContext):
     await state.set_state(None)
+    config = sett.get("config")
+    scope = (
+        "все ваши товары, кроме тех, что указаны в исключенных"
+        if config["playerok"]["auto_bump_items"]["all"]
+        else "только те товары, которые вы добавили во включенные"
+    )
     await throw_float_message(
         state=state,
-        message=callback.message, 
-        text=templ.bump_float_text("✔️ Подтвердите <b>поднятие товаров</b>:"), 
+        message=callback.message,
+        text=templ.bump_float_text(
+            "✔️ Подтвердите <b>поднятие товаров</b>:"
+            f"\n\n<blockquote>⚠️ Будут подняты <b>{scope}</b> — сразу и без учёта позиции, "
+            "даже если товар уже в топе. За каждое поднятие списываются деньги.</blockquote>"
+        ),
         reply_markup=templ.confirm_kb("bump_items", calls.MenuNavigation(to="bump").pack())
     )
 

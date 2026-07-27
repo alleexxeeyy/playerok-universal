@@ -1,13 +1,14 @@
 import pytz
 import re
 import sys
-from datetime import datetime, timedelta, timezone
-from collections import Counter
 import base64
 import string
 import requests
+from urllib.parse import urlparse
 from logging import getLogger
 from colorama import Fore
+from datetime import datetime, timedelta, timezone
+from collections import Counter
 
 from playerokapi.account import Account
 from playerokapi.exceptions import BotCheckDetectedException
@@ -51,6 +52,94 @@ def get_event_next_time(last_time_iso, interval):
         datetime.fromisoformat(last_time_iso) + timedelta(seconds=interval)
         if last_time_iso else datetime.now()
     )
+
+
+def parse_day_time(text: str) -> str | None:
+    text = (text or "").strip()
+
+    match = re.fullmatch(r"(\d{1,2})\s*[:.,\-]\s*(\d{1,2})", text)
+    if match:
+        hours, minutes = int(match.group(1)), int(match.group(2))
+    elif text.isdigit() and len(text) in (3, 4):
+        hours, minutes = int(text[:-2]), int(text[-2:])
+    elif text.isdigit() and len(text) <= 2:
+        hours, minutes = int(text), 0
+    else:
+        return None
+
+    if hours > 23 or minutes > 59:
+        return None
+    return f"{hours:02d}:{minutes:02d}"
+
+
+def is_night_time(time_from: str, time_to: str, now: datetime | None = None) -> bool:
+    start = parse_day_time(time_from)
+    end = parse_day_time(time_to)
+    if not start or not end or start == end:
+        return False
+
+    current = (now or datetime.now()).strftime("%H:%M")
+    if start < end:
+        return start <= current < end
+    return current >= start or current < end
+
+
+def get_next_day_time(time_str: str, now: datetime | None = None) -> datetime | None:
+    parsed = parse_day_time(time_str)
+    if not parsed:
+        return None
+
+    now = now or datetime.now()
+    hours, minutes = (int(part) for part in parsed.split(":"))
+    next_time = now.replace(hour=hours, minute=minutes, second=0, microsecond=0)
+    if next_time <= now:
+        next_time += timedelta(days=1)
+    return next_time
+
+
+def is_bump_night_now(config: dict, now: datetime | None = None) -> bool:
+    night = config["playerok"]["auto_bump_items"]["night"]
+    return bool(night["enabled"]) and is_night_time(night["time_from"], night["time_to"], now)
+
+
+def get_current_bump_interval(config: dict, now: datetime | None = None) -> int:
+    if is_bump_night_now(config, now):
+        return config["playerok"]["auto_bump_items"]["night"]["interval"] or 0
+    return config["playerok"]["auto_bump_items"]["interval"] or 0
+
+
+def get_current_bump_position(config: dict, now: datetime | None = None) -> int:
+    if is_bump_night_now(config, now):
+        return config["playerok"]["auto_bump_items"]["night"]["position"] or 0
+    return config["playerok"]["auto_bump_items"]["position"] or 0
+
+
+def get_bump_next_switch(config: dict, now: datetime) -> datetime | None:
+    night = config["playerok"]["auto_bump_items"]["night"]
+    if not night["enabled"]:
+        return None
+
+    if is_bump_night_now(config, now):
+        return get_next_day_time(night["time_to"], now)
+    return get_next_day_time(night["time_from"], now)
+
+
+def get_bump_next_time(config: dict, last_time_iso: str, now: datetime | None = None) -> datetime | None:
+    now = now or datetime.now()
+    last_time = datetime.fromisoformat(last_time_iso) if last_time_iso else datetime.min
+
+    cursor = now
+    for _ in range(1000):
+        interval = get_current_bump_interval(config, cursor)
+        due = max(last_time + timedelta(seconds=interval), cursor) if interval else None
+        switch = get_bump_next_switch(config, cursor)
+
+        if due and (not switch or due < switch):
+            return due
+        if not switch:
+            return None
+        cursor = switch
+    return None
 
 
 def get_tg_log_chats():
@@ -176,20 +265,61 @@ def is_tg_token_valid(token: str) -> bool:
     return bool(re.match(pattern, token))
 
 
+def is_url_valid(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except Exception:
+        return False
+
+
+def normalize_custom_api_url(cust_api_url: str) -> str:
+    if not (
+        cust_api_url.startswith("http://")
+        or cust_api_url.startswith("https://")
+    ):
+        cust_api_url = "https://" + cust_api_url
+    return cust_api_url.rstrip("/")
+
+
+def is_custom_api_url_working(cust_api_url: str) -> bool:
+    try:
+        config = sett.get("config")
+        token = config["telegram"]["api"]["token"]
+        proxy = config["telegram"]["api"]["proxy"]
+
+        if proxy:
+            proxies = {
+                "http": f"http://{proxy}",
+                "https": f"http://{proxy}",
+            }
+        else:
+            proxies = None
+
+        response = requests.get(
+            f"{normalize_custom_api_url(cust_api_url)}/bot{token}/getMe",
+            proxies=proxies,
+            timeout=30
+        )
+
+        data = response.json()
+        return data.get("ok", False) is True and data.get("result", {}).get("is_bot", False) is True
+    except Exception:
+        return False
+
+
 def is_tg_bot_exists() -> bool:
     try:
         config = sett.get("config")
         token = config["telegram"]["api"]["token"]
         proxy = config["telegram"]["api"]["proxy"]
-        custom_api_url = config["telegram"]["api"].get("custom_api_url", "")
+        custom_api_url = config["telegram"]["api"]["custom_api_url"]
 
         if custom_api_url:
-            if not (custom_api_url.startswith("http://")
-                    or custom_api_url.startswith("https://")):
-                custom_api_url = "https://" + custom_api_url
+            custom_api_url = normalize_custom_api_url(custom_api_url)
 
         tg_bot_api_url = (
-            custom_api_url.rstrip("/")
+            custom_api_url
             if custom_api_url
             else "https://api.telegram.org"
         )
@@ -331,38 +461,38 @@ def configure_config():
                 config["telegram"]["api"]["token"] = token
                 sett.set("config", config)
                 print(f"\n{Fore.YELLOW}Токен Telegram бота успешно сохранён в конфиг.")
-
-                # Кастомный URL Telegram API (Cloudflare Worker и т.п.)
-                print(
-                    f"\n{Fore.LIGHTYELLOW_EX}┌────┤ "
-                    f"{Fore.LIGHTGREEN_EX}Кастомный URL Telegram API "
-                    f"{Fore.LIGHTYELLOW_EX}(опционально) ├──────┐{Fore.WHITE}"
-                    f"\n\n  Если Telegram заблокирован, можно указать URL "
-                    f"Cloudflare Worker-прокси"
-                    f"\n  (или другого reverse-proxy) вместо api.telegram.org"
-                    f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}"
-                    f"https://tg-proxy.ваш-поддомен.workers.dev"
-                    f"\n  {Fore.LIGHTWHITE_EX}· Или пропустите, нажав Enter"
-                )
-                cust_api_url = input(
-                    f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}"
-                ).strip()
-                if cust_api_url:
-                    if not (cust_api_url.startswith("http://")
-                            or cust_api_url.startswith("https://")):
-                        cust_api_url = "https://" + cust_api_url
-                    config["telegram"]["api"]["custom_api_url"] = (
-                        cust_api_url.rstrip("/")
-                    )
-                    sett.set("config", config)
-                    print(
-                        f"\n{Fore.YELLOW}Кастомный URL Telegram API "
-                        f"сохранён."
-                    )
             else:
                 print(
                     f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
                     f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
+                )
+                
+        while not config["telegram"]["api"]["custom_api_url"]:
+            print(
+                f"\n{Fore.LIGHTYELLOW_EX}┌────┤ "
+                f"Введите {Fore.LIGHTGREEN_EX}Кастомный URL Telegram API "
+                f"{Fore.LIGHTYELLOW_EX}(опционально) ├──────┐{Fore.WHITE}"
+                f"\n\n  Если Telegram заблокирован, можно указать URL Cloudflare Worker-прокси"
+                f"\n  (или другого reverse-proxy) вместо api.telegram.org"
+                f"\n  {Fore.LIGHTWHITE_EX}Или пропустите эту настройку, нажав Enter"
+                f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}"
+                f"https://tg-proxy.ваш-поддомен.workers.dev"
+            )
+            cust_api_url = input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip()
+
+            if not cust_api_url:
+                print(f"\n{Fore.WHITE}Вы пропустили ввод кастомного URL.")
+                break
+
+            cust_api_url = normalize_custom_api_url(cust_api_url)
+            if is_url_valid(cust_api_url):
+                config["telegram"]["api"]["custom_api_url"] = cust_api_url
+                sett.set("config", config)
+                print(f"\n{Fore.YELLOW}Кастомный URL успешно сохранён в конфиг.")
+            else:
+                print(
+                    f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный URL. "
+                    f"Убедитесь, что он верный и попробуйте ещё раз."
                 )
 
         while not config["telegram"]["api"]["proxy"]:
@@ -381,6 +511,7 @@ def configure_config():
             if not proxy:
                 print(f"\n{Fore.WHITE}Вы пропустили ввод прокси.")
                 break
+
             if is_proxy_valid(proxy):
                 config["telegram"]["api"]["proxy"] = proxy
                 sett.set("config", config)

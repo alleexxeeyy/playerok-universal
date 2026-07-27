@@ -59,6 +59,10 @@ class DeleteDelivGood(CallbackData, prefix="delgod"):
     index: int
 
 
+class DeleteDataReplacementValue(CallbackData, prefix="deldrv"):
+    index: int
+
+
 class ChangeDealsFilter(CallbackData, prefix="chdf"):
     di: int = -1
     st: int = -1

@@ -8,7 +8,7 @@ from settings import Settings as sett
 from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states
-from ..helpful import throw_float_message
+from ..helpful import throw_float_message, notify
 
 from .navigation import *
 from .pagination import *
@@ -71,7 +71,7 @@ async def callback_send_fast_reply(callback: CallbackQuery, callback_data: calls
         reply_text = fast_replies[index]
 
         acc.send_message(chat_id, reply_text)
-        
+
         await callback_chat_page(callback, calls.ChatPage(id=chat_id), state)
     except Exception as e:
         await throw_float_message(
@@ -324,6 +324,7 @@ async def callback_delete_item(callback: CallbackQuery, callback_data: calls.Del
 
         from plbot.playerokbot import get_playerok_bot as plbot
         plbot().account.remove_item(item_id)
+        await notify(callback, "🗑️ Товар удалён")
 
         items = data.get("items")
         items.remove(item)

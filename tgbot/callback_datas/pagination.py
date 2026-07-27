@@ -28,6 +28,9 @@ class IncludedBumpItemsPagination(CallbackData, prefix="inbupag"):
 class ExcludedBumpItemsPagination(CallbackData, prefix="exbupag"):
     page: int
 
+class BumpItemsPositionsPagination(CallbackData, prefix="bupospag"):
+    page: int
+
 
 class CustomCommandsPagination(CallbackData, prefix="cucopag"):
     page: int
@@ -39,6 +42,13 @@ class DelivGoodsPagination(CallbackData, prefix="godspag"):
     page: int
 
 class MessagesPagination(CallbackData, prefix="messpag"):
+    page: int
+
+
+class DataReplacementsPagination(CallbackData, prefix="darepag"):
+    page: int
+
+class DataReplacementValuesPagination(CallbackData, prefix="darvpag"):
     page: int
 
 

@@ -26,6 +26,64 @@ async def do_auth(message: Message, state: FSMContext) -> Message | None:
     )
 
 
+MAX_TXT_FILE_SIZE = 5 * 1024 * 1024
+
+
+async def notify(callback: CallbackQuery, text: str, alert: bool = False) -> None:
+    if not callback:
+        return
+    try:
+        await callback.bot.answer_callback_query(
+            callback.id, text=text, show_alert=alert, cache_time=0
+        )
+    except Exception:
+        pass
+
+
+async def answer_callback(bot, callback: CallbackQuery) -> None:
+    try:
+        await bot.answer_callback_query(callback.id, cache_time=0)
+    except Exception:
+        pass
+
+
+async def extract_lines(message: Message) -> list[str]:
+    if message.text:
+        content = message.text
+    elif message.document:
+        file_name = (message.document.file_name or "").lower()
+        if not file_name.endswith(".txt"):
+            raise Exception("❌ Нужен файл в формате <b>.txt</b>")
+        if (message.document.file_size or 0) > MAX_TXT_FILE_SIZE:
+            raise Exception(f"❌ Файл слишком большой (максимум {MAX_TXT_FILE_SIZE // 1024 // 1024} МБ)")
+
+        file = await message.bot.get_file(message.document.file_id)
+        file_bytes = await message.bot.download_file(file.file_path)
+        content = file_bytes.read().decode("utf-8", errors="ignore")
+    else:
+        raise Exception("❌ Отправьте текст или .txt файл")
+
+    if len(content.strip()) == 0:
+        raise Exception("❌ Пустое значение")
+
+    lines = [line.strip() for line in content.splitlines() if line.strip()]
+    if not lines:
+        raise Exception("❌ Не удалось извлечь данные")
+    return lines
+
+
+def parse_keyphrases_lines(lines: list[str]) -> list[list[str]]:
+    keyphrases_list = []
+    for line in lines:
+        keyphrases = [phrase.strip() for phrase in line.split(",") if phrase.strip()]
+        if keyphrases:
+            keyphrases_list.append(keyphrases)
+
+    if not keyphrases_list:
+        raise Exception("❌ Не удалось извлечь ключевые фразы")
+    return keyphrases_list
+
+
 async def get_accent_message_id(state: FSMContext, message: Message, bot) -> int | None:
     data = await state.get_data()
 
@@ -77,7 +135,7 @@ async def try_edit_message(bot, chat_id, message_id, text, photo, reply_markup, 
 
         if "message is not modified" in msg:
             if callback:
-                await bot.answer_callback_query(callback.id, cache_time=0)
+                await answer_callback(bot, callback)
             return "not_modified"
 
         if "query is too old" in msg:
@@ -162,7 +220,7 @@ async def throw_float_message(
         )
 
     if callback:
-        await bot.answer_callback_query(callback.id, cache_time=0)
+        await answer_callback(bot, callback)
 
     if mess:
         await state.update_data(accent_message_id=mess.message_id)

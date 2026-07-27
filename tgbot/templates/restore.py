@@ -6,23 +6,46 @@ from settings import Settings as sett
 from .. import callback_datas as calls
 
 
+PUBLISH_STATUSES = {
+    "free": "🔵 Бесплатный",
+    "premium": "🟣 Премиум",
+    "last": "🟢 Прежний"
+}
+
+
 def restore_text():
     config = sett.get("config")
-    
+
     sold = "✅" if config["playerok"]["auto_restore_items"]["sold"] else "❌"
     expired = "✅" if config["playerok"]["auto_restore_items"]["expired"] else "❌"
     all = "Все товары" if config["playerok"]["auto_restore_items"]["all"] else "Указанные товары"
-    
+    free = "✅" if config["playerok"]["auto_restore_items"]["free"] else "❌"
+    premium = "✅" if config["playerok"]["auto_restore_items"]["premium"] else "❌"
+    publish_status = PUBLISH_STATUSES.get(
+        config["playerok"]["auto_restore_items"]["publish_status"], "Прежний"
+    )
+
     auto_restore_items = sett.get("auto_restore_items")
     included = len(auto_restore_items["included"])
     excluded = len(auto_restore_items["excluded"])
-    
+
+    data_replacement = len(sett.get("data_replacement"))
+
     txt = textwrap.dedent(f"""
         <b>♻️ Авто-восстановление</b>
-        <blockquote><b>(?)</b> Эта функция позволит автоматически восстанавливать (заново выставлять) предмет, который только что купили или который истёк, чтобы он снова был в продаже. Предмет будет выставлен с бесплатным статусом приоритета.</blockquote>
-
+        <blockquote><b>(?)</b> Эта функция позволит автоматически восстанавливать (заново выставлять) предмет, который только что купили или который истёк, чтобы он снова был в продаже.</blockquote>
+        
         <b>🛒 Проданные:</b> {sold}
         <b>⏰ Истёкшие:</b> {expired}
+
+        <b>🆓 Бесплатные:</b> {free}
+        <b>🚀 Премиум:</b> {premium}
+
+        <b>🏷️ Статус публикации:</b> {publish_status}
+        <blockquote><b>(?)</b> С каким статусом приоритета выставлять восстановленный товар. "Прежний" — с тем же, что был до этого. Учтите: премиум товары Playerok не позволяет восстановить с бесплатным статусом, поэтому они всегда восстанавливаются с премиумом, и за это будут списываться деньги с баланса.</blockquote>
+
+        <b>🔄 Замена данных:</b> {data_replacement}
+        <blockquote><b>(?)</b> Позволяет подменять данные товара (логин, пароль и т.д.) на новые перед его восстановлением, чтобы товар не выставлялся заново с уже проданными данными.</blockquote>
 
         <b>📦 Восстанавливать:</b> {all}
         <blockquote><b>(?)</b> Если вы выберете "Все товары", то будут восстанавливаться все товары, кроме тех, что указаны в исключениях. Если вы выберете "Указанные товары", то будут восстанавливаться только те товары, которые вы добавите во включенные.</blockquote>
@@ -39,16 +62,29 @@ def restore_kb():
     sold = "✅" if config["playerok"]["auto_restore_items"]["sold"] else "❌"
     expired = "✅" if config["playerok"]["auto_restore_items"]["expired"] else "❌"
     all = "Все товары" if config["playerok"]["auto_restore_items"]["all"] else "Указанные товары"
-    
+    free = "✅" if config["playerok"]["auto_restore_items"]["free"] else "❌"
+    premium = "✅" if config["playerok"]["auto_restore_items"]["premium"] else "❌"
+    publish_status = PUBLISH_STATUSES.get(
+        config["playerok"]["auto_restore_items"]["publish_status"], "Прежний"
+    )
+
     auto_restore_items = sett.get("auto_restore_items")
     included = len(auto_restore_items["included"])
     excluded = len(auto_restore_items["excluded"])
-    
+
+    data_replacement = len(sett.get("data_replacement"))
+
     rows = [
         [
         InlineKeyboardButton(text=f"🛒 Проданные: {sold}", callback_data="switch_auto_restore_items_sold"),
         InlineKeyboardButton(text=f"⏰ Истёкшие: {expired}", callback_data="switch_auto_restore_items_expired")
         ],
+        [
+        InlineKeyboardButton(text=f"🆓 Бесплатные: {free}", callback_data="switch_auto_restore_items_free"),
+        InlineKeyboardButton(text=f"💎 Премиум: {premium}", callback_data="switch_auto_restore_items_premium")
+        ],
+        [InlineKeyboardButton(text=f"🏷️ Статус публикации: {publish_status}", callback_data="switch_auto_restore_items_publish_status")],
+        [InlineKeyboardButton(text=f"🔄 Замена данных: {data_replacement}", callback_data=calls.DataReplacementsPagination(page=0).pack())],
         [InlineKeyboardButton(text=f"📦 Восстанавливать: {all}", callback_data="switch_auto_restore_items_all")],
         [
         InlineKeyboardButton(text=f"➕ Включенные: {included}", callback_data=calls.IncludedRestoreItemsPagination(page=0).pack()),

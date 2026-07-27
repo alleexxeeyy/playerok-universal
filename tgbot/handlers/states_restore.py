@@ -2,165 +2,86 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
+from utils import escape_html
 
 from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states
-from ..helpful import throw_float_message
+from ..helpful import throw_float_message, extract_lines, parse_keyphrases_lines
 
 
 router = Router()
 
 
-@router.message(states.RestoreItemsStates.waiting_for_new_included_restore_item_keyphrases, F.text)
-async def handler_waiting_for_new_included_restore_item_keyphrases(message: types.Message, state: FSMContext):
-    try: 
-        await state.set_state(None)
-        
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        
-        if len(message.text) <= 0:
-            raise Exception("❌ Слишком короткое значение")
-        
-        keyphrases = [phrase.strip() for phrase in message.text.split(",") if phrase.strip()]
-        
-        auto_restore_items = sett.get("auto_restore_items")
-        auto_restore_items["included"].append(keyphrases)
-        sett.set("auto_restore_items", auto_restore_items)
-        
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.new_restore_included_float_text(f"✅ Товар с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно включён в восстановление"),
-            reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
-        )
-    except Exception as e:
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.new_restore_included_float_text(e), 
-            reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
-        )
-
-
 @router.message(
-    states.RestoreItemsStates.waiting_for_new_included_restore_items_keyphrases_file, 
-    F.document.file_name.lower().endswith('.txt')
+    states.RestoreItemsStates.waiting_for_new_included_restore_item_keyphrases,
+    F.text | F.document
 )
-async def handler_waiting_for_new_included_restore_items_keyphrases_file(message: types.Message, state: FSMContext):
+async def handler_waiting_for_new_included_restore_item_keyphrases(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
-        
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        
-        file = await message.bot.get_file(message.document.file_id)
-        downloaded_file = await message.bot.download_file(file.file_path)
-        file_content = downloaded_file.read().decode('utf-8')
 
-        keyphrases_list = []
-        for line in file_content.splitlines():
-            line = line.strip()
-            if len(line) > 0:
-                keyphrases = [phrase.strip() for phrase in line.split(",") if phrase.strip()]
-                if len(keyphrases) > 0:
-                    keyphrases_list.append(keyphrases)
-
-        if len(keyphrases_list) <= 0:
-            raise Exception("❌ Файл не содержит валидных ключевых фраз")
+        keyphrases_list = parse_keyphrases_lines(await extract_lines(message))
 
         auto_restore_items = sett.get("auto_restore_items")
         auto_restore_items["included"].extend(keyphrases_list)
         sett.set("auto_restore_items", auto_restore_items)
-        
+
+        if len(keyphrases_list) > 1:
+            text = f"✅ Успешно включено <b>{len(keyphrases_list)}</b> товаров в восстановление"
+        else:
+            phrases = "</code>, <code>".join(escape_html(p) for p in keyphrases_list[0])
+            text = f"✅ Товар с ключевыми фразами <code>{phrases}</code> успешно включён в восстановление"
+
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.new_restore_included_float_text(f"✅ Успешно включено <b>{len(keyphrases_list)}</b> товаров из файла в восстановление"),
+            text=templ.new_restore_included_float_text(text),
             reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.new_restore_included_float_text(e), 
+            text=templ.new_restore_included_float_text(e),
             reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
-        )
-
-
-@router.message(states.RestoreItemsStates.waiting_for_new_excluded_restore_item_keyphrases, F.text)
-async def handler_waiting_for_new_excluded_restore_item_keyphrases(message: types.Message, state: FSMContext):
-    try: 
-        await state.set_state(None)
-        
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        
-        if len(message.text) <= 0:
-            raise Exception("❌ Слишком короткое значение")
-        
-        keyphrases = [phrase.strip() for phrase in message.text.split(",") if phrase.strip()]
-        
-        auto_restore_items = sett.get("auto_restore_items")
-        auto_restore_items["excluded"].append(keyphrases)
-        sett.set("auto_restore_items", auto_restore_items)
-    
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.new_restore_excluded_float_text(f"✅ Товар с ключевыми фразами <code>{'</code>, <code>'.join(keyphrases)}</code> успешно добавлен в исключения для восстановления"),
-            reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
-        )
-    except Exception as e:
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.new_restore_excluded_float_text(e), 
-            reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
         )
 
 
 @router.message(
-    states.RestoreItemsStates.waiting_for_new_excluded_restore_items_keyphrases_file, 
-    F.document.file_name.lower().endswith('.txt')
+    states.RestoreItemsStates.waiting_for_new_excluded_restore_item_keyphrases,
+    F.text | F.document
 )
-async def handler_waiting_for_new_excluded_restore_items_keyphrases_file(message: types.Message, state: FSMContext):
+async def handler_waiting_for_new_excluded_restore_item_keyphrases(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
-        
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        
-        file = await message.bot.get_file(message.document.file_id)
-        downloaded_file = await message.bot.download_file(file.file_path)
-        file_content = downloaded_file.read().decode('utf-8')
 
-        keyphrases_list = []
-        for line in file_content.splitlines():
-            line = line.strip()
-            if len(line) > 0:
-                keyphrases = [phrase.strip() for phrase in line.split(",") if phrase.strip()]
-                if len(keyphrases) > 0:
-                    keyphrases_list.append(keyphrases)
-
-        if len(keyphrases_list) <= 0:
-            raise Exception("❌ Файл не содержит валидных ключевых фраз")
+        keyphrases_list = parse_keyphrases_lines(await extract_lines(message))
 
         auto_restore_items = sett.get("auto_restore_items")
         auto_restore_items["excluded"].extend(keyphrases_list)
         sett.set("auto_restore_items", auto_restore_items)
-        
+
+        if len(keyphrases_list) > 1:
+            text = f"✅ Успешно добавлено <b>{len(keyphrases_list)}</b> товаров в исключения для восстановления"
+        else:
+            phrases = "</code>, <code>".join(escape_html(p) for p in keyphrases_list[0])
+            text = f"✅ Товар с ключевыми фразами <code>{phrases}</code> успешно добавлен в исключения для восстановления"
+
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.new_restore_excluded_float_text(f"✅ Успешно добавлено <b>{len(keyphrases_list)}</b> товаров из файла в исключения для восстановления"),
+            text=templ.new_restore_excluded_float_text(text),
             reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
         )
     except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.new_restore_excluded_float_text(e), 
+            text=templ.new_restore_excluded_float_text(e),
             reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
         )

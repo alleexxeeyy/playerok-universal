@@ -3,7 +3,7 @@ import asyncio
 import time
 from datetime import datetime, timedelta
 import pytz
-from threading import Thread
+from threading import Thread, RLock
 import textwrap
 import shutil
 import copy
@@ -32,6 +32,7 @@ from core.handlers import (
 from settings import DATA, Settings as sett
 from logging import getLogger
 from data import Data as data
+from utils import get_current_bump_interval, get_current_bump_position
 from tgbot.telegrambot import (
     get_telegram_bot, 
     get_telegram_bot_loop
@@ -78,10 +79,15 @@ class PlayerokBot:
         self.auto_restore_items = sett.get("auto_restore_items")
         self.auto_complete_deals = sett.get("auto_complete_deals")
         self.auto_bump_items = sett.get("auto_bump_items")
+        self.data_replacement = sett.get("data_replacement")
 
         self.initialized_users = data.get("initialized_users")
         self.saved_items = data.get("saved_items")
         self.cached_orders = data.get("cached_orders")
+        self.bumped_items = data.get("bumped_items")
+
+        self.item_positions: dict[str, dict] = {}
+        self.bump_lock = RLock()
 
         self.account = self.playerok_account = Account(
             cookies=self.config["playerok"]["api"]["cookies"],
@@ -344,34 +350,37 @@ class PlayerokBot:
         )
 
 
-    def bump_item(self, item: ItemProfile | MyItem):
+    def is_bump_item_matched(self, item: ItemProfile | MyItem) -> bool:
+        included = any(
+            any(
+                phrase.lower() in item.name.lower()
+                or item.name.lower() == phrase.lower()
+                for phrase in included_item
+            )
+            for included_item in self.auto_bump_items["included"]
+        )
+        excluded = any(
+            any(
+                phrase.lower() in item.name.lower()
+                or item.name.lower() == phrase.lower()
+                for phrase in excluded_item
+            )
+            for excluded_item in self.auto_bump_items["excluded"]
+        )
+
+        return (
+            self.config["playerok"]["auto_bump_items"]["all"]
+            and not excluded
+        ) or (
+            not self.config["playerok"]["auto_bump_items"]["all"]
+            and included
+        )
+
+    def bump_item(self, item: ItemProfile | MyItem, reason: str | None = None):
         try:
             name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
-            
-            included = any(
-                any(
-                    phrase.lower() in item.name.lower()
-                    or item.name.lower() == phrase.lower()
-                    for phrase in included_item
-                )
-                for included_item in self.auto_bump_items["included"]
-            )
-            excluded = any(
-                any(
-                    phrase.lower() in item.name.lower()
-                    or item.name.lower() == phrase.lower()
-                    for phrase in excluded_item
-                )
-                for excluded_item in self.auto_bump_items["excluded"]
-            )
 
-            if (
-                self.config["playerok"]["auto_bump_items"]["all"]
-                and not excluded
-            ) or (
-                not self.config["playerok"]["auto_bump_items"]["all"]
-                and included
-            ):
+            if self.is_bump_item_matched(item):
                 if not isinstance(item, MyItem):
                     try: item = self.account.get_item(item.id)
                     except: return
@@ -385,20 +394,31 @@ class PlayerokBot:
                 
                 time.sleep(1)
                 self.account.increase_item_priority_status(item.id, prem_status.id)
-                    
-                logger.info(
-                    f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят. "
-                    f"{Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1"
-                )
 
-                if (
-                    self.config["playerok"]["notifications"]["enabled"]
-                    and self.config["playerok"]["notifications"]["events"]["item_bumped"]
-                ):
-                    self.log_to_tg(
-                        log_text(f'⬆️ Товар <a href="https://playerok.com/products/{item.slug}">«{item.name}»</a> поднят. Позиция: {item.sequence} → 1'),
-                        log_item_kb(item.id)
+                with self.bump_lock:
+                    self.bumped_items[item.id] = datetime.now().isoformat()
+
+                # статус уже оплачен — ошибка логирования не должна выглядеть как неудачное поднятие
+                try:
+                    logger.info(
+                        f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— {Fore.YELLOW}поднят"
+                        f"{f' ({reason})' if reason else ''}. "
+                        f"{Fore.WHITE}Позиция: {Fore.LIGHTWHITE_EX}{item.sequence} {Fore.WHITE}→ {Fore.YELLOW}1"
                     )
+
+                    if (
+                        self.config["playerok"]["notifications"]["enabled"]
+                        and self.config["playerok"]["notifications"]["events"]["item_bumped"]
+                    ):
+                        self.log_to_tg(
+                            log_text(
+                                f'⬆️ Товар <a href="https://playerok.com/products/{item.slug}">«{item.name}»</a> поднят'
+                                f'{f" ({reason})" if reason else ""}. Позиция: {item.sequence} → 1'
+                            ),
+                            log_item_kb(item.id)
+                        )
+                except:
+                    pass
 
                 return True
         except Exception as e:
@@ -431,10 +451,155 @@ class PlayerokBot:
                 if self.bump_item(item):
                     cnt += 1
 
+            self._clean_bumped_items()
             return True, total, cnt, None
         except Exception as e:
             logger.error(f"{Fore.LIGHTRED_EX}Ошибка при поднятии товаров: {Fore.WHITE}{e}")
             return False, 0, 0, e
+
+    def _clean_bumped_items(self):
+        border = datetime.now() - timedelta(days=7)
+        with self.bump_lock:
+            for item_id, bumped_at in list(self.bumped_items.items()):
+                try:
+                    if datetime.fromisoformat(bumped_at) < border:
+                        del self.bumped_items[item_id]
+                except:
+                    del self.bumped_items[item_id]
+
+    def _set_last_check_time(self):
+        now = datetime.now().isoformat()
+        self.config["playerok"]["auto_bump_items"]["last_check_time"] = now
+
+        config = sett.get("config")
+        config["playerok"]["auto_bump_items"]["last_check_time"] = now
+        sett.set("config", config)
+
+    def check_items_positions(self):
+        try:
+            self._set_last_check_time()
+
+            position = get_current_bump_position(self.config)
+            cooldown = self.config["playerok"]["auto_bump_items"]["cooldown"] or 0
+
+            items = self.get_my_items(statuses=[ItemStatuses.APPROVED])
+            up_items = [
+                it for it in items
+                if it.priority != PriorityTypes.DEFAULT and self.is_bump_item_matched(it)
+            ]
+
+            total = len(up_items)
+            cnt = 0
+            checked_ids = []
+
+            for item in up_items:
+                checked_ids.append(item.id)
+
+                try:
+                    time.sleep(1)
+                    my_item = self.account.get_item(item.id)
+                except Exception as e:
+                    logger.error(f"{Fore.LIGHTRED_EX}Ошибка при получении позиции товара «{item.name[:32]}»: {Fore.WHITE}{e}")
+                    continue
+
+                if my_item.sequence is None:
+                    with self.bump_lock:
+                        self.item_positions.pop(my_item.id, None)
+                    continue
+
+                out_of_range = my_item.sequence > position
+
+                with self.bump_lock:
+                    cached = self.item_positions.get(my_item.id) or {}
+                    streak = (cached.get("streak", 0) + 1) if out_of_range else 0
+                    self.item_positions[my_item.id] = {
+                        "name": my_item.name,
+                        "slug": my_item.slug,
+                        "position": my_item.sequence,
+                        "streak": streak,
+                        "checked_at": datetime.now().isoformat()
+                    }
+                    last_bumped = self.bumped_items.get(my_item.id, "")
+
+                if streak < 2:
+                    continue
+                if not self._do_call_event(last_bumped, cooldown):
+                    continue
+
+                if self.bump_item(my_item, reason=f"выпал на {my_item.sequence} место"):
+                    cnt += 1
+                    with self.bump_lock:
+                        pos = self.item_positions.get(my_item.id)
+                        if pos:
+                            pos["streak"] = 0
+                            pos["position"] = 1
+
+            with self.bump_lock:
+                for item_id in list(self.item_positions):
+                    if item_id not in checked_ids:
+                        del self.item_positions[item_id]
+
+            self._clean_bumped_items()
+            return True, total, cnt, None
+        except Exception as e:
+            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при проверке позиций товаров: {Fore.WHITE}{e}")
+            return False, 0, 0, e
+
+    def replace_item_data(self, item: Item | MyItem):
+        data_replacement = sett.get("data_replacement") or []
+        repl = next(
+            (
+                r for r in data_replacement
+                if r.get("enabled")
+                and any(
+                    phrase.lower() in item.name.lower()
+                    or item.name.lower() == phrase.lower()
+                    for phrase in r.get("keyphrases", [])
+                )
+            ),
+            None
+        )
+        if not repl:
+            return None
+
+        values = repl.get("data") or []
+        if not values:
+            raise Exception("данные для замены закончились")
+
+        fields = [
+            f for f in (getattr(item, "data_fields", None) or [])
+            if f.type is GameCategoryDataFieldTypes.ITEM_DATA
+        ]
+        if not fields:
+            raise Exception("у товара нет полей с данными для замены")
+
+        sep = repl.get("separator") or ":"
+        new_values = values[0].split(sep)
+        if len(new_values) < len(fields):
+            raise Exception(
+                f"в строке данных «{values[0]}» {len(new_values)} значений, "
+                f"а у товара {len(fields)} полей с данными"
+            )
+
+        for field, value in zip(fields, new_values):
+            field.value = value.strip()
+
+        self.account.update_item(item.id, data_fields=fields)
+
+        # перечитываем перед списанием: за время запроса тг-бот мог изменить замены
+        data_replacement = sett.get("data_replacement") or []
+        repl = next(
+            (r for r in data_replacement if r.get("keyphrases") == repl.get("keyphrases")),
+            None
+        )
+        if repl is None:
+            return True, 0
+
+        if values[0] in repl.get("data", []):
+            repl["data"].remove(values[0])
+        self.data_replacement = data_replacement
+        sett.set("data_replacement", data_replacement)
+        return True, len(repl.get("data", []))
 
     def restore_item(self, item: Item | MyItem | ItemProfile):
         try:
@@ -464,31 +629,89 @@ class PlayerokBot:
                 not self.config["playerok"]["auto_restore_items"]["all"]
                 and included
             ):
+                is_premium = item.priority is PriorityTypes.PREMIUM
+                if is_premium and not self.config["playerok"]["auto_restore_items"]["premium"]:
+                    return
+                if not is_premium and not self.config["playerok"]["auto_restore_items"]["free"]:
+                    return
+
                 if not isinstance(item, MyItem):
                     try: item = self.account.get_item(item.id)
                     except: return
-                    
+                    # приоритет мог обновиться, перепроверяем — иначе премиум спишется вопреки настройке
+                    is_premium = item.priority is PriorityTypes.PREMIUM
+                    if is_premium and not self.config["playerok"]["auto_restore_items"]["premium"]:
+                        return
+                    if not is_premium and not self.config["playerok"]["auto_restore_items"]["free"]:
+                        return
+
+                replaced = self.replace_item_data(item)
+
                 time.sleep(1)
                 statuses = self.account.get_item_priority_statuses(item.id, item.raw_price)
+                if not statuses:
+                    raise Exception("Статусы приоритета не найдены")
 
-                pr_status = next(
-                    (st for st in statuses if st.type == PriorityTypes.DEFAULT or st.price == 0), 
-                    statuses[0]
+                prem_status = next(
+                    (st for st in statuses if st.type is PriorityTypes.PREMIUM or st.price > 0),
+                    None
+                )
+                free_status = next(
+                    (st for st in statuses if st.type is PriorityTypes.DEFAULT or st.price == 0),
+                    None
                 )
 
+                # премиум товары playerok не даёт восстановить с бесплатным статусом
+                publish_status = self.config["playerok"]["auto_restore_items"]["publish_status"]
+                if is_premium or publish_status == "premium":
+                    pr_status = prem_status
+                    if not pr_status:
+                        raise Exception("PREMIUM статус приоритета не найден")
+                else:
+                    pr_status = free_status or statuses[0]
+
                 time.sleep(1)
-                new_item = self.account.publish_item(item.id, pr_status.id)
-                
+                try:
+                    new_item = self.account.publish_item(item.id, pr_status.id)
+                except RequestPlayerokError as e:
+                    # если приоритет товара определился неверно, playerok не даст выставить его бесплатно
+                    if (
+                        pr_status.type is PriorityTypes.PREMIUM
+                        or not prem_status
+                        or not self.config["playerok"]["auto_restore_items"]["premium"]
+                    ):
+                        raise e
+
+                    logger.warning(
+                        f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— "
+                        f"{Fore.LIGHTYELLOW_EX}не удалось восстановить с бесплатным статусом, "
+                        f"пробую премиум: {Fore.WHITE}{e}"
+                    )
+                    time.sleep(1)
+                    pr_status = prem_status
+                    new_item = self.account.publish_item(item.id, pr_status.id)
+
+                status_frmtd = "премиум" if pr_status.type is PriorityTypes.PREMIUM else "бесплатный"
+
                 logger.info(
                     f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» "
-                    f"{Fore.WHITE}— {Fore.YELLOW}товар восстановлен"
+                    f"{Fore.WHITE}— {Fore.YELLOW}товар восстановлен "
+                    f"{Fore.WHITE}(статус: {Fore.LIGHTWHITE_EX}{status_frmtd}{Fore.WHITE})"
+                    + (
+                        f"{Fore.WHITE}, данные заменены "
+                        f"{Fore.WHITE}(осталось: {Fore.LIGHTWHITE_EX}{replaced[1]}{Fore.WHITE})"
+                        if replaced else ""
+                    )
                 )
                 if (
                     self.config["playerok"]["notifications"]["enabled"]
                     and self.config["playerok"]["notifications"]["events"]["item_restored"]
                 ):
                     self.log_to_tg(
-                        log_text(f'♻️ Товар <a href="https://playerok.com/products/{new_item.slug}">«{item.name}»</a> восстановлен'),
+                        log_text(
+                            f'♻️ Товар <a href="https://playerok.com/products/{new_item.slug}">«{item.name}»</a> восстановлен (статус: {status_frmtd})',
+                            f"🔄 Данные товара заменены\n💽 Осталось данных: {replaced[1]}" if replaced else ""
+                        ),
                         log_item_kb(item.id)
                     )
                 return True
@@ -680,15 +903,21 @@ class PlayerokBot:
                     self.auto_restore_items = sett.get("auto_restore_items")
                 if sett.get("auto_complete_deals") != self.auto_complete_deals: 
                     self.auto_complete_deals = sett.get("auto_complete_deals")
-                if sett.get("auto_bump_items") != self.auto_bump_items: 
+                if sett.get("auto_bump_items") != self.auto_bump_items:
                     self.auto_bump_items = sett.get("auto_bump_items")
-                
+                if sett.get("data_replacement") != self.data_replacement:
+                    self.data_replacement = sett.get("data_replacement")
+
                 if data.get("initialized_users") != self.initialized_users: 
                     data.set("initialized_users", self.initialized_users)
                 if data.get("saved_items") != self.saved_items: 
                     data.set("saved_items", self.saved_items)
-                if data.get("cached_orders") != self.cached_orders: 
+                if data.get("cached_orders") != self.cached_orders:
                     data.set("cached_orders", self.cached_orders)
+                with self.bump_lock:
+                    bumped_items = dict(self.bumped_items)
+                if data.get("bumped_items") != bumped_items:
+                    data.set("bumped_items", bumped_items)
                 
                 time.sleep(3)
 
@@ -710,14 +939,28 @@ class PlayerokBot:
 
         def bump_items_loop():
             while True:
-                if (
-                    self.config["playerok"]["auto_bump_items"]["enabled"]
-                    and self._do_call_event(
-                        self.config["playerok"]["auto_bump_items"]["last_time"],
-                        self.config["playerok"]["auto_bump_items"]["interval"]
-                    )
-                ):
-                    self.bump_items()
+                bump_config = self.config["playerok"]["auto_bump_items"]
+                if bump_config["enabled"]:
+                    if bump_config["mode"] == "position":
+                        position = get_current_bump_position(self.config)
+                        if (
+                            position > 0
+                            and self._do_call_event(
+                                bump_config["last_check_time"],
+                                bump_config["check_interval"] or 120
+                            )
+                        ):
+                            self.check_items_positions()
+                    else:
+                        interval = get_current_bump_interval(self.config)
+                        if (
+                            interval > 0
+                            and self._do_call_event(
+                                bump_config["last_time"],
+                                interval
+                            )
+                        ):
+                            self.bump_items()
                 time.sleep(3)
 
         def withdrawal_loop():

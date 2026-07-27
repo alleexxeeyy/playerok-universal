@@ -6,7 +6,7 @@ from settings import Settings as sett
 from .. import templates as templ
 from .. import states
 from .. import callback_datas as calls
-from ..helpful import throw_float_message
+from ..helpful import throw_float_message, extract_lines
 
 
 router = Router()
@@ -42,11 +42,10 @@ async def handler_waiting_for_auto_deliveries_page(message: types.Message, state
 
 @router.message(states.AutoDeliveriesStates.waiting_for_new_auto_delivery_keyphrases, F.text)
 async def handler_waiting_for_new_auto_delivery_keyphrases(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
-        
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
         
         if len(message.text) <= 0:
             raise Exception("❌ Слишком короткое значение")
@@ -73,11 +72,10 @@ async def handler_waiting_for_new_auto_delivery_keyphrases(message: types.Messag
 
 @router.message(states.AutoDeliveriesStates.waiting_for_new_auto_delivery_message, F.text)
 async def handler_waiting_for_new_auto_delivery_message(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
-        
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
         
         if len(message.text) <= 0:
             raise Exception("❌ Слишком короткое значение")
@@ -113,32 +111,12 @@ async def handler_waiting_for_new_auto_delivery_message(message: types.Message, 
 
 @router.message(states.AutoDeliveriesStates.waiting_for_new_auto_delivery_goods, F.text | F.document)
 async def handler_waiting_for_new_auto_delivery_goods(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
         
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        
-        if message.text:
-            if len(message.text.strip()) == 0:
-                raise Exception("❌ Слишком короткое значение")
-
-            goods = [g.strip() for g in message.text.splitlines() if g.strip()]
-        elif message.document:
-            file = await message.bot.get_file(message.document.file_id)
-            file_bytes = await message.bot.download_file(file.file_path)
-            content = file_bytes.read().decode("utf-8", errors="ignore")
-
-            if len(content.strip()) == 0:
-                raise Exception("❌ Файл пустой")
-
-            goods = [g.strip() for g in content.splitlines() if g.strip()]
-        else:
-            raise Exception("❌ Отправьте текст или файл")
-        
-        if not goods:
-            raise Exception("❌ Не удалось извлечь товары")
-        
+        goods = await extract_lines(message)
         await state.update_data(new_auto_delivery_goods=goods)
         
         keyphrases = data.get("new_auto_delivery_keyphrases")
@@ -169,11 +147,10 @@ async def handler_waiting_for_new_auto_delivery_goods(message: types.Message, st
 
 @router.message(states.AutoDeliveriesStates.waiting_for_auto_delivery_keyphrases, F.text)
 async def handler_waiting_for_auto_delivery_keyphrases(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    index = data.get("auto_delivery_index")
     try:
         await state.set_state(None)
-        
-        data = await state.get_data()
-        index = data.get("auto_delivery_index")
 
         if len(message.text) <= 0:
             raise Exception("❌ Слишком короткое значение")
@@ -202,11 +179,10 @@ async def handler_waiting_for_auto_delivery_keyphrases(message: types.Message, s
 
 @router.message(states.AutoDeliveriesStates.waiting_for_auto_delivery_message, F.text)
 async def handler_waiting_for_auto_delivery_message(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    index = data.get("auto_delivery_index")
     try:
         await state.set_state(None)
-        
-        data = await state.get_data()
-        index = data.get("auto_delivery_index")
         
         if len(message.text) <= 0:
             raise Exception("❌ Слишком короткий текст")
@@ -232,33 +208,14 @@ async def handler_waiting_for_auto_delivery_message(message: types.Message, stat
 
 @router.message(states.AutoDeliveriesStates.waiting_for_auto_delivery_goods_add, F.text | F.document)
 async def handler_waiting_for_auto_delivery_goods_add(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+    index = data.get("auto_delivery_index")
     try:
         await state.set_state(None)
-        
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        index = data.get("auto_delivery_index")
-        
-        if message.text:
-            if len(message.text.strip()) == 0:
-                raise Exception("❌ Слишком короткое значение")
 
-            goods = [g.strip() for g in message.text.splitlines() if g.strip()]
-        elif message.document:
-            file = await message.bot.get_file(message.document.file_id)
-            file_bytes = await message.bot.download_file(file.file_path)
-            content = file_bytes.read().decode("utf-8", errors="ignore")
+        goods = await extract_lines(message)
 
-            if len(content.strip()) == 0:
-                raise Exception("❌ Файл пустой")
-
-            goods = [g.strip() for g in content.splitlines() if g.strip()]
-        else:
-            raise Exception("❌ Отправьте текст или файл")
-        
-        if not goods:
-            raise Exception("❌ Не удалось извлечь товары")
-        
         auto_deliveries = sett.get("auto_deliveries")
         auto_deliveries[index]["goods"].extend(goods)
         sett.set("auto_deliveries", auto_deliveries)

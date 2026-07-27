@@ -3,7 +3,6 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
-from utils import escape_html
 
 from .. import callback_datas as calls
 
@@ -31,21 +30,21 @@ def deliv_goods_kb(index=0, page=0):
     start_offset = page * items_per_page
     end_offset = start_offset + items_per_page
 
-    for good in list(goods)[start_offset:end_offset]:
+    for i, good in enumerate(list(goods)[start_offset:end_offset], start=start_offset):
         rows.append([
-            InlineKeyboardButton(text=escape_html(good), callback_data="null_answer"),
-            InlineKeyboardButton(text="🗑️", callback_data=calls.DeleteDelivGood(index=goods.index(good)).pack()),
+            InlineKeyboardButton(text=good, callback_data="null_answer"),
+            InlineKeyboardButton(text="🗑️", callback_data=calls.DeleteDelivGood(index=i).pack()),
         ])
 
     if total_pages > 1:
         buttons_row = []
-        btn_back = InlineKeyboardButton(text="←", callback_data=calls.DelivGoodsPagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="123")
+        btn_back = InlineKeyboardButton(text="←", callback_data=calls.DelivGoodsPagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_back)
 
         btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="null_answer")
         buttons_row.append(btn_pages)
 
-        btn_next = InlineKeyboardButton(text="→", callback_data=calls.DelivGoodsPagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="123")
+        btn_next = InlineKeyboardButton(text="→", callback_data=calls.DelivGoodsPagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_next)
         rows.append(buttons_row)
 

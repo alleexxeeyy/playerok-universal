@@ -8,6 +8,15 @@ import shutil
 from pathlib import Path
 
 from settings import Settings as sett
+from core.configs import (
+    MAX_IMPORT_SIZE,
+    SUPPORTED_EXTENSIONS,
+    safe_file_name,
+    prepare_import_dir,
+    clear_import_dir,
+    clear_temp_dir,
+    peek_import
+)
 
 from .. import templates as templ
 from .. import states
@@ -18,8 +27,11 @@ from utils import (
     is_cookies_valid,
     is_token_valid,
     is_user_agent_valid,
-    is_proxy_valid, 
-    is_proxy_working
+    is_proxy_valid,
+    is_proxy_working,
+    is_url_valid,
+    is_custom_api_url_working,
+    normalize_custom_api_url
 )
 
 
@@ -150,6 +162,40 @@ async def handler_waiting_for_tg_proxy(message: types.Message, state: FSMContext
             state=state,
             message=message,
             text=templ.auth_float_text(e), 
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
+        )
+
+
+@router.message(states.SettingsStates.waiting_for_tg_custom_api_url, F.text)
+async def handler_waiting_for_tg_custom_api_url(message: types.Message, state: FSMContext):
+    try:
+        await state.set_state(None)
+
+        cust_api_url = normalize_custom_api_url(message.text.strip())
+
+        if not is_url_valid(cust_api_url):
+            raise Exception("❌ Неверный формат URL. Пример: https://tg-proxy.ваш-поддомен.workers.dev")
+        if not is_custom_api_url_working(cust_api_url):
+            raise Exception("❌ По указанному URL Telegram API не отвечает. Убедитесь, что прокси развёрнут и работает")
+
+        config = sett.get("config")
+        config["telegram"]["api"]["custom_api_url"] = cust_api_url
+        sett.set("config", config)
+
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.conn_float_text(
+                f"✅ <b>Кастомный URL Telegram API</b> был успешно изменён на <b>{cust_api_url}</b>"
+                f"\n\n❗ Изменения применятся после перезагрузки бота"
+            ),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.conn_float_text(e),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
 
@@ -612,9 +658,52 @@ async def handler_waiting_for_module_file(message: types.Message, state: FSMCont
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.modules_float_text(e), 
+            text=templ.modules_float_text(e),
             reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
         )
     finally:
         try: os.remove(temp_path)
         except: pass
+        clear_temp_dir()
+
+
+@router.message(states.SettingsStates.waiting_for_config_file, F.document)
+async def handler_waiting_for_config_file(message: types.Message, state: FSMContext, bot: Bot):
+    from ..callback_handlers.actions_configs import apply_import
+
+    user_id = message.from_user.id
+    try:
+        await state.set_state(None)
+
+        file_name = safe_file_name(message.document.file_name)
+        if not file_name.lower().endswith(SUPPORTED_EXTENSIONS):
+            raise Exception("❌ Нужен файл в формате <b>.json</b> или архив <b>.zip</b> / <b>.rar</b>")
+        if (message.document.file_size or 0) > MAX_IMPORT_SIZE:
+            raise Exception(f"❌ Файл слишком большой (максимум {MAX_IMPORT_SIZE // 1024 // 1024} МБ)")
+
+        import_path = os.path.join(prepare_import_dir(user_id), file_name)
+        await bot.download(message.document, destination=import_path)
+        await state.update_data(import_config_path=import_path)
+
+        if "config" in peek_import(import_path):
+            return await throw_float_message(
+                state=state,
+                message=message,
+                text=templ.configs_float_text(
+                    "📥 Файл принят. Что делать с <b>Cookie-данными, токеном Telegram бота и ключ-паролем</b>?"
+                    "\n\n<blockquote><b>(?)</b> Список авторизованных пользователей останется вашим в любом случае, "
+                    "чтобы вы не потеряли доступ к боту.</blockquote>"
+                ),
+                reply_markup=templ.configs_secrets_kb()
+            )
+
+        return await apply_import(state, message, user_id, keep_secrets=True)
+    except Exception as e:
+        clear_import_dir(user_id)
+        await state.update_data(import_config_path=None)
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.configs_float_text(e),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="configs").pack())
+        )

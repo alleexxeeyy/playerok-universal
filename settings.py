@@ -33,7 +33,10 @@ CONFIG = SettingsFile(
             "auto_restore_items": {
                 "sold": True,
                 "expired": False,
-                "all": True
+                "all": True,
+                "free": True,
+                "premium": True,
+                "publish_status": "last"
             },
             "auto_complete_deals": {
                 "enabled": False,
@@ -41,9 +44,21 @@ CONFIG = SettingsFile(
             },
             "auto_bump_items": {
                 "enabled": False,
+                "mode": "interval",
                 "interval": 3600,
+                "position": 10,
+                "cooldown": 600,
+                "check_interval": 120,
                 "all": False,
-                "last_time": ""
+                "last_time": "",
+                "last_check_time": "",
+                "night": {
+                    "enabled": False,
+                    "interval": 14400,
+                    "position": 25,
+                    "time_from": "23:00",
+                    "time_to": "08:00"
+                }
             },
             "auto_withdrawal": {
                 "enabled": False,
@@ -203,7 +218,13 @@ FAST_REPLIES = SettingsFile(
     need_restore=False,
     default=[]
 )
-DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_COMPLETE_DEALS, AUTO_BUMP_ITEMS, FAST_REPLIES]
+DATA_REPLACEMENT = SettingsFile(
+    name="data_replacement",
+    path="bot_settings/data_replacement.json",
+    need_restore=False,
+    default=[]
+)
+DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_COMPLETE_DEALS, AUTO_BUMP_ITEMS, FAST_REPLIES, DATA_REPLACEMENT]
 
 
 def validate_config(config, default):

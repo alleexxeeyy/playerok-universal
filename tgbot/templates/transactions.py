@@ -109,13 +109,13 @@ def transactions_kb(transactions: list[Transaction], page=0):
 
     if total_pages > 1:
         buttons_row = []
-        btn_back = InlineKeyboardButton(text="←", callback_data=calls.TransactionsPagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="123")
+        btn_back = InlineKeyboardButton(text="←", callback_data=calls.TransactionsPagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_back)
 
-        btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="enter_transactions_page")
+        btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="null_answer")
         buttons_row.append(btn_pages)
 
-        btn_next = InlineKeyboardButton(text="→", callback_data=calls.TransactionsPagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="123")
+        btn_next = InlineKeyboardButton(text="→", callback_data=calls.TransactionsPagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_next)
         rows.append(buttons_row)
 

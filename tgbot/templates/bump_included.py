@@ -30,11 +30,11 @@ def bump_included_kb(page=0):
     start_offset = page * items_per_page
     end_offset = start_offset + items_per_page
 
-    for keyphrases in list(included_bump_items)[start_offset:end_offset]:
+    for i, keyphrases in enumerate(list(included_bump_items)[start_offset:end_offset], start=start_offset):
         keyphrases_frmtd = ", ".join(keyphrases) or "❌ Не указано"
         rows.append([
             InlineKeyboardButton(text=f"{keyphrases_frmtd}", callback_data="null_answer"),
-            InlineKeyboardButton(text=f"🗑️", callback_data=calls.DeleteIncludedBumpItem(index=included_bump_items.index(keyphrases)).pack()),
+            InlineKeyboardButton(text=f"🗑️", callback_data=calls.DeleteIncludedBumpItem(index=i).pack()),
         ])
 
     if total_pages > 1:
@@ -50,8 +50,7 @@ def bump_included_kb(page=0):
         rows.append(buttons_row)
 
     rows.append([
-        InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_included_bump_item_keyphrases"),
-        InlineKeyboardButton(text="➕📄 Добавить много", callback_data="send_new_included_bump_items_keyphrases_file"),
+        InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_included_bump_item_keyphrases")
     ])
     rows.append([
         InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="bump").pack()),

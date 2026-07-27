@@ -25,7 +25,12 @@ CACHED_ORDERS = DataFile(
     path="bot_data/cached_orders.json",
     default={}
 )
-DATA = [INITIALIZED_USERS, SAVED_ITEMS, CACHED_ORDERS]
+BUMPED_ITEMS = DataFile(
+    name="bumped_items",
+    path="bot_data/bumped_items.json",
+    default={}
+)
+DATA = [INITIALIZED_USERS, SAVED_ITEMS, CACHED_ORDERS, BUMPED_ITEMS]
 
 
 def get_json(path: str, default: dict | list) -> dict:

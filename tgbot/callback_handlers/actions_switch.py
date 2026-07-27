@@ -14,9 +14,10 @@ from .. import callback_datas as calls
 from .. import states as states
 from ..helpful import throw_float_message
 from ..callback_handlers.page import (
-    callback_message_page, 
+    callback_message_page,
     callback_module_page,
-    callback_auto_delivery_page
+    callback_auto_delivery_page,
+    callback_data_replacement
 )
 from .navigation import *
 from .pagination import *
@@ -30,7 +31,7 @@ async def callback_switch_auto_restore_items_sold(callback: CallbackQuery, state
     config = sett.get("config")
     config["playerok"]["auto_restore_items"]["sold"] = not config["playerok"]["auto_restore_items"]["sold"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="restore"), state
     )
@@ -41,7 +42,7 @@ async def callback_switch_auto_restore_items_expired(callback: CallbackQuery, st
     config = sett.get("config")
     config["playerok"]["auto_restore_items"]["expired"] = not config["playerok"]["auto_restore_items"]["expired"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="restore"), state
     )
@@ -52,7 +53,45 @@ async def callback_switch_auto_restore_items_all(callback: CallbackQuery, state:
     config = sett.get("config")
     config["playerok"]["auto_restore_items"]["all"] = not config["playerok"]["auto_restore_items"]["all"]
     sett.set("config", config)
-    
+
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="restore"), state
+    )
+
+
+@router.callback_query(F.data == "switch_auto_restore_items_free")
+async def callback_switch_auto_restore_items_free(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_restore_items"]["free"] = not config["playerok"]["auto_restore_items"]["free"]
+    sett.set("config", config)
+
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="restore"), state
+    )
+
+
+@router.callback_query(F.data == "switch_auto_restore_items_premium")
+async def callback_switch_auto_restore_items_premium(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_restore_items"]["premium"] = not config["playerok"]["auto_restore_items"]["premium"]
+    sett.set("config", config)
+
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="restore"), state
+    )
+
+
+@router.callback_query(F.data == "switch_auto_restore_items_publish_status")
+async def callback_switch_auto_restore_items_publish_status(callback: CallbackQuery, state: FSMContext):
+    statuses = list(templ.PUBLISH_STATUSES.keys())
+
+    config = sett.get("config")
+    current = config["playerok"]["auto_restore_items"]["publish_status"]
+    index = statuses.index(current) if current in statuses else statuses.index("last")
+    new_status = statuses[(index + 1) % len(statuses)]
+    config["playerok"]["auto_restore_items"]["publish_status"] = new_status
+    sett.set("config", config)
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="restore"), state
     )
@@ -63,7 +102,20 @@ async def callback_switch_auto_bump_items_enabled(callback: CallbackQuery, state
     config = sett.get("config")
     config["playerok"]["auto_bump_items"]["enabled"] = not config["playerok"]["auto_bump_items"]["enabled"]
     sett.set("config", config)
-    
+
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="bump"), state
+    )
+
+
+@router.callback_query(F.data == "switch_auto_bump_items_mode")
+async def callback_switch_auto_bump_items_mode(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_bump_items"]["mode"] = (
+        "interval" if config["playerok"]["auto_bump_items"]["mode"] == "position" else "position"
+    )
+    sett.set("config", config)
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="bump"), state
     )
@@ -74,7 +126,18 @@ async def callback_switch_auto_bump_items_all(callback: CallbackQuery, state: FS
     config = sett.get("config")
     config["playerok"]["auto_bump_items"]["all"] = not config["playerok"]["auto_bump_items"]["all"]
     sett.set("config", config)
-    
+
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="bump"), state
+    )
+
+
+@router.callback_query(F.data == "switch_auto_bump_items_night_enabled")
+async def callback_switch_auto_bump_items_night_enabled(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_bump_items"]["night"]["enabled"] = not config["playerok"]["auto_bump_items"]["night"]["enabled"]
+    sett.set("config", config)
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="bump"), state
     )
@@ -85,7 +148,7 @@ async def callback_switch_read_chat_enabled(callback: CallbackQuery, state: FSMC
     config = sett.get("config")
     config["playerok"]["read_chat"] = not config["playerok"]["read_chat"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="other"), state
     )
@@ -96,7 +159,7 @@ async def callback_switch_auto_complete_deals_enabled(callback: CallbackQuery, s
     config = sett.get("config")
     config["playerok"]["auto_complete_deals"]["enabled"] = not config["playerok"]["auto_complete_deals"]["enabled"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="complete"), state
     )
@@ -107,7 +170,7 @@ async def callback_switch_auto_complete_deals_all(callback: CallbackQuery, state
     config = sett.get("config")
     config["playerok"]["auto_complete_deals"]["all"] = not config["playerok"]["auto_complete_deals"]["all"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="complete"), state
     )
@@ -117,7 +180,12 @@ async def callback_switch_auto_complete_deals_all(callback: CallbackQuery, state
 async def callback_switch_auto_delivery_piece(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
-    index = data.get("auto_delivery_index", 0)
+    index = data.get("auto_delivery_index")
+
+    if index is None:
+        return await callback_auto_deliveries_pagination(
+            callback, calls.AutoDeliveriesPagination(page=last_page), state
+        )
 
     auto_deliveries = sett.get("auto_deliveries")
     auto_deliveries[index]["piece"] = not auto_deliveries[index].get("piece", False)
@@ -128,12 +196,32 @@ async def callback_switch_auto_delivery_piece(callback: CallbackQuery, state: FS
     )
 
 
+@router.callback_query(F.data == "switch_data_replacement_enabled")
+async def callback_switch_data_replacement_enabled(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+    index = data.get("data_replacement_index")
+
+    if index is None:
+        return await callback_data_replacements_pagination(
+            callback, calls.DataReplacementsPagination(page=last_page), state
+        )
+
+    data_replacement = sett.get("data_replacement")
+    data_replacement[index]["enabled"] = not data_replacement[index].get("enabled", False)
+    sett.set("data_replacement", data_replacement)
+
+    return await callback_data_replacement(
+        callback, calls.DataReplacementPage(index=index), state
+    )
+
+
 @router.callback_query(F.data == "switch_auto_withdrawal_enabled")
 async def callback_switch_auto_withdrawal_enabled(callback: CallbackQuery, state: FSMContext):
     config = sett.get("config")
     config["playerok"]["auto_withdrawal"]["enabled"] = not config["playerok"]["auto_withdrawal"]["enabled"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="withdrawal"), state
     )
@@ -144,7 +232,7 @@ async def callback_switch_watermark_enabled(callback: CallbackQuery, state: FSMC
     config = sett.get("config")
     config["playerok"]["watermark"]["enabled"] = not config["playerok"]["watermark"]["enabled"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="other"), state
     )
@@ -155,7 +243,7 @@ async def callback_switch_notifications_enabled(callback: CallbackQuery, state: 
     config = sett.get("config")
     config["playerok"]["notifications"]["enabled"] = not config["playerok"]["notifications"]["enabled"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -166,7 +254,7 @@ async def callback_switch_notifications_new_user_message(callback: CallbackQuery
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["new_user_message"] = not config["playerok"]["notifications"]["events"]["new_user_message"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -177,7 +265,7 @@ async def callback_switch_notifications_new_system_message(callback: CallbackQue
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["new_system_message"] = not config["playerok"]["notifications"]["events"]["new_system_message"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -188,7 +276,7 @@ async def callback_switch_notifications_new_deal(callback: CallbackQuery, state:
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["new_deal"] = not config["playerok"]["notifications"]["events"]["new_deal"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -199,7 +287,7 @@ async def callback_switch_notifications_new_review(callback: CallbackQuery, stat
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["new_review"] = not config["playerok"]["notifications"]["events"]["new_review"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -210,7 +298,7 @@ async def callback_switch_notifications_new_problem(callback: CallbackQuery, sta
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["new_problem"] = not config["playerok"]["notifications"]["events"]["new_problem"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -221,7 +309,7 @@ async def callback_switch_notifications_deal_status_changed(callback: CallbackQu
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["deal_status_changed"] = not config["playerok"]["notifications"]["events"]["deal_status_changed"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -232,7 +320,7 @@ async def callback_switch_notifications_item_restored(callback: CallbackQuery, s
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["item_restored"] = not config["playerok"]["notifications"]["events"]["item_restored"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -243,7 +331,7 @@ async def callback_switch_notifications_item_bumped(callback: CallbackQuery, sta
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["item_bumped"] = not config["playerok"]["notifications"]["events"]["item_bumped"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -254,7 +342,7 @@ async def callback_switch_notifications_withdrawal_requested(callback: CallbackQ
     config = sett.get("config")
     config["playerok"]["notifications"]["events"]["withdrawal_requested"] = not config["playerok"]["notifications"]["events"]["withdrawal_requested"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="notifications"), state
     )
@@ -265,7 +353,7 @@ async def callback_switch_updates_auto_update(callback: CallbackQuery, state: FS
     config = sett.get("config")
     config["updates"]["auto_update"] = not config["updates"]["auto_update"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="updates"), state
     )
@@ -276,7 +364,7 @@ async def callback_switch_updates_notify(callback: CallbackQuery, state: FSMCont
     config = sett.get("config")
     config["updates"]["notify"] = not config["updates"]["notify"]
     sett.set("config", config)
-    
+
     return await callback_menu_navigation(
         callback, calls.MenuNavigation(to="updates"), state
     )
@@ -297,7 +385,7 @@ async def callback_switch_message_enabled(callback: CallbackQuery, state: FSMCon
         messages = sett.get("messages")
         messages[message_id]["enabled"] = not messages[message_id]["enabled"]
         sett.set("messages", messages)
-        
+
         return await callback_message_page(
             callback, calls.MessagePage(message_id=message_id), state
         )
@@ -327,7 +415,7 @@ async def callback_switch_module_enabled(callback: CallbackQuery, state: FSMCont
             await disable_module(module_uuid)
         else:
             await enable_module(module_uuid)
-        
+
         return await callback_module_page(
             callback, calls.ModulePage(uuid=module_uuid), state
         )

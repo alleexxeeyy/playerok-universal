@@ -126,7 +126,7 @@ async def callback_enter_pl_proxy(callback: CallbackQuery, state: FSMContext):
         state=state,
         message=callback.message,
         text=templ.conn_float_text(
-            f"🌐 Введите новый <b>прокси для FunPay</b> (формат: user:pass@ip:port или ip:port):"
+            f"🌐 Введите новый <b>прокси для Playerok</b> (формат: user:pass@ip:port или ip:port):"
             f"\n\n・ <b>Текущий:</b> <code>{proxy}</code>"
         ),
         reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
@@ -146,6 +146,26 @@ async def callback_enter_tg_proxy(callback: CallbackQuery, state: FSMContext):
         text=templ.conn_float_text(
             f"🌐 Введите новый <b>прокси для Telegram</b> (формат: user:pass@ip:port или ip:port):"
             f"\n\n・ <b>Текущий:</b> <code>{proxy}</code>"
+        ),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_tg_custom_api_url")
+async def callback_enter_tg_custom_api_url(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(states.SettingsStates.waiting_for_tg_custom_api_url)
+
+    config = sett.get("config")
+    custom_api_url = config["telegram"]["api"]["custom_api_url"] or "❌ Не задано"
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.conn_float_text(
+            f"🔗 Введите новый <b>кастомный URL Telegram API</b> (например, Cloudflare Worker-прокси):"
+            f"\n\n・ <b>Текущий:</b> <code>{custom_api_url}</code>"
+            f"\n\n<blockquote><b>(?)</b> Указывается вместо api.telegram.org, если Telegram заблокирован. Пример: https://tg-proxy.ваш-поддомен.workers.dev"
+            f"\n\nПосле изменения нужно перезагрузить бота, чтобы новый URL применился.</blockquote>"
         ),
         reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
     )
@@ -199,6 +219,7 @@ async def callback_enter_new_included_restore_item_keyphrases(callback: Callback
         text=templ.new_restore_included_float_text(
             f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно включить в авто-восстановление "
             f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
+            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
         ),
         reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
     )
@@ -216,6 +237,7 @@ async def callback_enter_new_excluded_restore_item_keyphrases(callback: Callback
         text=templ.new_restore_excluded_float_text(
             f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно исключить из авто-восстановления "
             f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
+            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
         ),
         reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
     )
@@ -233,6 +255,7 @@ async def callback_enter_new_included_complete_deal_keyphrases(callback: Callbac
         text=templ.new_complete_included_float_text(
             f"🔑 Введите <b>ключевые фразы</b> названия товара, сделку по которому нужно включить в авто-подтверждение "
             f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
+            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
         ),
         reply_markup=templ.back_kb(calls.IncludedCompleteDealsPagination(page=last_page).pack())
     )
@@ -250,6 +273,7 @@ async def callback_enter_new_excluded_complete_deal_keyphrases(callback: Callbac
         text=templ.new_complete_excluded_float_text(
             f"🔑 Введите <b>ключевые фразы</b> названия товара, сделку по которому нужно исключить из авто-подтверждения "
             f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
+            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
         ),
         reply_markup=templ.back_kb(calls.ExcludedCompleteDealsPagination(page=last_page).pack())
     )
@@ -273,6 +297,114 @@ async def callback_enter_auto_bump_items_interval(callback: CallbackQuery, state
     )
 
 
+@router.callback_query(F.data == "enter_auto_bump_items_position")
+async def callback_enter_auto_bump_items_position(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(states.BumpItemsStates.waiting_for_bump_items_position)
+
+    config = sett.get("config")
+    position = config["playerok"]["auto_bump_items"]["position"]
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.bump_float_text(
+            f"📊 Введите <b>позицию, выйдя за которую товар будет подниматься</b>:"
+            f"\n\n・ <b>Текущее:</b> <code>{position}</code>"
+        ),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_auto_bump_items_cooldown")
+async def callback_enter_auto_bump_items_cooldown(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(states.BumpItemsStates.waiting_for_bump_items_cooldown)
+
+    config = sett.get("config")
+    cooldown = config["playerok"]["auto_bump_items"]["cooldown"]
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.bump_float_text(
+            f"🕒 Введите <b>кулдаун поднятия одного товара</b>:"
+            f"\n\n・ <b>Текущее:</b> <code>{cooldown}</code> сек."
+        ),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_auto_bump_items_night_interval")
+async def callback_enter_auto_bump_items_night_interval(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(states.BumpItemsStates.waiting_for_bump_items_night_interval)
+
+    config = sett.get("config")
+    interval = config["playerok"]["auto_bump_items"]["night"]["interval"]
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.bump_float_text(
+            f"⏰ Введите <b>интервал поднятия товаров ночью</b>:"
+            f"\n\n・ <b>Текущее:</b> <code>{interval}</code> сек."
+        ),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_auto_bump_items_night_position")
+async def callback_enter_auto_bump_items_night_position(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(states.BumpItemsStates.waiting_for_bump_items_night_position)
+
+    config = sett.get("config")
+    position = config["playerok"]["auto_bump_items"]["night"]["position"]
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.bump_float_text(
+            f"📊 Введите <b>позицию, выйдя за которую товар будет подниматься ночью</b>:"
+            f"\n\n・ <b>Текущее:</b> <code>{position}</code>"
+        ),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_auto_bump_items_night_time_from")
+async def callback_enter_auto_bump_items_night_time_from(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(states.BumpItemsStates.waiting_for_bump_items_night_time_from)
+
+    config = sett.get("config")
+    time_from = config["playerok"]["auto_bump_items"]["night"]["time_from"]
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.bump_float_text(
+            f"🕓 Введите <b>время начала ночи</b> в формате <code>ЧЧ:ММ</code> (например, <code>23:00</code>):"
+            f"\n\n・ <b>Текущее:</b> <code>{time_from}</code>"
+        ),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_auto_bump_items_night_time_to")
+async def callback_enter_auto_bump_items_night_time_to(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(states.BumpItemsStates.waiting_for_bump_items_night_time_to)
+
+    config = sett.get("config")
+    time_to = config["playerok"]["auto_bump_items"]["night"]["time_to"]
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.bump_float_text(
+            f"🕗 Введите <b>время конца ночи</b> в формате <code>ЧЧ:ММ</code> (например, <code>08:00</code>):"
+            f"\n\n・ <b>Текущее:</b> <code>{time_to}</code>"
+        ),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="bump").pack())
+    )
+
+
 @router.callback_query(F.data == "enter_new_included_bump_item_keyphrases")
 async def callback_enter_new_included_bump_item_keyphrases(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
@@ -285,6 +417,7 @@ async def callback_enter_new_included_bump_item_keyphrases(callback: CallbackQue
         text=templ.new_bump_included_float_text(
             f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно включить в авто-поднятие "
             f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
+            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
         ),
         reply_markup=templ.back_kb(calls.IncludedBumpItemsPagination(page=last_page).pack())
     )
@@ -302,6 +435,7 @@ async def callback_enter_new_excluded_bump_item_keyphrases(callback: CallbackQue
         text=templ.new_bump_excluded_float_text(
             f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно исключить из авто-поднятия "
             f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
+            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
         ),
         reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
     )
@@ -487,7 +621,8 @@ async def callback_enter_auto_delivery_goods_add(callback: CallbackQuery, state:
             state=state,
             message=callback.message,
             text=templ.new_deliv_goods_float_text(
-                f"📦 Отправьте <b>товары</b> для добавления в поштучную выдачу (1 строка = 1 товар, можно прислать .txt файл с товарами):"
+                f"📦 Отправьте <b>товары</b> для добавления в поштучную выдачу (1 строка = 1 товар):"
+                f"\n\n📄 Можно прислать <b>.txt файл</b>"
             ),
             reply_markup=templ.back_kb(calls.DelivGoodsPagination(page=last_page).pack())
         )
@@ -497,6 +632,141 @@ async def callback_enter_auto_delivery_goods_add(callback: CallbackQuery, state:
             message=callback.message,
             text=templ.new_deliv_goods_float_text(e),
             reply_markup=templ.back_kb(calls.DelivGoodsPagination(page=last_page).pack())
+        )
+
+
+@router.callback_query(F.data == "enter_data_replacements_page")
+async def callback_enter_data_replacements_page(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+
+    await state.set_state(states.DataReplacementStates.waiting_for_page)
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.data_replacements_float_text(f"📃 Введите номер страницы для перехода:"),
+        reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+    )
+
+
+@router.callback_query(F.data == "enter_new_data_replacement_keyphrases")
+async def callback_enter_new_data_replacement_keyphrases(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+
+    await state.set_state(states.DataReplacementStates.waiting_for_new_data_replacement_keyphrases)
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.new_data_replacement_float_text(
+            f"🔑 Введите <b>ключевые фразы</b> названия товара, которому нужно заменять данные при восстановлении "
+            f"(указываются через запятую, например, \"steam аккаунт, стим\"):"
+        ),
+        reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+    )
+
+
+@router.callback_query(F.data == "enter_data_replacement_keyphrases")
+async def callback_enter_data_replacement_keyphrases(callback: CallbackQuery, state: FSMContext):
+    try:
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+
+        index = data.get("data_replacement_index")
+        if index is None:
+            return await callback_data_replacements_pagination(
+                callback, calls.DataReplacementsPagination(page=last_page), state
+            )
+
+        await state.set_state(states.DataReplacementStates.waiting_for_data_replacement_keyphrases)
+        data_replacement = sett.get("data_replacement")
+        keyphrases = "</code>, <code>".join(
+            escape_html(p) for p in data_replacement[index]["keyphrases"]
+        ) or "❌ Не задано"
+
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_float_text(
+                f"🔑 Введите новые <b>ключевые фразы</b> названия товара, которому нужно заменять данные (указываются через запятую)"
+                f"\n\n・ <b>Текущее:</b> <code>{keyphrases}</code>"
+            ),
+            reply_markup=templ.back_kb(calls.DataReplacementPage(index=index).pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_float_text(e),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+        )
+
+
+@router.callback_query(F.data == "enter_data_replacement_separator")
+async def callback_enter_data_replacement_separator(callback: CallbackQuery, state: FSMContext):
+    try:
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+
+        index = data.get("data_replacement_index")
+        if index is None:
+            return await callback_data_replacements_pagination(
+                callback, calls.DataReplacementsPagination(page=last_page), state
+            )
+
+        await state.set_state(states.DataReplacementStates.waiting_for_data_replacement_separator)
+        data_replacement = sett.get("data_replacement")
+        separator = escape_html(data_replacement[index].get("separator") or ":")
+
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_float_text(
+                f"🔣 Введите новый <b>разделитель</b>, которым разделены значения в строке данных"
+                f"\n\n・ <b>Текущий:</b> <code>{separator}</code>"
+            ),
+            reply_markup=templ.back_kb(calls.DataReplacementPage(index=index).pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.data_replacement_float_text(e),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
+        )
+
+
+@router.callback_query(F.data == "enter_data_replacement_values_add")
+async def callback_enter_data_replacement_values_add(callback: CallbackQuery, state: FSMContext):
+    try:
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+        values_page = data.get("data_replacement_values_page", 0)
+
+        index = data.get("data_replacement_index")
+        if index is None:
+            return await callback_data_replacements_pagination(
+                callback, calls.DataReplacementsPagination(page=last_page), state
+            )
+
+        separator = sett.get("data_replacement")[index].get("separator") or ":"
+        await state.set_state(states.DataReplacementStates.waiting_for_data_replacement_values_add)
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.new_data_replacement_values_float_text(
+                f"💽 Отправьте <b>данные</b> для замены (1 строка = 1 набор данных, значения разделяются "
+                f"разделителем <code>{escape_html(separator)}</code>):"
+                f"\n\n📄 Можно прислать <b>.txt файл</b>"
+            ),
+            reply_markup=templ.back_kb(calls.DataReplacementValuesPagination(page=values_page).pack())
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.new_data_replacement_values_float_text(e),
+            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
         )
 
 

@@ -1,11 +1,9 @@
 import os
+import traceback
+from html import escape
+from logging import getLogger
 from aiogram import types, Router, Bot, F
 from aiogram.fsm.context import FSMContext
-
-import zipfile
-import rarfile
-import shutil
-from pathlib import Path
 
 from settings import Settings as sett
 from core.configs import (
@@ -16,6 +14,14 @@ from core.configs import (
     clear_import_dir,
     clear_temp_dir,
     peek_import
+)
+from core.modules import (
+    MODULE_EXTENSIONS,
+    MAX_MODULE_SIZE,
+    ModuleImportError,
+    prepare_module_import_dir,
+    clear_module_import_dir,
+    import_modules_from_archive
 )
 
 from .. import templates as templ
@@ -34,6 +40,8 @@ from utils import (
     normalize_custom_api_url
 )
 
+
+logger = getLogger("universal.telegram")
 
 router = Router()
 
@@ -517,154 +525,73 @@ async def handler_waiting_for_fast_reply_text(message: types.Message, state: FSM
         )
 
 
-@router.message(
-    states.SettingsStates.waiting_for_module_file, 
-    F.document.file_name.lower().regexp(r'.*\.(zip|rar)$')
-)
+@router.message(states.SettingsStates.waiting_for_module_file, F.document)
 async def handler_waiting_for_module_file(message: types.Message, state: FSMContext, bot: Bot):
+    user_id = message.from_user.id
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+
     try:
         await state.set_state(None)
 
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        
-        file_name = message.document.file_name
-        temp_path = os.path.join("temp", file_name)
-        modules_path = "modules"
+        file_name = safe_file_name(message.document.file_name)
+        if not file_name.lower().endswith(MODULE_EXTENSIONS):
+            raise ModuleImportError("❌ Нужен архив в формате <b>.zip</b> или <b>.rar</b>")
+        if (message.document.file_size or 0) > MAX_MODULE_SIZE:
+            raise ModuleImportError(f"❌ Файл слишком большой (максимум {MAX_MODULE_SIZE // 1024 // 1024} МБ)")
 
-        os.makedirs("temp", exist_ok=True)
-        os.makedirs(modules_path, exist_ok=True)
+        archive_path = os.path.join(prepare_module_import_dir(user_id), file_name)
+        await bot.download(message.document, destination=archive_path)
 
-        await bot.download(message.document, destination=temp_path)
+        installed = import_modules_from_archive(archive_path)
 
-        def _get_module_meta(dest):
-            try:
-                import ast
-
-                constants = {}
-                target_keys = {'NAME', 'DESCRIPTION', 'VERSION'}
-
-                for py_file in Path(dest).rglob('*.py'):
-                    if len(constants) == len(target_keys):
-                        break
-                    try:
-                        with open(py_file, 'r', encoding='utf-8') as f:
-                            tree = ast.parse(f.read())
-                        for node in ast.walk(tree):
-                            if isinstance(node, ast.Assign):
-                                for target in node.targets:
-                                    if isinstance(target, ast.Name) and target.id in target_keys:
-                                        try:
-                                            constants[target.id] = ast.literal_eval(node.value)
-                                        except:
-                                            pass
-                    except:
-                        pass
-
-                name = constants.get('NAME')
-                description = constants.get('DESCRIPTION')
-                version = constants.get('VERSION')
-                
-                return name, description, version
-            except Exception as e:
-                raise Exception(f"❌ Ошибка при инициализации модуля {os.path.basename(dest)}: <blockquote>{e}</blockquote>")
-
-        if file_name.lower().endswith('.zip'):
-            archive = zipfile.ZipFile(temp_path)
-            names = archive.namelist()
+        if len(installed) == 1:
+            result = f"✅ Модуль <b>успешно импортирован</b>: <code>{file_name}</code>"
         else:
-            archive = rarfile.RarFile(temp_path)
-            names = archive.namelist()
-
-        with archive:
-            has_init = any(
-                n == f"{next(iter({n.split('/')[0] for n in names if '/' in n}))}//__init__.py"
-                for n in names
+            str_installed = "\n".join(f"・ <b>{name}</b>" for name in installed)
+            result = (
+                f"✅ Успешно импортировано <b>{len(installed)} модулей</b> из <code>{file_name}</code>:"
+                f"\n\n<blockquote>{str_installed}</blockquote>"
             )
 
-            # корневые папки в архиве
-            root_folders = {n.split('/')[0] for n in names if '/' in n}
-            single_folder = len(root_folders) == 1
-
-            if has_init or single_folder:
-                if has_init:
-                    module_name = os.path.splitext(file_name)[0]
-                    dest = os.path.join(modules_path, module_name)
-                    os.makedirs(dest, exist_ok=True)
-                    archive.extractall(dest)
-                else:  # single_folder
-                    module_name = next(iter(root_folders))
-                    dest = os.path.join(modules_path, module_name)
-                    if os.path.exists(dest):
-                        shutil.rmtree(dest)
-                    archive.extractall(modules_path)  # распаковываем прямо в modules
-
-                name, desc, version = _get_module_meta(dest)
-
-                await throw_float_message(
-                    state=state,
-                    message=message,
-                    text=templ.modules_float_text(
-                        f"✅ Модуль <b>успешно импортирован</b>:"
-                        f"\n\n<blockquote><b>{name} ({version})</b>"
-                        f"\n{desc}</blockquote>"
-                        f"\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
-                    ),
-                    reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
-                )
-            else:
-                # каждую корневую папку из архива кладём в modules
-                before = set(os.listdir(modules_path))
-                extract_temp = os.path.join("temp", "extracted")
-                os.makedirs(extract_temp, exist_ok=True)
-                archive.extractall(extract_temp)
-
-                for item in os.listdir(extract_temp):
-                    src = os.path.join(extract_temp, item)
-                    dst = os.path.join(modules_path, item)
-                    
-                    if os.path.isdir(src):
-                        if os.path.exists(dst):
-                            shutil.rmtree(dst)
-                        shutil.move(src, dst)
-
-                shutil.rmtree(extract_temp)
-                after = set(os.listdir(modules_path))
-                added_modules = {os.path.basename(f) for f in after - before}
-
-                modules_info = []
-                for mod_folder in added_modules:
-                    mod_dest = os.path.join(modules_path, mod_folder)
-                    name, desc, version = _get_module_meta(mod_dest)
-                    modules_info.append((name or mod_folder, desc, version))
-
-                str_added = "\n".join(
-                    f"・ <b>{n}</b> ({v})" if v else f"・ <b>{n}</b>"
-                    for n, d, v in modules_info
-                )
-
-                await throw_float_message(
-                    state=state,
-                    message=message,
-                    text=templ.modules_float_text(
-                        f"✅ Успешно импортировано <b>{len(added_modules)} модулей</b>:"
-                        f"\n\n<blockquote>{str_added}</blockquote>"
-                        f"\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
-                    ),
-                    reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
-                )
-        
-    except Exception as e:
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.modules_float_text(e),
+            text=templ.modules_float_text(
+                f"{result}"
+                f"\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
+            ),
+            reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
+        )
+    except Exception as e:
+        if not isinstance(e, ModuleImportError):
+            logger.error(f"Не удалось импортировать модуль: {traceback.format_exc()}")
+        text = str(e) if isinstance(e, ModuleImportError) else (
+            f"❌ Не удалось импортировать модуль: <blockquote>{escape(str(e))}</blockquote>"
+        )
+
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.modules_float_text(text),
             reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
         )
     finally:
-        try: os.remove(temp_path)
-        except: pass
+        clear_module_import_dir(user_id)
         clear_temp_dir()
+
+
+@router.message(states.SettingsStates.waiting_for_module_file)
+async def handler_waiting_for_module_file_wrong(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.modules_float_text("❌ Нужен <b>архив</b> с модулем в формате <b>.zip</b> или <b>.rar</b>"),
+        reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
+    )
 
 
 @router.message(states.SettingsStates.waiting_for_config_file, F.document)

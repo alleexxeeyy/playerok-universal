@@ -101,3 +101,6 @@ class SelMessageTemplatePagination(CallbackData, prefix="smtpag"):
     id: str
     type: int
     page: int
+
+class ReleasesPagination(CallbackData, prefix="relpag"):
+    page: int

@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import zipfile
 import io
@@ -26,6 +27,23 @@ REPO = "alleexxeeyy/playerok-universal"
 logger = getLogger("universal.updater")
 
 latest_release = None
+
+releases_cache = []
+releases_cache_at = 0.0
+RELEASES_TTL = 300
+
+
+def get_cached_releases(force=False):
+    """Список релизов с GitHub с кэшем — для экрана истории обновлений."""
+    global releases_cache, releases_cache_at
+
+    if not force and releases_cache and time.time() - releases_cache_at < RELEASES_TTL:
+        return releases_cache
+
+    releases_cache = get_releases()
+    releases_cache_at = time.time()
+    return releases_cache
+
 
 
 def get_releases():

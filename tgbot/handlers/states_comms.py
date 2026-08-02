@@ -86,7 +86,7 @@ async def handler_waiting_for_new_custom_command_answer(message: types.Message, 
             state=state,
             message=message,
             text=templ.new_comm_float_text(
-                f"✔️ Подтвердите <b>добавление новой команды:</b>"
+                f"✔️ Подтвердите <b>добавление новой команды</b>:"
                 f"\n\n<b>· Команда:</b> {cmd}"
                 f"\n<b>· Ответ:</b> <blockquote>{answr}</blockquote>"
             ),

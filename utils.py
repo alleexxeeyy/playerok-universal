@@ -485,15 +485,27 @@ def configure_config():
                 break
 
             cust_api_url = normalize_custom_api_url(cust_api_url)
-            if is_url_valid(cust_api_url):
-                config["telegram"]["api"]["custom_api_url"] = cust_api_url
-                sett.set("config", config)
-                print(f"\n{Fore.YELLOW}Кастомный URL успешно сохранён в конфиг.")
-            else:
+            if not is_url_valid(cust_api_url):
                 print(
                     f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный URL. "
                     f"Убедитесь, что он верный и попробуйте ещё раз."
                 )
+                continue
+
+            print(f"\n{Fore.WHITE}Проверяю URL, это займёт до 30 секунд...")
+            if not is_custom_api_url_working(cust_api_url):
+                print(
+                    f"\n{Fore.LIGHTRED_EX}URL не ответил на проверочный запрос. "
+                    f"Либо он указан неверно, либо сервер недоступен, либо неверен токен бота."
+                    f"\n{Fore.WHITE}  Если сохранить такой URL, бот не сможет связаться с Telegram."
+                    f"\n  {Fore.LIGHTWHITE_EX}Введите y, чтобы сохранить всё равно, или Enter, чтобы ввести другой"
+                )
+                if input(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}").strip().lower() not in ("y", "yes", "д", "да"):
+                    continue
+
+            config["telegram"]["api"]["custom_api_url"] = cust_api_url
+            sett.set("config", config)
+            print(f"\n{Fore.YELLOW}Кастомный URL успешно сохранён в конфиг.")
 
         while not config["telegram"]["api"]["proxy"]:
             print(

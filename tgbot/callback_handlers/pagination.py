@@ -3,6 +3,8 @@ from aiogram import Router
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
+import asyncio
+
 from settings import Settings as sett
 from playerokapi.enums import MessageTemplateTypes, SortDirections, ReviewStatuses
 
@@ -819,3 +821,33 @@ async def callback_reviews_pagination(callback: CallbackQuery, callback_data: ca
             reply_markup=templ.back_kb(calls.MenuNavigation(to="default").pack()),
             callback=callback
         )
+
+
+@router.callback_query(calls.ReleasesPagination.filter())
+async def callback_releases_pagination(callback: CallbackQuery, callback_data: calls.ReleasesPagination, state: FSMContext):
+    await state.set_state(None)
+
+    from updater import get_cached_releases
+
+    page = callback_data.page
+    await state.update_data(rel_last_page=page)
+
+    try:
+        releases = await asyncio.to_thread(get_cached_releases)
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.releases_float_text(e),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="updates").pack()),
+            callback=callback
+        )
+        return
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.releases_text(releases),
+        reply_markup=templ.releases_kb(releases, page),
+        callback=callback
+    )

@@ -646,7 +646,7 @@ async def callback_confirm_deleting_custom_command(callback: CallbackQuery, stat
         await throw_float_message(
             state=state,
             message=callback.message,
-            text=templ.comm_page_float_text(f"🗑️ Подтвердите <b>удаление команды</b> <code>{command}</code>"),
+            text=templ.comm_page_float_text(f"🗑️ Подтвердите <b>удаление команды</b> <code>{command}</code>:"),
             reply_markup=templ.confirm_kb(
                 confirm_cb="delete_custom_command", 
                 cancel_cb=calls.CustomCommandPage(command=command).pack()
@@ -996,7 +996,7 @@ async def callback_send_module_file(callback: CallbackQuery, state: FSMContext):
         state=state,
         message=callback.message,
         text=templ.modules_float_text(
-            "🗂 Отправьте <b>архив</b> с модулем/модулями (форматы: zip, rar)"
+            "🗂 Отправьте <b>архив</b> с модулем/модулями (форматы: zip, rar):"
         ),
         reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
     )

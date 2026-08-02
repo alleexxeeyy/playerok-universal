@@ -204,7 +204,7 @@ async def callback_send_config_file(callback: CallbackQuery, state: FSMContext):
         message=callback.message,
         text=templ.configs_float_text(
             "🗂 Отправьте <b>файл конфига или данных</b> (config.json, messages.json, cached_orders.json и т.д.)"
-            " или <b>архив</b> с ними (форматы: zip, rar)"
+            " или <b>архив</b> с ними (форматы: zip, rar):"
         ),
         reply_markup=templ.back_kb(calls.MenuNavigation(to="configs").pack()),
         callback=callback

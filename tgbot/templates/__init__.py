@@ -73,3 +73,5 @@ from .transaction import *
 from .reviews import *
 from .reviews_filter import *
 from .review import *
+from .releases import *
+from .release import *

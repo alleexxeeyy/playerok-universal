@@ -556,7 +556,7 @@ async def callback_enter_auto_delivery_keyphrases(callback: CallbackQuery, state
             state=state,
             message=callback.message,
             text=templ.deliv_page_float_text(
-                f"🔑 Введите новые <b>ключевые фразы</b> названия товара, на который авто-выдачи (указываются через запятую)"
+                f"🔑 Введите новые <b>ключевые фразы</b> названия товара, на который авто-выдачи (указываются через запятую):"
                 f"\n\n・ <b>Текущее:</b> <code>{auto_delivery_message}</code>"
             ),
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=index).pack())
@@ -590,7 +590,7 @@ async def callback_enter_auto_delivery_message(callback: CallbackQuery, state: F
             state=state,
             message=callback.message,
             text=templ.deliv_page_float_text(
-                f"💬 Введите новое <b>сообщение</b> после покупки"
+                f"💬 Введите новое <b>сообщение</b> после покупки:"
                 f"\n\n・ <b>Текущее:</b> <blockquote>{auto_delivery_message}</blockquote>"
             ),
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=index).pack())
@@ -688,7 +688,7 @@ async def callback_enter_data_replacement_keyphrases(callback: CallbackQuery, st
             state=state,
             message=callback.message,
             text=templ.data_replacement_float_text(
-                f"🔑 Введите новые <b>ключевые фразы</b> названия товара, которому нужно заменять данные (указываются через запятую)"
+                f"🔑 Введите новые <b>ключевые фразы</b> названия товара, которому нужно заменять данные (указываются через запятую):"
                 f"\n\n・ <b>Текущее:</b> <code>{keyphrases}</code>"
             ),
             reply_markup=templ.back_kb(calls.DataReplacementPage(index=index).pack())
@@ -722,7 +722,7 @@ async def callback_enter_data_replacement_separator(callback: CallbackQuery, sta
             state=state,
             message=callback.message,
             text=templ.data_replacement_float_text(
-                f"🔣 Введите новый <b>разделитель</b>, которым разделены значения в строке данных"
+                f"🔣 Введите новый <b>разделитель</b>, которым разделены значения в строке данных:"
                 f"\n\n・ <b>Текущий:</b> <code>{separator}</code>"
             ),
             reply_markup=templ.back_kb(calls.DataReplacementPage(index=index).pack())

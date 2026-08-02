@@ -32,3 +32,6 @@ class TransactionPage(CallbackData, prefix="trpage"):
 
 class ReviewPage(CallbackData, prefix="rvpage"):
     id: str
+
+class ReleasePage(CallbackData, prefix="relpage"):
+    index: int

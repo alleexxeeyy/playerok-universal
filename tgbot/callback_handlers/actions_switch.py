@@ -97,6 +97,17 @@ async def callback_switch_auto_restore_items_publish_status(callback: CallbackQu
     )
 
 
+@router.callback_query(F.data == "switch_auto_restore_items_recreate")
+async def callback_switch_auto_restore_items_recreate(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["auto_restore_items"]["recreate"] = not config["playerok"]["auto_restore_items"]["recreate"]
+    sett.set("config", config)
+
+    return await callback_menu_navigation(
+        callback, calls.MenuNavigation(to="restore"), state
+    )
+
+
 @router.callback_query(F.data == "switch_auto_bump_items_enabled")
 async def callback_switch_auto_bump_items_enabled(callback: CallbackQuery, state: FSMContext):
     config = sett.get("config")

@@ -87,6 +87,7 @@ class PlayerokBot:
         self.bumped_items = data.get("bumped_items")
 
         self.item_positions: dict[str, dict] = {}
+        self.recreated_items: set[str] = set()
         self.bump_lock = RLock()
 
         self.account = self.playerok_account = Account(
@@ -545,20 +546,17 @@ class PlayerokBot:
             logger.error(f"{Fore.LIGHTRED_EX}Ошибка при проверке позиций товаров: {Fore.WHITE}{e}")
             return False, 0, 0, e
 
-    def replace_item_data(self, item: Item | MyItem):
+    def prepare_item_data(self, item: Item | MyItem):
         data_replacement = sett.get("data_replacement") or []
-        repl = next(
-            (
-                r for r in data_replacement
-                if r.get("enabled")
-                and any(
-                    phrase.lower() in item.name.lower()
-                    or item.name.lower() == phrase.lower()
-                    for phrase in r.get("keyphrases", [])
-                )
-            ),
-            None
-        )
+        repl = next((
+            r for r in data_replacement
+            if r.get("enabled")
+            and any(
+                phrase.lower() in item.name.lower()
+                or item.name.lower() == phrase.lower()
+                for phrase in r.get("keyphrases", [])
+            )
+        ), None)
         if not repl:
             return None
 
@@ -584,22 +582,123 @@ class PlayerokBot:
         for field, value in zip(fields, new_values):
             field.value = value.strip()
 
-        self.account.update_item(item.id, data_fields=fields)
+        return repl.get("keyphrases"), values[0], fields
 
+    def consume_item_data(self, keyphrases: list, value: str) -> int:
         # перечитываем перед списанием: за время запроса тг-бот мог изменить замены
         data_replacement = sett.get("data_replacement") or []
         repl = next(
-            (r for r in data_replacement if r.get("keyphrases") == repl.get("keyphrases")),
+            (r for r in data_replacement if r.get("keyphrases") == keyphrases),
             None
         )
         if repl is None:
-            return True, 0
+            return 0
 
-        if values[0] in repl.get("data", []):
-            repl["data"].remove(values[0])
+        if value in repl.get("data", []):
+            repl["data"].remove(value)
         self.data_replacement = data_replacement
         sett.set("data_replacement", data_replacement)
-        return True, len(repl.get("data", []))
+        return len(repl.get("data", []))
+
+    def replace_item_data(self, item: Item | MyItem):
+        prepared = self.prepare_item_data(item)
+        if not prepared:
+            return None
+
+        keyphrases, value, fields = prepared
+        self.account.update_item(item.id, data_fields=fields)
+        return True, self.consume_item_data(keyphrases, value)
+
+    def publish_restored_item(self, item_id: str, raw_price: int, is_premium: bool, name_frmtd: str):
+        time.sleep(1)
+        statuses = self.account.get_item_priority_statuses(item_id, raw_price)
+        if not statuses:
+            raise Exception("Статусы приоритета не найдены")
+
+        prem_status = next(
+            (st for st in statuses if st.type is PriorityTypes.PREMIUM or st.price > 0),
+            None
+        )
+        free_status = next(
+            (st for st in statuses if st.type is PriorityTypes.DEFAULT or st.price == 0),
+            None
+        )
+
+        # премиум товары playerok не даёт восстановить с бесплатным статусом
+        publish_status = self.config["playerok"]["auto_restore_items"]["publish_status"]
+        if is_premium or publish_status == "premium":
+            pr_status = prem_status
+            if not pr_status:
+                raise Exception("PREMIUM статус приоритета не найден")
+        else:
+            pr_status = free_status or statuses[0]
+
+        time.sleep(1)
+        try:
+            new_item = self.account.publish_item(item_id, pr_status.id)
+        except RequestPlayerokError as e:
+            # если приоритет товара определился неверно, playerok не даст выставить его бесплатно
+            if (
+                pr_status.type is PriorityTypes.PREMIUM
+                or not prem_status
+                or not self.config["playerok"]["auto_restore_items"]["premium"]
+            ):
+                raise e
+
+            logger.warning(
+                f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— "
+                f"{Fore.LIGHTYELLOW_EX}не удалось восстановить с бесплатным статусом, "
+                f"пробую премиум: {Fore.WHITE}{e}"
+            )
+            time.sleep(1)
+            pr_status = prem_status
+            new_item = self.account.publish_item(item_id, pr_status.id)
+
+        return new_item, pr_status
+
+    def create_item_copy(self, item: MyItem) -> Item:
+        if not item.category or not item.obtaining_type:
+            raise Exception("у товара нет категории или способа получения")
+
+        attachments = []
+        for att in (item.attachments or []):
+            if not att.url:
+                continue
+            attachments.append(self.account.download_file(att.url))
+            time.sleep(0.5)
+
+        data_fields = [
+            f for f in (item.data_fields or [])
+            if f.type is GameCategoryDataFieldTypes.ITEM_DATA
+        ]
+
+        time.sleep(1)
+        return self.account.create_item(
+            game_category_id=item.category.id,
+            obtaining_type_id=item.obtaining_type.id,
+            name=item.name,
+            price=item.raw_price,
+            description=item.description or "",
+            options=item.attributes or {},
+            data_fields=data_fields,
+            attachments=attachments
+        )
+
+    def remove_item_quietly(self, item_id: str, name_frmtd: str, what: str) -> bool:
+        err = None
+        for _ in range(3):
+            try:
+                time.sleep(1)
+                self.account.remove_item(item_id)
+                return True
+            except Exception as e:
+                err = e
+
+        logger.warning(
+            f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— "
+            f"{Fore.LIGHTYELLOW_EX}не удалось удалить {what}: {Fore.WHITE}{err}"
+        )
+        return False
 
     def restore_item(self, item: Item | MyItem | ItemProfile):
         try:
@@ -645,62 +744,63 @@ class PlayerokBot:
                     if not is_premium and not self.config["playerok"]["auto_restore_items"]["free"]:
                         return
 
-                replaced = self.replace_item_data(item)
+                # playerok больше не даёт выставить повторно товары некоторых категорий (аккаунты)
+                recreate = item.may_be_published is False
+                if recreate:
+                    if not self.config["playerok"]["auto_restore_items"]["recreate"]:
+                        logger.warning(
+                            f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— "
+                            f"{Fore.LIGHTYELLOW_EX}Playerok не даёт выставить этот товар повторно. "
+                            f"{Fore.WHITE}Включите «Пересоздание» в меню авто-восстановления, "
+                            f"чтобы бот пересоздавал такие товары"
+                        )
+                        return
+                    # товар уже пересоздавали — иначе наплодим дублей
+                    if item.id in self.recreated_items:
+                        return
 
-                time.sleep(1)
-                statuses = self.account.get_item_priority_statuses(item.id, item.raw_price)
-                if not statuses:
-                    raise Exception("Статусы приоритета не найдены")
+                    # данные списываем только после успешной публикации, иначе сгорят впустую
+                    prepared = self.prepare_item_data(item)
+                    draft = self.create_item_copy(item)
+                    try:
+                        new_item, pr_status = self.publish_restored_item(
+                            draft.id, item.raw_price, is_premium, name_frmtd
+                        )
+                    except Exception:
+                        # иначе на каждой неудачной попытке будет копиться новый черновик
+                        self.remove_item_quietly(draft.id, name_frmtd, "черновик после неудачной публикации")
+                        raise
 
-                prem_status = next(
-                    (st for st in statuses if st.type is PriorityTypes.PREMIUM or st.price > 0),
-                    None
-                )
-                free_status = next(
-                    (st for st in statuses if st.type is PriorityTypes.DEFAULT or st.price == 0),
-                    None
-                )
+                    self.recreated_items.add(item.id)
+                    replaced = (True, self.consume_item_data(*prepared[:2])) if prepared else None
 
-                # премиум товары playerok не даёт восстановить с бесплатным статусом
-                publish_status = self.config["playerok"]["auto_restore_items"]["publish_status"]
-                if is_premium or publish_status == "premium":
-                    pr_status = prem_status
-                    if not pr_status:
-                        raise Exception("PREMIUM статус приоритета не найден")
+                    old_removed = self.remove_item_quietly(item.id, name_frmtd, "старый товар после пересоздания")
+                    if old_removed:
+                        with self.bump_lock:
+                            self.bumped_items.pop(item.id, None)
+                            self.item_positions.pop(item.id, None)
                 else:
-                    pr_status = free_status or statuses[0]
-
-                time.sleep(1)
-                try:
-                    new_item = self.account.publish_item(item.id, pr_status.id)
-                except RequestPlayerokError as e:
-                    # если приоритет товара определился неверно, playerok не даст выставить его бесплатно
-                    if (
-                        pr_status.type is PriorityTypes.PREMIUM
-                        or not prem_status
-                        or not self.config["playerok"]["auto_restore_items"]["premium"]
-                    ):
-                        raise e
-
-                    logger.warning(
-                        f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— "
-                        f"{Fore.LIGHTYELLOW_EX}не удалось восстановить с бесплатным статусом, "
-                        f"пробую премиум: {Fore.WHITE}{e}"
+                    old_removed = True
+                    replaced = self.replace_item_data(item)
+                    new_item, pr_status = self.publish_restored_item(
+                        item.id, item.raw_price, is_premium, name_frmtd
                     )
-                    time.sleep(1)
-                    pr_status = prem_status
-                    new_item = self.account.publish_item(item.id, pr_status.id)
 
                 status_frmtd = "премиум" if pr_status.type is PriorityTypes.PREMIUM else "бесплатный"
+                action_frmtd = "пересоздан" if recreate else "восстановлен"
 
                 logger.info(
                     f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» "
-                    f"{Fore.WHITE}— {Fore.YELLOW}товар восстановлен "
+                    f"{Fore.WHITE}— {Fore.YELLOW}товар {action_frmtd} "
                     f"{Fore.WHITE}(статус: {Fore.LIGHTWHITE_EX}{status_frmtd}{Fore.WHITE})"
                     + (
                         f"{Fore.WHITE}, данные заменены "
                         f"{Fore.WHITE}(осталось: {Fore.LIGHTWHITE_EX}{replaced[1]}{Fore.WHITE})"
                         if replaced else ""
+                    )
+                    + (
+                        f"{Fore.WHITE}, но {Fore.LIGHTYELLOW_EX}старый товар остался — удалите его вручную"
+                        if not old_removed else ""
                     )
                 )
                 if (
@@ -709,10 +809,13 @@ class PlayerokBot:
                 ):
                     self.log_to_tg(
                         log_text(
-                            f'♻️ Товар <a href="https://playerok.com/products/{new_item.slug}">«{item.name}»</a> восстановлен (статус: {status_frmtd})',
-                            f"🔄 Данные товара заменены\n💽 Осталось данных: {replaced[1]}" if replaced else ""
+                            f'{"🆕" if recreate else "♻️"} Товар <a href="https://playerok.com/products/{new_item.slug}">«{item.name}»</a> {action_frmtd} (статус: {status_frmtd})',
+                            "\n".join(filter(None, [
+                                f"🔄 Данные товара заменены\n💽 Осталось данных: {replaced[1]}" if replaced else "",
+                                "⚠️ Старый товар не удалился — удалите его вручную" if not old_removed else ""
+                            ]))
                         ),
-                        log_item_kb(item.id)
+                        log_item_kb(new_item.id)
                     )
                 return True
         except Exception as e:

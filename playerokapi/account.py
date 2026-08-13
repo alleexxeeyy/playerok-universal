@@ -1098,6 +1098,37 @@ class Account:
             content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
             return filename, open(image, "rb"), content_type
 
+    def download_file(self, url: str) -> bytes:
+        """
+        Скачивает файл по прямой ссылке.
+
+        :param url: Ссылка на файл.
+        :type url: `str`
+
+        :return: Байты файла.
+        :rtype: `bytes`
+        """
+
+        err = ""
+        for _ in range(3):
+            try:
+                with self.__request_lock:
+                    r = self.__curl_session.get(
+                        url=url,
+                        headers={"user-agent": self.user_agent},
+                        timeout=self.requests_timeout
+                    )
+            except Exception as e:
+                err = str(e).strip() or traceback.format_exc()
+                self._refresh_clients()
+                continue
+
+            if r.status_code == 200:
+                return r.content
+            err = f"код ответа {r.status_code}"
+
+        raise RequestSendingError(url, err)
+
     def upload_chat_image_into_temporary_store(
         self,
         image: str | bytes,
@@ -1202,7 +1233,7 @@ class Account:
         name: str, 
         price: int, 
         description: str, 
-        options: list[GameCategoryOption], 
+        options: list[GameCategoryOption] | dict,
         data_fields: list[GameCategoryDataField],
         attachments: list[str | bytes]  # ← было: list[str]
     ) -> types.Item:
@@ -1224,8 +1255,9 @@ class Account:
         :param description: Описание предмета.
         :type description: `str`
 
-        :param options: Массив **выбранных** опций (аттрибутов) предмета.
-        :type options: `list[playerokapi.types.GameCategoryOption]`
+        :param options: Массив **выбранных** опций (аттрибутов) предмета,
+            либо готовый словарь аттрибутов вида `{поле: значение}`.
+        :type options: `list[playerokapi.types.GameCategoryOption]` or `dict`
 
         :param data_fields: Массив полей с данными предмета. \n
             !!! Должны быть заполнены данные с типом поля `ITEM_DATA`, то есть те данные, которые указываются при заполнении информации о товаре.
@@ -1238,9 +1270,9 @@ class Account:
         :return: Объект созданного предмета.
         :rtype: `playerokapi.types.Item`
         """
-        payload_attributes = {option.field: option.value for option in options}
+        payload_attributes = options if isinstance(options, dict) else {option.field: option.value for option in options}
         payload_data_fields = [{"fieldId": field.id, "value": field.value} for field in data_fields]
-        
+
         headers = {"accept": "*/*"}
         operations = {
             "operationName": "createItem",

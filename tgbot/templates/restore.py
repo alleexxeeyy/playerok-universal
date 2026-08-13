@@ -24,6 +24,7 @@ def restore_text():
     publish_status = PUBLISH_STATUSES.get(
         config["playerok"]["auto_restore_items"]["publish_status"], "Прежний"
     )
+    recreate = "✅" if config["playerok"]["auto_restore_items"]["recreate"] else "❌"
 
     auto_restore_items = sett.get("auto_restore_items")
     included = len(auto_restore_items["included"])
@@ -43,6 +44,11 @@ def restore_text():
 
         <b>🏷️ Статус публикации:</b> {publish_status}
         <blockquote><b>(?)</b> С каким статусом приоритета выставлять восстановленный товар. "Прежний" — с тем же, что был до этого. Учтите: премиум товары Playerok не позволяет восстановить с бесплатным статусом, поэтому они всегда восстанавливаются с премиумом, и за это будут списываться деньги с баланса.</blockquote>
+
+        <b>🆕 Пересоздание:</b> {recreate}
+        <blockquote><b>(?)</b> Playerok не даёт выставить повторно товары некоторых категорий (например, аккаунты). Если включить, бот будет пересоздавать такой товар заново, вместо публикации, а старый — удалять.
+
+        <b>⚠️ Будьте аккуратны:</b> правилами Playerok запрещено "Создавать новые товары и удалять товары через какие-либо программные продукты (боты, скрипты и т.д.)". Пересоздание делает и то, и другое, поэтому включайте его на свой страх и риск.</blockquote>
 
         <b>🔄 Замена данных:</b> {data_replacement}
         <blockquote><b>(?)</b> Позволяет подменять данные товара (логин, пароль и т.д.) на новые перед его восстановлением, чтобы товар не выставлялся заново с уже проданными данными.</blockquote>
@@ -67,6 +73,7 @@ def restore_kb():
     publish_status = PUBLISH_STATUSES.get(
         config["playerok"]["auto_restore_items"]["publish_status"], "Прежний"
     )
+    recreate = "✅" if config["playerok"]["auto_restore_items"]["recreate"] else "❌"
 
     auto_restore_items = sett.get("auto_restore_items")
     included = len(auto_restore_items["included"])
@@ -84,6 +91,7 @@ def restore_kb():
         InlineKeyboardButton(text=f"💎 Премиум: {premium}", callback_data="switch_auto_restore_items_premium")
         ],
         [InlineKeyboardButton(text=f"🏷️ Статус публикации: {publish_status}", callback_data="switch_auto_restore_items_publish_status")],
+        [InlineKeyboardButton(text=f"🆕 Пересоздание: {recreate}", callback_data="switch_auto_restore_items_recreate")],
         [InlineKeyboardButton(text=f"🔄 Замена данных: {data_replacement}", callback_data=calls.DataReplacementsPagination(page=0).pack())],
         [InlineKeyboardButton(text=f"📦 Восстанавливать: {all}", callback_data="switch_auto_restore_items_all")],
         [

@@ -36,7 +36,8 @@ CONFIG = SettingsFile(
                 "all": True,
                 "free": True,
                 "premium": True,
-                "publish_status": "last"
+                "publish_status": "last",
+                "recreate": False
             },
             "auto_complete_deals": {
                 "enabled": False,

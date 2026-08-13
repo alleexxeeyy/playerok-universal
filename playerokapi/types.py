@@ -502,17 +502,104 @@ class UserProfile:
         return parser.review_list(r["data"]["testimonials"])
 
 
+class ItemDealConfirmationRestrictionTexts:
+    """
+    Тексты ограничения подтверждения сделки.
+
+    :param seller_deal_subtitle: Подзаголовок сделки для продавца.
+    :type seller_deal_subtitle: `str` or `None`
+
+    :param buyer_deal_subtitle: Подзаголовок сделки для покупателя.
+    :type buyer_deal_subtitle: `str` or `None`
+
+    :param buyer_timer_text: Текст таймера для покупателя.
+    :type buyer_timer_text: `str` or `None`
+    """
+
+    def __init__(self, seller_deal_subtitle: str | None, buyer_deal_subtitle: str | None,
+                 buyer_timer_text: str | None):
+        self.seller_deal_subtitle: str | None = seller_deal_subtitle
+        """ Подзаголовок сделки для продавца. """
+        self.buyer_deal_subtitle: str | None = buyer_deal_subtitle
+        """ Подзаголовок сделки для покупателя. """
+        self.buyer_timer_text: str | None = buyer_timer_text
+        """ Текст таймера для покупателя. """
+
+
 class ItemDealProps:
     """
     Параметры сделки.
 
     :param auto_confirm_period: Срок авто-подтверждения сделки (в днях).
     :type auto_confirm_period: `int`
+
+    :param confirmation_restriction: Ограничено ли подтверждение сделки.
+    :type confirmation_restriction: `bool` or `None`
+
+    :param confirmation_restriction_texts: Тексты ограничения подтверждения сделки.
+    :type confirmation_restriction_texts: `playerokapi.types.ItemDealConfirmationRestrictionTexts` or `None`
     """
 
-    def __init__(self, auto_confirm_period: int):
+    def __init__(self, auto_confirm_period: int, confirmation_restriction: bool | None = None,
+                 confirmation_restriction_texts: ItemDealConfirmationRestrictionTexts | None = None):
         self.auto_confirm_period: int = auto_confirm_period
         """ Срок авто-подтверждения сделки (в днях). """
+        self.confirmation_restriction: bool | None = confirmation_restriction
+        """ Ограничено ли подтверждение сделки. """
+        self.confirmation_restriction_texts: ItemDealConfirmationRestrictionTexts | None = confirmation_restriction_texts
+        """ Тексты ограничения подтверждения сделки. """
+
+
+class ItemDealWarning:
+    """
+    Предупреждение сделки.
+
+    :param id: ID предупреждения.
+    :type id: `str`
+
+    :param status: Статус сделки, на котором показывается предупреждение.
+    :type status: `playerokapi.enums.ItemDealStatuses` or `None`
+
+    :param title: Заголовок предупреждения.
+    :type title: `str` or `None`
+
+    :param text: Текст предупреждения.
+    :type text: `str` or `None`
+    """
+
+    def __init__(self, id: str, status: ItemDealStatuses | None, title: str | None,
+                 text: str | None):
+        self.id: str = id
+        """ ID предупреждения. """
+        self.status: ItemDealStatuses | None = status
+        """ Статус сделки, на котором показывается предупреждение. """
+        self.title: str | None = title
+        """ Заголовок предупреждения. """
+        self.text: str | None = text
+        """ Текст предупреждения. """
+
+
+class ItemDealAutomationObtainingField:
+    """
+    Поле автоматической выдачи сделки.
+
+    :param code: Код поля.
+    :type code: `str` or `None`
+
+    :param value: Значение поля.
+    :type value: `str` or `None`
+
+    :param name: Название поля.
+    :type name: `str` or `None`
+    """
+
+    def __init__(self, code: str | None, value: str | None, name: str | None):
+        self.code: str | None = code
+        """ Код поля. """
+        self.value: str | None = value
+        """ Значение поля. """
+        self.name: str | None = name
+        """ Название поля. """
 
 
 class ItemDeal:
@@ -547,7 +634,7 @@ class ItemDeal:
     :type completed_user: `playerokapi.types.UserProfile` or `None`
 
     :param props: Прочие настройки сделки.
-    :type props: `str` or `None`
+    :type props: `playerokapi.types.ItemDealProps` or `None`
 
     :param previous_status: Предыдущий статус.
     :type previous_status: `playerokapi.enums.ItemDealStatuses` or `None`
@@ -571,7 +658,7 @@ class ItemDeal:
     :type chat: `playerokapi.types.Chat` or `None`
 
     :param item: Предмет сделки.
-    :type item: `playerokapi.types.Item`
+    :type item: `playerokapi.types.MyItem` or `playerokapi.types.Item` or `playerokapi.types.ItemProfile` or `None`
 
     :param review: Отзыв по сделке.
     :type review: `playerokapi.types.Review` or `None`
@@ -581,14 +668,30 @@ class ItemDeal:
 
     :param comment_from_buyer: Комментарий от покупателя.
     :type comment_from_buyer: `str` or `None`
+
+    :param automation_obtaining_fields: Поля автоматической выдачи.
+    :type automation_obtaining_fields: `list[playerokapi.types.ItemDealAutomationObtainingField]` or `None`
+
+    :param game_category_warnings: Предупреждения категории игры.
+    :type game_category_warnings: `list[playerokapi.types.ItemDealWarning]` or `None`
+
+    :param obtaining_type_warnings: Предупреждения способа получения.
+    :type obtaining_type_warnings: `list[playerokapi.types.ItemDealWarning]` or `None`
+
+    :param is_automated: Является ли сделка автоматической.
+    :type is_automated: `bool` or `None`
     """
 
-    def __init__(self, id: str, status: ItemDealStatuses, status_expiration_date: str | None, status_description: str | None, 
-                 direction: ItemDealDirections, obtaining: str | None, has_problem: bool, report_problem_enabled: bool | None, 
-                 completed_user: UserProfile | None, props: str | None, previous_status: ItemDealStatuses | None, 
+    def __init__(self, id: str, status: ItemDealStatuses, status_expiration_date: str | None, status_description: str | None,
+                 direction: ItemDealDirections, obtaining: str | None, has_problem: bool, report_problem_enabled: bool | None,
+                 completed_user: UserProfile | None, props: ItemDealProps | None, previous_status: ItemDealStatuses | None,
                  completed_at: str, created_at: str, logs: list[ItemLog] | None, transaction: Transaction | None,
-                 user: UserProfile, chat: Chat | None, item: Item, review: Review | None, obtaining_fields: list[GameCategoryDataField] | None,
-                 comment_from_buyer: str | None):
+                 user: UserProfile, chat: Chat | None, item: MyItem | Item | ItemProfile | None, review: Review | None,
+                 obtaining_fields: list[GameCategoryDataField] | None, comment_from_buyer: str | None,
+                 automation_obtaining_fields: list[ItemDealAutomationObtainingField] | None = None,
+                 game_category_warnings: list[ItemDealWarning] | None = None,
+                 obtaining_type_warnings: list[ItemDealWarning] | None = None,
+                 is_automated: bool | None = None):
         self.id: str = id
         """ ID сделки. """
         self.status: ItemDealStatuses = status
@@ -607,7 +710,7 @@ class ItemDeal:
         """ Включено ли обжалование проблемы. """
         self.completed_user: UserProfile | None = completed_user
         """ Профиль пользователя, подтвердившего сделку. """
-        self.props: str | None = props
+        self.props: ItemDealProps | None = props
         """ Прочие настройки сделки. """
         self.previous_status: ItemDealStatuses | None = previous_status
         """ Предыдущий статус. """
@@ -623,7 +726,7 @@ class ItemDeal:
         """ Профиль пользователя, совершившего сделку. """
         self.chat: Chat | None = chat
         """ Чат сделки (передаётся только его ID). """
-        self.item: Item = item
+        self.item: MyItem | Item | ItemProfile | None = item
         """ Предмет сделки. """
         self.review: Review | None = review
         """ Отзыв по сделке. """
@@ -631,6 +734,14 @@ class ItemDeal:
         """ Получаемые поля. """
         self.comment_from_buyer: str | None = comment_from_buyer
         """ Комментарий от покупателя. """
+        self.automation_obtaining_fields: list[ItemDealAutomationObtainingField] | None = automation_obtaining_fields
+        """ Поля автоматической выдачи. """
+        self.game_category_warnings: list[ItemDealWarning] | None = game_category_warnings
+        """ Предупреждения категории игры. """
+        self.obtaining_type_warnings: list[ItemDealWarning] | None = obtaining_type_warnings
+        """ Предупреждения способа получения. """
+        self.is_automated: bool | None = is_automated
+        """ Является ли сделка автоматической. """
 
 
 class ItemDealPageInfo:
@@ -701,10 +812,17 @@ class GameCategoryAgreement:
 
     :param sequence: Последовательность соглашения.
     :type sequence: `str`
+
+    :param game_category_id: ID категории игры соглашения.
+    :type game_category_id: `str` or `None`
+
+    :param game_category_obtaining_type_id: ID способа получения соглашения.
+    :type game_category_obtaining_type_id: `str` or `None`
     """
 
-    def __init__(self, id: str, description: str, 
-                 icontype: GameCategoryAgreementIconTypes, sequence: int):
+    def __init__(self, id: str, description: str,
+                 icontype: GameCategoryAgreementIconTypes, sequence: int,
+                 game_category_id: str | None = None, game_category_obtaining_type_id: str | None = None):
         self.id: str = id
         """ ID соглашения. """
         self.description: str = description
@@ -713,6 +831,10 @@ class GameCategoryAgreement:
         """ Тип иконки соглашения. """
         self.sequence: str = sequence
         """ Последовательность соглашения. """
+        self.game_category_id: str | None = game_category_id
+        """ ID категории игры соглашения. """
+        self.game_category_obtaining_type_id: str | None = game_category_obtaining_type_id
+        """ ID способа получения соглашения. """
 
 
 class GameCategoryAgreementPageInfo:
@@ -804,11 +926,14 @@ class GameCategoryObtainingType:
 
     :param props: Пропорции категории.
     :type props: `playerokapi.types.GameCategoryProps`
+
+    :param stock_type: Тип склада способа получения.
+    :type stock_type: `str` or `None`
     """
 
     def __init__(self, id: str, name: str, description: str, game_category_id: str, no_comment_from_buyer: bool,
                  instruction_for_buyer: str | None, instruction_for_seller: str | None, sequence: int, fee_multiplier: float,
-                 agreements: list[GameCategoryAgreement], props: GameCategoryProps):
+                 agreements: list[GameCategoryAgreement], props: GameCategoryProps, stock_type: str | None = None):
         self.id: str = id
         """ ID способа. """
         self.name: str = name
@@ -831,6 +956,8 @@ class GameCategoryObtainingType:
         """ Соглашения покупателя на покупку/продавца на продажу. """
         self.props: GameCategoryProps = props
         """ Пропорции категории. """
+        self.stock_type: str | None = stock_type
+        """ Тип склада способа получения. """
 
 
 class GameCategoryObtainingTypePageInfo:
@@ -1007,6 +1134,24 @@ class GameCategoryProps:
         """ Минимальное количество отзывов для продавца. """
 
 
+class GameCategoryOptionValueRangeLimit:
+    """
+    Подкласс, описывающий лимит разброса по значению опции категории.
+
+    :param min: Минимальное значение.
+    :type min: `int` or `None`
+
+    :param max: Максимальное значение.
+    :type max: `int` or `None`
+    """
+
+    def __init__(self, min: int | None, max: int | None):
+        self.min: int | None = min
+        """ Минимальное значение. """
+        self.max: int | None = max
+        """ Максимальное значение. """
+
+
 class GameCategoryOption:
     """
     Подкласс, описывающий опцию категории.
@@ -1030,11 +1175,15 @@ class GameCategoryOption:
     :type value: `str`
 
     :param value_range_limit: Лимит разброса по значению.
-    :type value_range_limit: `int` or `None`
+    :type value_range_limit: `playerokapi.types.GameCategoryOptionValueRangeLimit` or `None`
+
+    :param multiple: Можно ли выбрать несколько значений опции.
+    :type multiple: `bool` or `None`
     """
 
     def __init__(self, id: str, group: str, label: str, type: GameCategoryOptionTypes,
-                 field: str, value: str, value_range_limit: int | None):
+                 field: str, value: str, value_range_limit: GameCategoryOptionValueRangeLimit | None,
+                 multiple: bool | None = None):
         self.id: str = id
         """ ID опции. """
         self.group: str = group
@@ -1047,8 +1196,10 @@ class GameCategoryOption:
         """ Название поля (для payload запроса на сайт). """
         self.value: str = value
         """ Значение поля (для payload запроса на сайт). """
-        self.value_range_limit: int | None = value_range_limit
+        self.value_range_limit: GameCategoryOptionValueRangeLimit | None = value_range_limit
         """ Лимит разброса по значению. """
+        self.multiple: bool | None = multiple
+        """ Можно ли выбрать несколько значений опции. """
 
 
 class GameCategoryInstruction:
@@ -1437,6 +1588,24 @@ class ItemLog:
         """ Профиль пользователя, совершившего лог. """
 
 
+class ItemCharacteristic:
+    """
+    Подкласс, описывающий характеристику предмета.
+
+    :param label: Название характеристики.
+    :type label: `str` or `None`
+
+    :param value: Значение характеристики.
+    :type value: `str` or `None`
+    """
+
+    def __init__(self, label: str | None, value: str | None):
+        self.label: str | None = label
+        """ Название характеристики. """
+        self.value: str | None = value
+        """ Значение характеристики. """
+
+
 class Item:
     """
     Объект предмета.
@@ -1497,12 +1666,30 @@ class Item:
 
     :param user: Профиль продавца.
     :type user: `playerokapi.types.UserProfile`
+
+    :param characteristics: Характеристики предмета.
+    :type characteristics: `list[playerokapi.types.ItemCharacteristic]` or `None`
+
+    :param is_attachments_forbidden: Запрещены ли файлы-приложения.
+    :type is_attachments_forbidden: `bool` or `None`
+
+    :param is_automated: Является ли предмет автоматическим.
+    :type is_automated: `bool` or `None`
+
+    :param buyer: Профиль покупателя предмета (если продан).
+    :type buyer: `playerokapi.types.UserProfile` or `None`
+
+    :param post_moderation_checked_at: Дата проверки постмодерацией.
+    :type post_moderation_checked_at: `str` or `None`
     """
 
     def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int,
-                 priority: PriorityTypes, priority_position: int, attachments: list[FileObject], attributes: dict, category: GameCategory, 
-                 comment: str | None, data_fields: list[GameCategoryDataField] | None,  fee_multiplier: float, game: GameProfile, 
-                 seller_type: UserTypes, status: ItemStatuses, user: UserProfile):
+                 priority: PriorityTypes, priority_position: int, attachments: list[FileObject], attributes: dict, category: GameCategory,
+                 comment: str | None, data_fields: list[GameCategoryDataField] | None,  fee_multiplier: float, game: GameProfile,
+                 seller_type: UserTypes, status: ItemStatuses, user: UserProfile,
+                 characteristics: list[ItemCharacteristic] | None = None, is_attachments_forbidden: bool | None = None,
+                 is_automated: bool | None = None, buyer: UserProfile | None = None,
+                 post_moderation_checked_at: str | None = None):
         self.id: str = id
         """ ID предмета. """
         self.slug: str = slug
@@ -1543,6 +1730,16 @@ class Item:
         """ Статус предмета. """
         self.user: UserProfile = user
         """ Профиль продавца. """
+        self.characteristics: list[ItemCharacteristic] | None = characteristics
+        """ Характеристики предмета. """
+        self.is_attachments_forbidden: bool | None = is_attachments_forbidden
+        """ Запрещены ли файлы-приложения. """
+        self.is_automated: bool | None = is_automated
+        """ Является ли предмет автоматическим. """
+        self.buyer: UserProfile | None = buyer
+        """ Профиль покупателя предмета (если продан). """
+        self.post_moderation_checked_at: str | None = post_moderation_checked_at
+        """ Дата проверки постмодерацией. """
 
 
 class MyItem:
@@ -1650,15 +1847,46 @@ class MyItem:
 
     :param created_at: Дата создания товара.
     :type created_at: `str` or `None`
+
+    :param characteristics: Характеристики предмета.
+    :type characteristics: `list[playerokapi.types.ItemCharacteristic]` or `None`
+
+    :param is_attachments_forbidden: Запрещены ли файлы-приложения.
+    :type is_attachments_forbidden: `bool` or `None`
+
+    :param is_automated: Является ли предмет автоматическим.
+    :type is_automated: `bool` or `None`
+
+    :param deals_counter: Количество сделок по предмету.
+    :type deals_counter: `int` or `None`
+
+    :param keep_in_sale: Оставить ли предмет в продаже после покупки.
+    :type keep_in_sale: `bool` or `None`
+
+    :param keep_in_sale_available: Доступно ли оставление предмета в продаже после покупки.
+    :type keep_in_sale_available: `bool` or `None`
+
+    :param may_be_published: Может ли предмет быть опубликован.
+    :type may_be_published: `bool` or `None`
+
+    :param post_moderation_checked_at: Дата проверки постмодерацией.
+    :type post_moderation_checked_at: `str` or `None`
+
+    :param moderator: Модератор, проверивший предмет.
+    :type moderator: `playerokapi.types.Moderator` or `None`
     """
 
     def __init__(self, id: str, slug: str, name: str, description: str, obtaining_type: GameCategoryObtainingType | None, price: int, raw_price: int, priority_position: int,
                  attachments: list[FileObject], attributes: dict, buyer: UserProfile, category: GameCategory, comment: str | None,
                  data_fields: list[GameCategoryDataField] | None, fee_multiplier: float, game: GameProfile, seller_type: UserTypes, status: ItemStatuses,
-                 user: UserProfile, prev_price: int, prev_fee_multiplier: float, seller_notified_about_fee_change: bool, 
+                 user: UserProfile, prev_price: int, prev_fee_multiplier: float, seller_notified_about_fee_change: bool,
                  priority: PriorityTypes, priority_price: int, sequence: int | None, status_expiration_date: str | None, status_description: str | None,
-                 status_payment: Transaction | None, views_counter: int, is_editable: bool, approval_date: str | None, deleted_at: str | None, 
-                 updated_at: str | None, created_at: str | None):
+                 status_payment: Transaction | None, views_counter: int, is_editable: bool, approval_date: str | None, deleted_at: str | None,
+                 updated_at: str | None, created_at: str | None, characteristics: list[ItemCharacteristic] | None = None,
+                 is_attachments_forbidden: bool | None = None, is_automated: bool | None = None,
+                 deals_counter: int | None = None, keep_in_sale: bool | None = None,
+                 keep_in_sale_available: bool | None = None, may_be_published: bool | None = None,
+                 post_moderation_checked_at: str | None = None, moderator: Moderator | None = None):
         self.id: str = id
         """ ID предмета. """
         self.slug: str = slug
@@ -1727,6 +1955,24 @@ class MyItem:
         """ Дата последнего обновления товара. """
         self.created_at: str | None = created_at
         """ Дата создания товара. """
+        self.characteristics: list[ItemCharacteristic] | None = characteristics
+        """ Характеристики предмета. """
+        self.is_attachments_forbidden: bool | None = is_attachments_forbidden
+        """ Запрещены ли файлы-приложения. """
+        self.is_automated: bool | None = is_automated
+        """ Является ли предмет автоматическим. """
+        self.deals_counter: int | None = deals_counter
+        """ Количество сделок по предмету. """
+        self.keep_in_sale: bool | None = keep_in_sale
+        """ Оставить ли предмет в продаже после покупки. """
+        self.keep_in_sale_available: bool | None = keep_in_sale_available
+        """ Доступно ли оставление предмета в продаже после покупки. """
+        self.may_be_published: bool | None = may_be_published
+        """ Может ли предмет быть опубликован. """
+        self.post_moderation_checked_at: str | None = post_moderation_checked_at
+        """ Дата проверки постмодерацией. """
+        self.moderator: Moderator | None = moderator
+        """ Модератор, проверивший предмет. """
 
 
 class ItemProfile:
@@ -1777,12 +2023,22 @@ class ItemProfile:
 
     :param created_at: Дата создания.
     :type created_at: `str`
+
+    :param deals_counter: Количество сделок по предмету.
+    :type deals_counter: `int` or `None`
+
+    :param is_attachments_forbidden: Запрещены ли файлы-приложения.
+    :type is_attachments_forbidden: `bool` or `None`
+
+    :param is_automated: Является ли предмет автоматическим.
+    :type is_automated: `bool` or `None`
     """
 
     def __init__(self, id: str, slug: str, priority: PriorityTypes, status: ItemStatuses,
                  name: str, price: int, raw_price: int, seller_type: UserTypes, attachment: FileObject,
-                 user: UserProfile, approval_date: str, priority_position: int, views_counter: int | None, 
-                 fee_multiplier: float, created_at: str):
+                 user: UserProfile, approval_date: str, priority_position: int, views_counter: int | None,
+                 fee_multiplier: float, created_at: str, deals_counter: int | None = None,
+                 is_attachments_forbidden: bool | None = None, is_automated: bool | None = None):
         self.id: str = id
         """ ID предмета. """
         self.slug: str = slug
@@ -1813,6 +2069,12 @@ class ItemProfile:
         """ Множитель комиссии. """
         self.created_at: str = created_at
         """ Дата создания. """
+        self.deals_counter: int | None = deals_counter
+        """ Количество сделок по предмету. """
+        self.is_attachments_forbidden: bool | None = is_attachments_forbidden
+        """ Запрещены ли файлы-приложения. """
+        self.is_automated: bool | None = is_automated
+        """ Является ли предмет автоматическим. """
 
 
 class ItemProfilePageInfo:
@@ -2069,6 +2331,138 @@ class TransactionProvider:
         """ Платёжные методы. """
 
 
+class TransactionPropsUserData:
+    """
+    Подкласс, описывающий данные пользователя в параметрах транзакции.
+
+    :param account: Счёт пользователя.
+    :type account: `str` or `None`
+
+    :param email: Почта пользователя.
+    :type email: `str` or `None`
+
+    :param ip_address: IP адрес пользователя.
+    :type ip_address: `str` or `None`
+
+    :param phone_number: Номер телефона пользователя.
+    :type phone_number: `str` or `None`
+    """
+
+    def __init__(self, account: str | None, email: str | None, ip_address: str | None,
+                 phone_number: str | None):
+        self.account: str | None = account
+        """ Счёт пользователя. """
+        self.email: str | None = email
+        """ Почта пользователя. """
+        self.ip_address: str | None = ip_address
+        """ IP адрес пользователя. """
+        self.phone_number: str | None = phone_number
+        """ Номер телефона пользователя. """
+
+
+class TransactionPropsPaymentAccount:
+    """
+    Подкласс, описывающий платёжный счёт в параметрах транзакции.
+
+    :param id: ID счёта.
+    :type id: `str` or `None`
+
+    :param value: Значение счёта.
+    :type value: `str` or `None`
+    """
+
+    def __init__(self, id: str | None, value: str | None):
+        self.id: str | None = id
+        """ ID счёта. """
+        self.value: str | None = value
+        """ Значение счёта. """
+
+
+class TransactionProps:
+    """
+    Подкласс, описывающий параметры транзакции.
+
+    :param creator_id: ID создателя транзакции.
+    :type creator_id: `str` or `None`
+
+    :param deal_id: ID сделки транзакции.
+    :type deal_id: `str` or `None`
+
+    :param paid_from_pending_income: Оплачено ли из замороженных средств.
+    :type paid_from_pending_income: `bool` or `None`
+
+    :param payment_url: Ссылка на оплату.
+    :type payment_url: `str` or `None`
+
+    :param success_url: Ссылка на страницу успешной оплаты.
+    :type success_url: `str` or `None`
+
+    :param fee: Комиссия транзакции.
+    :type fee: `int` or `None`
+
+    :param payment_account: Платёжный счёт.
+    :type payment_account: `playerokapi.types.TransactionPropsPaymentAccount` or `None`
+
+    :param payment_gateway: Платёжный шлюз.
+    :type payment_gateway: `str` or `None`
+
+    :param already_spent: Уже потраченная сумма.
+    :type already_spent: `int` or `None`
+
+    :param exchange_rate: Курс обмена.
+    :type exchange_rate: `float` or `None`
+
+    :param amount_after_conversion_rub: Сумма после конвертации в рублях.
+    :type amount_after_conversion_rub: `float` or `None`
+
+    :param amount_after_conversion_usdt: Сумма после конвертации в USDT.
+    :type amount_after_conversion_usdt: `float` or `None`
+
+    :param fragment_username: Имя пользователя Fragment.
+    :type fragment_username: `str` or `None`
+
+    :param user_data: Данные пользователя.
+    :type user_data: `playerokapi.types.TransactionPropsUserData` or `None`
+    """
+
+    def __init__(self, creator_id: str | None = None, deal_id: str | None = None,
+                 paid_from_pending_income: bool | None = None, payment_url: str | None = None,
+                 success_url: str | None = None, fee: int | None = None,
+                 payment_account: TransactionPropsPaymentAccount | None = None,
+                 payment_gateway: str | None = None, already_spent: int | None = None,
+                 exchange_rate: float | None = None, amount_after_conversion_rub: float | None = None,
+                 amount_after_conversion_usdt: float | None = None, fragment_username: str | None = None,
+                 user_data: TransactionPropsUserData | None = None):
+        self.creator_id: str | None = creator_id
+        """ ID создателя транзакции. """
+        self.deal_id: str | None = deal_id
+        """ ID сделки транзакции. """
+        self.paid_from_pending_income: bool | None = paid_from_pending_income
+        """ Оплачено ли из замороженных средств. """
+        self.payment_url: str | None = payment_url
+        """ Ссылка на оплату. """
+        self.success_url: str | None = success_url
+        """ Ссылка на страницу успешной оплаты. """
+        self.fee: int | None = fee
+        """ Комиссия транзакции. """
+        self.payment_account: TransactionPropsPaymentAccount | None = payment_account
+        """ Платёжный счёт. """
+        self.payment_gateway: str | None = payment_gateway
+        """ Платёжный шлюз. """
+        self.already_spent: int | None = already_spent
+        """ Уже потраченная сумма. """
+        self.exchange_rate: float | None = exchange_rate
+        """ Курс обмена. """
+        self.amount_after_conversion_rub: float | None = amount_after_conversion_rub
+        """ Сумма после конвертации в рублях. """
+        self.amount_after_conversion_usdt: float | None = amount_after_conversion_usdt
+        """ Сумма после конвертации в USDT. """
+        self.fragment_username: str | None = fragment_username
+        """ Имя пользователя Fragment. """
+        self.user_data: TransactionPropsUserData | None = user_data
+        """ Данные пользователя. """
+
+
 class Transaction:
     """
     Объект транзакции.
@@ -2132,12 +2526,16 @@ class Transaction:
 
     :param sbp_bank_name: Название банка СБП (если транзакция была совершена с помощью СБП).
     :type sbp_bank_name: `str` or `None`
+
+    :param props: Параметры транзакции.
+    :type props: `playerokapi.types.TransactionProps` or `None`
     """
 
-    def __init__(self, id: str, operation: TransactionOperations, direction: TransactionDirections, provider_id: TransactionProviderIds, 
-                 provider: TransactionProvider, user: UserProfile, creator: UserProfile, status: TransactionStatuses, status_description: str | None, 
-                 status_expiration_date: str | None, value: int, fee: int, created_at: str, verified_at: str | None, verified_by: UserProfile | None, 
-                 completed_at: str | None, completed_by: UserProfile | None, payment_method_id: str | None, is_suspicious: bool | None, sbp_bank_name: str | None):
+    def __init__(self, id: str, operation: TransactionOperations, direction: TransactionDirections, provider_id: TransactionProviderIds,
+                 provider: TransactionProvider, user: UserProfile, creator: UserProfile, status: TransactionStatuses, status_description: str | None,
+                 status_expiration_date: str | None, value: int, fee: int, created_at: str, verified_at: str | None, verified_by: UserProfile | None,
+                 completed_at: str | None, completed_by: UserProfile | None, payment_method_id: str | None, is_suspicious: bool | None, sbp_bank_name: str | None,
+                 props: TransactionProps | None = None):
         self.id: str = id
         """ ID транзакции. """
         self.operation: TransactionOperations = operation
@@ -2178,6 +2576,8 @@ class Transaction:
         """ Подозрительная ли транзакция. """
         self.sbp_bank_name: str | None = sbp_bank_name
         """ Название банка СБП (если транзакция была совершена с помощью СБП). """
+        self.props: TransactionProps | None = props
+        """ Параметры транзакции. """
 
 
 class TransactionPageInfo:
@@ -2321,10 +2721,21 @@ class UserBankCardList:
 
 
 class Moderator:
-    # TODO: Сделать класс модератора Moderator
+    """
+    Объект модератора.
 
-    def __init__(self):
-        pass
+    :param id: ID модератора.
+    :type id: `str`
+
+    :param username: Имя пользователя модератора.
+    :type username: `str` or `None`
+    """
+
+    def __init__(self, id: str, username: str | None = None):
+        self.id: str = id
+        """ ID модератора. """
+        self.username: str | None = username
+        """ Имя пользователя модератора. """
 
 
 class TemporaryAttachmentUploadOutput:

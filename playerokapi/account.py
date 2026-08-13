@@ -413,10 +413,11 @@ class Account:
 
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
         data: dict = r["data"]["user"]
+        type_name = data.get("__typename")
         
-        if data.get("__typename") == "UserFragment": 
+        if type_name == "UserFragment": 
             profile = data
-        elif data.get("__typename") == "User": 
+        elif type_name == "User": 
             profile = data.get("profile")
         else: 
             profile = None
@@ -1590,12 +1591,7 @@ class Account:
         }
         
         r = self.request("get", f"{self.base_url}/graphql", headers, payload).json()
-        data: dict = r["data"]["item"]
-        if data["__typename"] == "MyItem": _item = my_item(data)
-        elif data["__typename"] == "ItemProfile": _item = item_profile(data)
-        elif data["__typename"] in ["Item", "ForeignItem"]: _item = item(data)
-        else: _item = None
-        return _item
+        return item_by_typename(r["data"]["item"])
 
     def get_item_priority_statuses(
         self, 

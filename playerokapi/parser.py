@@ -112,6 +112,53 @@ def transaction_provider(data: dict) -> "TransactionProvider":
     )
 
 
+def transaction_props_user_data(data: dict) -> "TransactionPropsUserData":
+    from .types import TransactionPropsUserData
+    if not data:
+        return None
+
+    return TransactionPropsUserData(
+        account=data.get("account"),
+        email=data.get("email"),
+        ip_address=data.get("ipAddress"),
+        phone_number=data.get("phoneNumber"),
+    )
+
+
+def transaction_props_payment_account(data: dict) -> "TransactionPropsPaymentAccount":
+    from .types import TransactionPropsPaymentAccount
+    if not data:
+        return None
+
+    return TransactionPropsPaymentAccount(
+        id=data.get("id"),
+        value=data.get("value"),
+    )
+
+
+def transaction_props(data: dict) -> "TransactionProps":
+    from .types import TransactionProps
+    if not data:
+        return None
+
+    return TransactionProps(
+        creator_id=data.get("creatorId"),
+        deal_id=data.get("dealId"),
+        paid_from_pending_income=data.get("paidFromPendingIncome"),
+        payment_url=data.get("paymentURL"),
+        success_url=data.get("successURL"),
+        fee=data.get("fee"),
+        payment_account=transaction_props_payment_account(data.get("paymentAccount")),
+        payment_gateway=data.get("paymentGateway"),
+        already_spent=data.get("alreadySpent"),
+        exchange_rate=data.get("exchangeRate"),
+        amount_after_conversion_rub=data.get("amountAfterConversionRub"),
+        amount_after_conversion_usdt=data.get("amountAfterConversionUsdt"),
+        fragment_username=data.get("fragmentUsername"),
+        user_data=transaction_props_user_data(data.get("userData")),
+    )
+
+
 def transaction(data: dict) -> "Transaction":
     from .types import Transaction
     if not data:
@@ -131,13 +178,14 @@ def transaction(data: dict) -> "Transaction":
         value=data.get("value"),
         fee=data.get("fee"),
         created_at=data.get("createdAt"),
-        verified_at=data.get("verified_at"),
-        verified_by=data.get("verified_by"),
-        completed_at=data.get("completed_at"),
-        completed_by=data.get("completed_by"),
-        payment_method_id=data.get("paymentMethodId"), 
-        is_suspicious=data.get("is_suspicious"), 
-        sbp_bank_name=data.get("spb_bank_name")
+        verified_at=data.get("verifiedAt"),
+        verified_by=user_profile(data.get("verifiedBy")),
+        completed_at=data.get("completedAt"),
+        completed_by=user_profile(data.get("completedBy")),
+        payment_method_id=data.get("paymentMethodId"),
+        is_suspicious=data.get("isSuspicious"),
+        sbp_bank_name=data.get("spbBankName"),
+        props=transaction_props(data.get("props")),
     )
 
 
@@ -258,6 +306,17 @@ def game_category_props(data: dict) -> "GameCategoryProps":
     )
 
 
+def game_category_option_value_range_limit(data: dict) -> "GameCategoryOptionValueRangeLimit":
+    from .types import GameCategoryOptionValueRangeLimit
+    if not data:
+        return None
+
+    return GameCategoryOptionValueRangeLimit(
+        min=data.get("min"),
+        max=data.get("max"),
+    )
+
+
 def game_category_option(data: dict) -> "GameCategoryOption":
     from .types import GameCategoryOption
     if not data:
@@ -270,7 +329,8 @@ def game_category_option(data: dict) -> "GameCategoryOption":
         type=GameCategoryOptionTypes.__members__.get(data.get("type")),
         field=data.get("field"),
         value=data.get("value"),
-        value_range_limit=data.get("valueRangeLimit"),
+        value_range_limit=game_category_option_value_range_limit(data.get("valueRangeLimit")),
+        multiple=data.get("multiple"),
     )
 
 
@@ -284,6 +344,8 @@ def game_category_agreement(data: dict) -> "GameCategoryAgreement":
         description=data.get("description"),
         icontype=GameCategoryAgreementIconTypes.__members__.get(data.get("iconType")),
         sequence=data.get("sequence"),
+        game_category_id=data.get("gameCategoryId"),
+        game_category_obtaining_type_id=data.get("gameCategoryObtainingTypeId"),
     )
 
 
@@ -329,6 +391,7 @@ def game_category_obtaining_type(data: dict) -> "GameCategoryObtainingType":
         fee_multiplier=data.get("feeMultiplier"),
         agreements=[game_category_agreement(agr) for agr in (data.get("agreements") or [])],
         props=game_category_props(data.get("props")),
+        stock_type=data.get("stockType"),
     )
 
 
@@ -632,11 +695,22 @@ def item_log(data: dict) -> "ItemLog":
     )
 
 
+def item_characteristic(data: dict) -> "ItemCharacteristic":
+    from .types import ItemCharacteristic
+    if not data:
+        return None
+
+    return ItemCharacteristic(
+        label=data.get("label"),
+        value=data.get("value"),
+    )
+
+
 def item(data: dict) -> "Item":
     from .types import Item
     if not data:
         return None
-    
+
     return Item(
         id=data.get("id"),
         slug=data.get("slug"),
@@ -654,9 +728,14 @@ def item(data: dict) -> "Item":
         data_fields=[game_category_data_field(field) for field in (data.get("dataFields") or [])],
         fee_multiplier=data.get("feeMultiplier"),
         game=game_profile(data.get("game")),
-        seller_type=data.get("sellerType"),
+        seller_type=UserTypes.__members__.get(data.get("sellerType")),
         status=ItemStatuses.__members__.get(data.get("status")),
         user=user_profile(data.get("user")),
+        characteristics=[item_characteristic(char) for char in (data.get("characteristics") or [])],
+        is_attachments_forbidden=data.get("isAttachmentsForbidden"),
+        is_automated=data.get("isAutomated"),
+        buyer=user_profile(data.get("buyer")),
+        post_moderation_checked_at=data.get("postModerationCheckedAt"),
     )
 
 
@@ -685,7 +764,7 @@ def my_item(data: dict) -> "MyItem":
         prev_fee_multiplier=data.get("prevFeeMultiplier"),
         seller_notified_about_fee_change=data.get("sellerNotifiedAboutFeeChange"),
         game=game_profile(data.get("game")),
-        seller_type=data.get("sellerType"),
+        seller_type=UserTypes.__members__.get(data.get("sellerType")),
         status=ItemStatuses.__members__.get(data.get("status")),
         user=user_profile(data.get("user")),
         priority=PriorityTypes.__members__.get(data.get("priority")),
@@ -695,11 +774,20 @@ def my_item(data: dict) -> "MyItem":
         status_description=data.get("statusDescription"),
         status_payment=transaction(data.get("statusPayment")),
         views_counter=data.get("viewsCounter"),
-        is_editable=data.get("isEditable"),
+        is_editable=data.get("editable"),
         approval_date=data.get("approvalDate"),
         deleted_at=data.get("deletedAt"),
         updated_at=data.get("updatedAt"),
         created_at=data.get("createdAt"),
+        characteristics=[item_characteristic(char) for char in (data.get("characteristics") or [])],
+        is_attachments_forbidden=data.get("isAttachmentsForbidden"),
+        is_automated=data.get("isAutomated"),
+        deals_counter=data.get("dealsCounter"),
+        keep_in_sale=data.get("keepInSale"),
+        keep_in_sale_available=data.get("keepInSaleAvailable"),
+        may_be_published=data.get("mayBePublished"),
+        post_moderation_checked_at=data.get("postModerationCheckedAt"),
+        moderator=moderator(data.get("moderator")),
     )
 
 
@@ -724,7 +812,25 @@ def item_profile(data: dict) -> "ItemProfile":
         views_counter=data.get("viewsCounter"),
         fee_multiplier=data.get("feeMultiplier"),
         created_at=data.get("createdAt"),
+        deals_counter=data.get("dealsCounter"),
+        is_attachments_forbidden=data.get("isAttachmentsForbidden"),
+        is_automated=data.get("isAutomated"),
     )
+
+
+def item_by_typename(data: dict) -> "MyItem | Item | ItemProfile":
+    if not data:
+        return None
+
+    type_name = data.get("__typename")
+    if type_name == "MyItem":
+        return my_item(data)
+    elif type_name in ["MyItemProfile", "ForeignItemProfile", "ItemProfile"]:
+        return item_profile(data)
+    elif type_name in ["Item", "ForeignItem"]:
+        return item(data)
+    else:
+        return None
 
 
 def item_profile_page_info(data: dict) -> "ItemProfilePageInfo":
@@ -752,8 +858,15 @@ def item_profile_list(data: dict) -> "ItemProfileList":
     )
 
 
-def moderator(data: dict) -> "Moderator": # TODO: Сделать парсинг класса Moderator
-    ...  
+def moderator(data: dict) -> "Moderator":
+    from .types import Moderator
+    if not data:
+        return None
+
+    return Moderator(
+        id=data.get("id"),
+        username=data.get("username"),
+    )
 
 
 def event(data: dict): # TODO: Сделать парсинг класса Event
@@ -850,13 +963,52 @@ def review_list(data: dict) -> "ReviewList":
     )
 
 
+def item_deal_confirmation_restriction_texts(data: dict) -> "ItemDealConfirmationRestrictionTexts":
+    from .types import ItemDealConfirmationRestrictionTexts
+    if not data:
+        return None
+
+    return ItemDealConfirmationRestrictionTexts(
+        seller_deal_subtitle=data.get("sellerDealSubtitle"),
+        buyer_deal_subtitle=data.get("buyerDealSubtitle"),
+        buyer_timer_text=data.get("buyerTimerText"),
+    )
+
+
 def item_deal_props(data: dict) -> "ItemDealProps":
     from .types import ItemDealProps
     if not data:
         return None
-    
+
     return ItemDealProps(
-        auto_confirm_period=data.get("autoConfirmPeriod")
+        auto_confirm_period=data.get("autoConfirmPeriod"),
+        confirmation_restriction=data.get("confirmationRestriction"),
+        confirmation_restriction_texts=item_deal_confirmation_restriction_texts(data.get("confirmationRestrictionTexts")),
+    )
+
+
+def item_deal_warning(data: dict) -> "ItemDealWarning":
+    from .types import ItemDealWarning
+    if not data:
+        return None
+
+    return ItemDealWarning(
+        id=data.get("id"),
+        status=ItemDealStatuses.__members__.get(data.get("status")),
+        title=data.get("title"),
+        text=data.get("text"),
+    )
+
+
+def item_deal_automation_obtaining_field(data: dict) -> "ItemDealAutomationObtainingField":
+    from .types import ItemDealAutomationObtainingField
+    if not data:
+        return None
+
+    return ItemDealAutomationObtainingField(
+        code=data.get("code"),
+        value=data.get("value"),
+        name=data.get("name"),
     )
 
 
@@ -876,17 +1028,21 @@ def item_deal(data: dict) -> "ItemDeal":
         report_problem_enabled=data.get("reportProblemEnabled"),
         completed_user=user_profile(data.get("completedBy")),
         props=item_deal_props(data.get("props")),
-        previous_status=data.get("prevStatus"),
+        previous_status=ItemDealStatuses.__members__.get(data.get("prevStatus")),
         completed_at=data.get("completedAt"),
         created_at=data.get("createdAt"),
         logs=[item_log(log) for log in (data.get("logs") or [])],
         transaction=transaction(data.get("transaction")),
         user=user_profile(data.get("user")),
         chat=chat(data.get("chat")),
-        item=item(data.get("item")),
+        item=item_by_typename(data.get("item")),
         review=review(data.get("testimonial")),
         obtaining_fields=[game_category_data_field(field) for field in (data.get("obtainingFields") or [])],
         comment_from_buyer=data.get("commentFromBuyer"),
+        automation_obtaining_fields=[item_deal_automation_obtaining_field(field) for field in (data.get("automationObtainingFields") or [])],
+        game_category_warnings=[item_deal_warning(warning) for warning in (data.get("gameCategoryWarnings") or [])],
+        obtaining_type_warnings=[item_deal_warning(warning) for warning in (data.get("obtainingTypeWarnings") or [])],
+        is_automated=data.get("isAutomated"),
     )
 
 

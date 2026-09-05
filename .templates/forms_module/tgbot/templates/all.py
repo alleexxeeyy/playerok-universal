@@ -18,7 +18,7 @@ def menu_text():
         Модуль, позволяющий заполнять анкеты
 
         <b>Ссылки:</b>
-        ┣ <b>@alleexxeeyy</b> — главный и единственный разработчик
+        ┣ <b>@friedfluoride</b> — главный и единственный разработчик
         ┗ <b>@friedshopbot</b> — бот для покупки официальных модулей
 
         Перемещайтесь по разделам ниже ↓
@@ -32,7 +32,7 @@ def menu_kb():
         ],
         [InlineKeyboardButton(text="📖 Инструкция", callback_data=calls.FORMS_InstructionNavigation(to="default").pack())], 
         [
-        InlineKeyboardButton(text="👨‍💻 Разработчик", url="https://t.me/alleexxeeyy"), 
+        InlineKeyboardButton(text="👨‍💻 Разработчик", url="https://t.me/friedfluoride"), 
         InlineKeyboardButton(text="🤖 Наш бот", url="https://t.me/friedshopbot")
         ]
     ]

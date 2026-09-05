@@ -214,8 +214,8 @@ export default {
   VERSION = "0.1"
   NAME = "test_module"
   DESCRIPTION = "Тестовый модуль. /test_module в Telegram боте для управления"
-  AUTHORS = "@alleexxeeyy"
-  LINKS = "https://t.me/alleexxeeyy, https://t.me/friedauto"
+  AUTHORS = "@friedfluoride"
+  LINKS = "https://t.me/friedfluoride, https://t.me/friedauto"
   ```
 
   **`__init__.py`**:

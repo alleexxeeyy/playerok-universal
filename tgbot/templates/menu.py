@@ -68,8 +68,8 @@ def menu_kb():
         [InlineKeyboardButton(text="🗂 Конфиги", callback_data=calls.MenuNavigation(to="configs").pack())],
         [InlineKeyboardButton(text="━━━  ССЫЛКИ  ━━━", callback_data="null_answer")],
         [
-        InlineKeyboardButton(text="📢 Новости", url="https://t.me/alexeyproduction"), 
-        InlineKeyboardButton(text="🧩 Плагины", url="https://t.me/alexey_production_bot"),
+        InlineKeyboardButton(text="📢 Новости", url="https://t.me/friedauto"), 
+        InlineKeyboardButton(text="🧩 Плагины", url="https://t.me/friedshopbot"),
         ],
         [
         InlineKeyboardButton(text="👨‍💻 Разработчик", url="https://t.me/alleexxeeyy"), 

@@ -19,7 +19,7 @@ def menu_text():
 
         <b>Ссылки:</b>
         ┣ <b>@alleexxeeyy</b> — главный и единственный разработчик
-        ┗ <b>@alexey_production_bot</b> — бот для покупки официальных модулей
+        ┗ <b>@friedshopbot</b> — бот для покупки официальных модулей
 
         Перемещайтесь по разделам ниже ↓
     """)
@@ -33,7 +33,7 @@ def menu_kb():
         [InlineKeyboardButton(text="📖 Инструкция", callback_data=calls.FORMS_InstructionNavigation(to="default").pack())], 
         [
         InlineKeyboardButton(text="👨‍💻 Разработчик", url="https://t.me/alleexxeeyy"), 
-        InlineKeyboardButton(text="🤖 Наш бот", url="https://t.me/alexey_production_bot")
+        InlineKeyboardButton(text="🤖 Наш бот", url="https://t.me/friedshopbot")
         ]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)

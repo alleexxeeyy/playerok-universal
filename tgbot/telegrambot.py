@@ -83,8 +83,8 @@ class TelegramBot:
             short_description = textwrap.dedent(f"""
                 Playerok Universal — бесплатный бот-помощник для playerok.com
                 
-                📢 @alexeyproduction
-                🤖 @alexey_production_bot
+                📢 @friedauto
+                🤖 @friedshopbot
                 🧑‍💻 @alleexxeeyy
             """)
             await self.bot.set_my_short_description(short_description=short_description)
@@ -112,8 +112,8 @@ class TelegramBot:
                                         
                 ⬇️ Скачать бота: https://github.com/alleexxeeyy/playerok-universal
                 
-                📢 Новости: @alexeyproduction
-                🤖 Плагины: @alexey_production_bot
+                📢 Новости: @friedauto
+                🤖 Плагины: @friedshopbot
                 🧑‍💻 Автор: @alleexxeeyy
             """)
             await self.bot.set_my_description(description=description)

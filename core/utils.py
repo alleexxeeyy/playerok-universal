@@ -2,6 +2,8 @@ import os
 import re
 import sys
 import ctypes
+import hashlib
+import tempfile
 import logging
 import pkg_resources
 import subprocess
@@ -34,6 +36,118 @@ def shutdown():
     main_loop.call_soon_threadsafe(main_loop.stop)
 
 
+LOCK_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # корень бота, а не текущая директория
+LOCK_PATH = os.path.join(LOCK_FOLDER, "bot_data", ".instance.lock")
+LOCK_PREFIX = "playerok-universal"
+LOCK_OFFSET = 1024  # лочим байт в стороне от PID, чтобы второй процесс мог его прочитать (на win лок блокирует чтение региона)
+PID_WIDTH = 32
+
+_instance_locks = []
+
+if sys.platform == "win32":
+    import msvcrt
+
+    def _lock_region(file):
+        file.seek(LOCK_OFFSET)
+        msvcrt.locking(file.fileno(), msvcrt.LK_NBLCK, 1)
+
+    def _unlock_region(file):
+        file.seek(LOCK_OFFSET)
+        msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)
+else:
+    import fcntl
+
+    def _lock_region(file):
+        fcntl.flock(file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    def _unlock_region(file):
+        fcntl.flock(file.fileno(), fcntl.LOCK_UN)
+
+
+def acquire_lock(path: str, attempts: int = 12, delay: float = 0.25) -> int | None:
+    """
+    Пытается занять лок-файл. Лок снимает операционная система при завершении процесса, 
+    так что зависших локов после падения бота не остаётся.
+    Если лок взять не получилось из-за ошибки (нет прав, недоступна папка), бот всё равно запускается — 
+    защита от двойного запуска не должна мешать работе, но в консоль уходит предупреждение.
+
+    :param path: Путь к лок-файлу.
+    :type path: str
+
+    :param attempts: Кол-во попыток занять лок (нужны при перезапуске, когда старый процесс ещё не умер).
+    :type attempts: int
+
+    :param delay: Пауза между попытками в секундах.
+    :type delay: float
+
+    :return: None, если лок занят нами, иначе PID процесса, который его держит (0 — если PID не удалось прочитать).
+    """
+
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        file = os.fdopen(os.open(path, os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0), 0o644), "rb+")
+    except Exception as e:
+        logger.warning(f"Не удалось открыть файл лока \"{path}\": {e}. Бот запустится без защиты от двойного запуска")
+        return None
+
+    for attempt in range(attempts):
+        try:
+            _lock_region(file)
+            break
+        except OSError:
+            if attempt < attempts - 1:
+                time.sleep(delay)
+        except Exception as e:
+            logger.warning(f"Не удалось занять лок \"{path}\": {e}. Бот запустится без защиты от двойного запуска")
+            file.close()
+            return None
+    else:
+        pid = 0
+        try:
+            file.seek(0)
+            pid = int(file.read(PID_WIDTH).decode("utf-8", "ignore").strip())
+        except:
+            pass
+        file.close()
+        return pid
+
+    try:
+        file.seek(0)
+        file.write(str(os.getpid()).ljust(PID_WIDTH).encode("utf-8"))
+        file.flush()
+    except:
+        pass
+
+    _instance_locks.append(file)
+    return None
+
+
+def acquire_instance_lock(attempts: int = 12, delay: float = 0.25) -> int | None:
+    """Лок папки бота — не даёт запустить одну и ту же папку дважды."""
+    return acquire_lock(LOCK_PATH, attempts, delay)
+
+
+def acquire_account_lock(account_id: str, attempts: int = 12, delay: float = 0.25) -> int | None:
+    """Лок аккаунта Playerok — не даёт запустить два бота на одном аккаунте из разных папок."""
+    digest = hashlib.sha256(str(account_id).encode("utf-8")).hexdigest()[:16]
+    return acquire_lock(os.path.join(tempfile.gettempdir(), f"{LOCK_PREFIX}-{digest}.lock"), attempts, delay)
+
+
+def release_instance_locks():
+    global _instance_locks
+
+    for file in _instance_locks:
+        try:
+            _unlock_region(file)
+        except:
+            pass
+        try:
+            file.close()
+        except:
+            pass
+    _instance_locks = []
+
+
 def restart(from_tg=False):
     python = sys.executable
     args = sys.argv.copy()
@@ -41,6 +155,7 @@ def restart(from_tg=False):
     if from_tg:
         args.append("--from_tg")
 
+    release_instance_locks() # иначе новый процесс упрётся в локи, которые держит ещё живой старый
     logger.info("Перезапуск бота...")
     os.execv(python, [python] + args)
 

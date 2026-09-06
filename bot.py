@@ -12,7 +12,8 @@ from core.utils import (
     install_requirements, 
     patch_requests, 
     init_main_loop, 
-    run_async_in_thread
+    run_async_in_thread, 
+    acquire_instance_lock
 )
 from core.modules import (
     load_modules, 
@@ -85,6 +86,23 @@ async def start_playerok_bot():
 
 
 if __name__ == "__main__":
+    running_pid = acquire_instance_lock()
+    if running_pid is not None:
+        print(
+            f"\n\n   {Fore.LIGHTRED_EX}┌───────────────────────────────────────┐\n"
+            f"\n     {Fore.LIGHTRED_EX}Бот уже запущен!"
+            f"\n"
+            f"\n     {Fore.WHITE}Playerok Universal из этой папки уже работает"
+            f"\n     в другом окне{f' (процесс {running_pid})' if running_pid else ''}."
+            f"\n     Закройте это окно — если запустить одного бота дважды,"
+            f"\n     заказы и сообщения будут обрабатываться по два раза."
+            f"\n"
+            f"\n     {Fore.LIGHTBLACK_EX}Если бот на самом деле не запущен — завершите"
+            f"\n     зависший процесс python и попробуйте снова."
+            f"\n\n   {Fore.LIGHTRED_EX}└───────────────────────────────────────┘\n\n"
+        )
+        sys.exit(1)
+
     try:
         from_tg = "--from_tg" in sys.argv
 

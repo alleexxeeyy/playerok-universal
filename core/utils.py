@@ -80,7 +80,7 @@ def acquire_lock(path: str, attempts: int = 12, delay: float = 0.25) -> int | No
     :param delay: Пауза между попытками в секундах.
     :type delay: float
 
-    :return: None, если лок занят нами, иначе PID процесса, который его держит (0 — если PID не удалось прочитать).
+    :return: None, если лок занят нами или его не удалось проверить, иначе PID процесса, который его держит.
     """
 
     try:
@@ -103,12 +103,18 @@ def acquire_lock(path: str, attempts: int = 12, delay: float = 0.25) -> int | No
             return None
     else:
         pid = 0
-        try:
-            file.seek(0)
-            pid = int(file.read(PID_WIDTH).decode("utf-8", "ignore").strip())
-        except:
-            pass
+        for _ in range(2): # держатель пишет PID сразу после захвата, но можем попасть ровно в этот момент
+            try:
+                file.seek(0)
+                pid = int(file.read(PID_WIDTH).decode("utf-8", "ignore").strip())
+                break
+            except:
+                time.sleep(0.3)
         file.close()
+
+        if not pid: # лок занят, но держателя нет — значит сломался сам механизм лока, а не бот запущен дважды
+            logger.warning(f"Лок \"{path}\" занят, но PID держателя не читается. Бот запустится без защиты от двойного запуска")
+            return None
         return pid
 
     try:

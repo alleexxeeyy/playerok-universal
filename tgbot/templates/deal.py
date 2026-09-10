@@ -20,6 +20,7 @@ def deal_text(deal: ItemDeal):
     item_image = deal.item.attachments[0].url
     item_price = deal.item.price
 
+    status_sym, status_str = "❔", "Неизвестен"
     status = deal.status
     if status:
         if status == ItemDealStatuses.PAID:

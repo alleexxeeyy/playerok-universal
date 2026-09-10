@@ -20,7 +20,7 @@ from settings import Settings as sett
 from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states
-from ..helpful import throw_float_message, do_auth, notify, answer_callback
+from ..helpful import throw_float_message, do_auth, notify, answer_callback, require_state_item
 from .navigation import *
 from .pagination import *
 from .page import *
@@ -1273,21 +1273,32 @@ async def callback_sel_items_filter_category(callback: CallbackQuery, state: FSM
 
 @router.callback_query(F.data == "sel_item_pr_status")
 async def callback_sel_item_pr_status(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(None)
-
     data = await state.get_data()
-    item = data.get("item")
+    try:
+        await state.set_state(None)
 
-    from plbot.playerokbot import get_playerok_bot as plbot
-    pr_statuses = plbot().account.get_item_priority_statuses(item.id, item.raw_price)
-    await state.update_data(item_pr_statuses=pr_statuses)
+        item = require_state_item(data)
 
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.item_float_text("⚡ Выберите <b>статус приоритета</b> товара:"),
-        reply_markup=templ.sel_item_pr_status_kb(item, pr_statuses)
-    )
+        from plbot.playerokbot import get_playerok_bot as plbot
+        pr_statuses = plbot().account.get_item_priority_statuses(item.id, item.raw_price)
+        if not pr_statuses:
+            raise Exception("❌ Playerok не вернул ни одного статуса приоритета для этого товара")
+        await state.update_data(item_pr_statuses=pr_statuses)
+
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.item_float_text("⚡ Выберите <b>статус приоритета</b> товара:"),
+            reply_markup=templ.sel_item_pr_status_kb(item, pr_statuses)
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.item_float_text(e),
+            reply_markup=templ.back_kb(calls.ItemsPagination(page=data.get("last_page", 0)).pack()),
+            callback=callback
+        )
 
 
 @router.callback_query(F.data == "transactions_filter")

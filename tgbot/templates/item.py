@@ -23,6 +23,7 @@ def item_text(item: MyItem):
     
     priority = "Бесплатный" if item.priority == PriorityTypes.DEFAULT else "Премиум"
 
+    status_sym, status_str = "❔", "Неизвестен"
     status = item.status
     if status:
         if status == ItemStatuses.PENDING_APPROVAL:
@@ -122,13 +123,23 @@ def sel_item_pr_status_kb(item: MyItem, pr_statuses: list[ItemPriorityStatus]):
     free_st = next((st for st in pr_statuses if st.price == 0), None)
     prem_st = next((st for st in pr_statuses if st.price > 0), None)
     
-    rows = [
-        [
-        InlineKeyboardButton(text=f"🟢 Бесплатный ({free_st.price}₽)", callback_data=calls.ConfirmPublishItem(st_id=free_st.id).pack()),
-        InlineKeyboardButton(text=f"🚀 Премиум ({prem_st.price}₽)", callback_data=calls.ConfirmPublishItem(st_id=prem_st.id).pack())
-        ],
-        [InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.ItemPage(id=item.id).pack())]
-    ]
+    # премиум товары playerok не даёт выставить с бесплатным статусом — тогда бесплатного в списке нет
+    statuses_row = []
+    if free_st:
+        statuses_row.append(InlineKeyboardButton(
+            text=f"🟢 Бесплатный ({free_st.price}₽)",
+            callback_data=calls.ConfirmPublishItem(st_id=free_st.id).pack()
+        ))
+    if prem_st:
+        statuses_row.append(InlineKeyboardButton(
+            text=f"🚀 Премиум ({prem_st.price}₽)",
+            callback_data=calls.ConfirmPublishItem(st_id=prem_st.id).pack()
+        ))
+
+    rows = []
+    if statuses_row:
+        rows.append(statuses_row)
+    rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.ItemPage(id=item.id).pack())])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb

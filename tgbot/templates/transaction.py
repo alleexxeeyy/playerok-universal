@@ -14,6 +14,7 @@ def transaction_text(transaction: Transaction):
     sum = f"{sum_sym}{transaction.value}"
     provider = transaction.provider.name
 
+    operation_str = "❔ Неизвестна"
     operation = transaction.operation
     if operation:
         if operation == TransactionOperations.DEPOSIT:
@@ -37,6 +38,7 @@ def transaction_text(transaction: Transaction):
         elif operation == TransactionOperations.STEAM_DEPOSIT:
             operation_str = "🎮 Steam пополнение"
 
+    status_str = "Неизвестен"
     status = transaction.status
     if status:
         if status == TransactionStatuses.PENDING:

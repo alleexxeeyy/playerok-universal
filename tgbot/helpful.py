@@ -74,6 +74,14 @@ async def extract_lines(message: Message) -> list[str]:
     return lines
 
 
+def require_state_item(data: dict):
+    # состояние живёт в памяти: после перезапуска бота старое меню остаётся у юзера, а товар в нём — нет
+    item = data.get("item")
+    if not item:
+        raise Exception("❌ Меню устарело после перезапуска бота — откройте страницу товара заново")
+    return item
+
+
 MAX_SHOWN_ITEM_ERRORS = 10
 
 

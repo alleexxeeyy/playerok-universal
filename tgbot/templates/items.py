@@ -14,6 +14,7 @@ def _get_item_info(item: Item):
     item_name = item_name[:48] + ("..." if len(item_name) > 48 else "")
     item_price = item.price
 
+    status_sym, status_str = "❔", "Неизвестен"
     status = item.status
     if status:
         if status == ItemStatuses.PENDING_APPROVAL:

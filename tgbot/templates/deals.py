@@ -19,6 +19,7 @@ def _get_deal_info(deal: ItemDeal):
     item_name = item_name[:48] + ("..." if len(item_name) > 48 else "")
     item_price = deal.item.price
 
+    status_sym, status_str = "❔", "Неизвестен"
     status = deal.status
     if status:
         if status == ItemDealStatuses.PAID:

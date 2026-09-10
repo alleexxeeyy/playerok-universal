@@ -5,7 +5,8 @@ from aiogram.types import (
     Message, 
     CallbackQuery, 
     InputMediaPhoto, 
-    FSInputFile
+    FSInputFile,
+    LinkPreviewOptions
 )
 from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 
@@ -96,7 +97,7 @@ def _item_errors_block(errors: list[str]) -> str:
 
 
 def item_refs_report(items: list[dict], errors: list[str], one: str, many: str) -> str:
-    from utils import escape_html
+    from utils import binding_links
 
     if not items:
         raise Exception(
@@ -105,7 +106,7 @@ def item_refs_report(items: list[dict], errors: list[str], one: str, many: str) 
         )
 
     if len(items) == 1:
-        text = one.format(name=escape_html(items[0].get("name") or "-"))
+        text = one.format(name=binding_links({"items": items}, "-"))
     else:
         text = many.format(count=len(items))
 
@@ -157,6 +158,7 @@ async def try_edit_message(bot, chat_id, message_id, text, photo, reply_markup, 
             text=text,
             reply_markup=reply_markup,
             parse_mode="HTML",
+            link_preview_options=LinkPreviewOptions(is_disabled=True),
             **kwargs
         )
 
@@ -193,6 +195,7 @@ async def send_new_message(bot, chat_id, text, photo, reply_markup, reply_to, **
         reply_markup=reply_markup,
         parse_mode="HTML",
         reply_to_message_id=reply_to,
+        link_preview_options=LinkPreviewOptions(is_disabled=True),
         **kwargs
     )
 

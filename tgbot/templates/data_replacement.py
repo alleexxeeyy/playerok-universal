@@ -2,7 +2,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
-from utils import escape_html, binding_title
+from utils import escape_html, binding_title, binding_links
 
 from .. import callback_datas as calls
 
@@ -11,7 +11,7 @@ def data_replacement_text(index: int):
     repl = sett.get("data_replacement")[index]
 
     enabled = "✅" if repl.get("enabled") else "❌"
-    items_frmtd = escape_html(binding_title(repl, "❌ Не задано"))
+    items_frmtd = binding_links(repl, "❌ Не задано")
     separator = escape_html(repl.get("separator") or ":")
     total_data = len(repl.get("data", []))
 

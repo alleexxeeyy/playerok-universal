@@ -2,7 +2,7 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
-from utils import escape_html, binding_title
+from utils import escape_html, binding_links
 
 from .. import templates as templ
 from .. import states
@@ -93,7 +93,7 @@ async def handler_waiting_for_new_data_replacement_values(message: types.Message
         values = await extract_lines(message)
         await state.update_data(new_data_replacement_values=values)
 
-        items_frmtd = escape_html(binding_title({"items": data.get("new_data_replacement_items") or []}))
+        items_frmtd = binding_links({"items": data.get("new_data_replacement_items") or []})
 
         await throw_float_message(
             state=state,

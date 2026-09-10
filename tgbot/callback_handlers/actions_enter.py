@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
-from utils import escape_html, binding_title
+from utils import escape_html, binding_links
 
 from .. import templates as templ
 from .. import callback_datas as calls
@@ -551,7 +551,7 @@ async def callback_enter_auto_delivery_items(callback: CallbackQuery, state: FSM
         
         await state.set_state(states.AutoDeliveriesStates.waiting_for_auto_delivery_items)
         auto_deliveries = sett.get("auto_deliveries")
-        current = escape_html(binding_title(auto_deliveries[index]))
+        current = binding_links(auto_deliveries[index])
         
         await throw_float_message(
             state=state,
@@ -683,7 +683,7 @@ async def callback_enter_data_replacement_items(callback: CallbackQuery, state: 
 
         await state.set_state(states.DataReplacementStates.waiting_for_data_replacement_items)
         data_replacement = sett.get("data_replacement")
-        current = escape_html(binding_title(data_replacement[index]))
+        current = binding_links(data_replacement[index])
 
         await throw_float_message(
             state=state,

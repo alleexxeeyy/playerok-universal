@@ -2,7 +2,7 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
-from utils import escape_html, binding_title
+from utils import binding_links
 
 from .. import templates as templ
 from .. import states
@@ -90,7 +90,7 @@ async def handler_waiting_for_new_auto_delivery_message(message: types.Message, 
 
         await state.update_data(new_auto_delivery_message=message.text)
         
-        items_frmtd = escape_html(binding_title({"items": data.get("new_auto_delivery_items") or []}))
+        items_frmtd = binding_links({"items": data.get("new_auto_delivery_items") or []})
         msg = message.text
         
         await throw_float_message(
@@ -126,7 +126,7 @@ async def handler_waiting_for_new_auto_delivery_goods(message: types.Message, st
         goods = await extract_lines(message)
         await state.update_data(new_auto_delivery_goods=goods)
         
-        items_frmtd = escape_html(binding_title({"items": data.get("new_auto_delivery_items") or []}))
+        items_frmtd = binding_links({"items": data.get("new_auto_delivery_items") or []})
         
         await throw_float_message(
             state=state,

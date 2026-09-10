@@ -8,7 +8,7 @@ import sys
 import base64
 import string
 import requests
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
 from logging import getLogger
 from colorama import Fore
 from datetime import datetime, timedelta, timezone
@@ -519,6 +519,38 @@ def split_new_items(items: list[dict], entries: list) -> tuple[list[dict], list[
         existing.add(item.get("id"))
 
     return fresh, dupes
+
+
+def item_url(bound: dict) -> str | None:
+    slug = (bound or {}).get("slug")
+    if not slug:
+        return None
+    # slug бывает кириллическим — в кнопку-ссылку такой URL нужно отдавать закодированным
+    return f"https://playerok.com/products/{quote(str(slug), safe='')}"
+
+
+def binding_links(entry, empty: str = "❌ Не указано") -> str:
+    parts = []
+    for bound in binding_items(entry):
+        name = str(bound.get("name") or bound.get("slug") or bound.get("id") or "").strip()
+        if not name:
+            continue
+        url = item_url(bound)
+        parts.append(f'<a href="{url}">{escape_html(name)}</a>' if url else escape_html(name))
+    if parts:
+        return ", ".join(parts)
+
+    phrases = binding_phrases(entry)
+    if phrases:
+        return "🔑 " + escape_html(", ".join(phrases))
+    return empty
+
+
+def binding_single_url(entry) -> str | None:
+    items = binding_items(entry)
+    if len(items) != 1:
+        return None
+    return item_url(items[0])
 
 
 def binding_key(entry) -> tuple:

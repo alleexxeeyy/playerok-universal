@@ -2,7 +2,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
-from utils import escape_html, binding_title
+from utils import binding_title, binding_links
 
 from .. import callback_datas as calls
 
@@ -13,7 +13,7 @@ def deliv_page_text(index: int):
     
     piece = deliv.get("piece")
     piece_str = "Поштучно" if piece else "Сообщением"
-    items_frmtd = escape_html(binding_title(deliv, "❌ Не задано"))
+    items_frmtd = binding_links(deliv, "❌ Не задано")
 
     if piece:
         total_goods = len(deliv.get("goods", []))

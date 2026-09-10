@@ -3,7 +3,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
-from utils import binding_title
+from utils import binding_title, binding_single_url
 
 from .. import callback_datas as calls
 
@@ -34,7 +34,10 @@ def bump_excluded_kb(page=0):
     for i, entry in enumerate(list(excluded_bump_items)[start_offset:end_offset], start=start_offset):
         title = binding_title(entry, "❌ Не указано")
         title_frmtd = title[:32] + ("..." if len(title) > 32 else "")
+        url = binding_single_url(entry)
         rows.append([
+            InlineKeyboardButton(text=f"{title_frmtd}", url=url)
+            if url else
             InlineKeyboardButton(text=f"{title_frmtd}", callback_data="null_answer"),
             InlineKeyboardButton(text=f"🗑️", callback_data=calls.DeleteExcludedBumpItem(index=i).pack()),
         ])

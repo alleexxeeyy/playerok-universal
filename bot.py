@@ -117,7 +117,7 @@ if __name__ == "__main__":
             f"\n       {Fore.WHITE}by {Fore.LIGHTYELLOW_EX}@friedfluoride (3xtra)"
             f"\n"
             f"\n     {Fore.WHITE}· GitHub: {Fore.LIGHTWHITE_EX}github.com/alleexxeeyy/playerok-universal"
-            f"\n     {Fore.WHITE}· Новости: {Fore.LIGHTWHITE_EX}t.me/friedauto"
+            f"\n     {Fore.WHITE}· Новости: {Fore.LIGHTWHITE_EX}t.me/friedplayerok"
             f"\n     {Fore.WHITE}· Плагины: {Fore.LIGHTWHITE_EX}t.me/friedshopbot"
             f"\n\n   {Fore.LIGHTYELLOW_EX}└───────────────────────────────────────┘\n\n"
         )

@@ -1,5 +1,5 @@
 # Playerok Universal
-[![telegram](https://img.shields.io/badge/telegram-%D0%BA%D0%B0%D0%BD%D0%B0%D0%BB-blue?style=for-the-badge&logo=telegram)](https://t.me/friedauto)
+[![telegram](https://img.shields.io/badge/telegram-%D0%BA%D0%B0%D0%BD%D0%B0%D0%BB-blue?style=for-the-badge&logo=telegram)](https://t.me/friedplayerok)
 [![plugins](https://img.shields.io/badge/%F0%9F%A7%A9%20%D0%BF%D0%BB%D0%B0%D0%B3%D0%B8%D0%BD%D1%8B-%D0%B1%D0%BE%D1%82%D0%B0-green?style=for-the-badge)](https://t.me/friedshopbot)
 [![python](https://img.shields.io/badge/python-3.12.x-yellow?style=for-the-badge&logo=python&link=https%3A%2F%2Fimg.shields.io%2Fbadge%2Ftelegram-%25D0%25BA%25D0%25B0%25D0%25BD%25D0%25B0%25D0%25BB-blue%3Fstyle%3Dfor-the-badge%26logo%3Dtelegram)](https://www.python.org/downloads/release/python-3119/)
 [![stars](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Falleexxeeyy%2Fplayerok-universal&query=%24.stargazers_count&style=for-the-badge&label=stars&color=43d433&logo=github)](https://github.com/alleexxeeyy/playerok-universal/stargazers)
@@ -216,7 +216,7 @@ export default {
   NAME = "test_module"
   DESCRIPTION = "Тестовый модуль. /test_module в Telegram боте для управления"
   AUTHORS = "@friedfluoride"
-  LINKS = "https://t.me/friedfluoride, https://t.me/friedauto"
+  LINKS = "https://t.me/friedfluoride, https://t.me/friedplayerok"
   ```
 
   **`__init__.py`**:
@@ -421,5 +421,5 @@ export default {
 
 ## 🔗 Ссылки
 - **Разработчик:** [@alleexxeeyy](https://github.com/alleexxeeyy)
-- **Новости:** [@friedauto](https://t.me/friedauto)
+- **Новости:** [@friedplayerok](https://t.me/friedplayerok)
 - **Плагины**: [@friedshopbot](https://t.me/friedshopbot)

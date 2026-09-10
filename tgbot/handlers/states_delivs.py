@@ -2,11 +2,17 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
+from utils import escape_html, binding_title
 
 from .. import templates as templ
 from .. import states
 from .. import callback_datas as calls
-from ..helpful import throw_float_message, extract_lines
+from ..helpful import (
+    throw_float_message,
+    extract_lines,
+    resolve_item_lines,
+    item_refs_report
+)
 
 
 router = Router()
@@ -40,25 +46,27 @@ async def handler_waiting_for_auto_deliveries_page(message: types.Message, state
         )
 
 
-@router.message(states.AutoDeliveriesStates.waiting_for_new_auto_delivery_keyphrases, F.text)
-async def handler_waiting_for_new_auto_delivery_keyphrases(message: types.Message, state: FSMContext):
+@router.message(states.AutoDeliveriesStates.waiting_for_new_auto_delivery_items, F.text | F.document)
+async def handler_waiting_for_new_auto_delivery_items(message: types.Message, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
-        
-        if len(message.text) <= 0:
-            raise Exception("❌ Слишком короткое значение")
-        
-        keyphrases = [phrase.strip() for phrase in message.text.split(",")]
-        
-        await state.update_data(new_auto_delivery_keyphrases=keyphrases)
+
+        items, errors = await resolve_item_lines(await extract_lines(message))
+        report = item_refs_report(
+            items, errors,
+            "🛍️ Выбран товар <b>{name}</b>",
+            "🛍️ Выбрано товаров: <b>{count}</b>"
+        )
+
+        await state.update_data(new_auto_delivery_items=items)
         await state.set_state(states.AutoDeliveriesStates.waiting_for_auto_delivery_piece)
         
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.new_deliv_float_text(f"🛒 Выберите <b>тип авто-выдачи</b>:"),
+            text=templ.new_deliv_float_text(f"{report}\n\n🛒 Выберите <b>тип авто-выдачи</b>:"),
             reply_markup=templ.new_deliv_piece_kb(last_page)
         )
     except Exception as e:
@@ -82,8 +90,7 @@ async def handler_waiting_for_new_auto_delivery_message(message: types.Message, 
 
         await state.update_data(new_auto_delivery_message=message.text)
         
-        keyphrases = data.get("new_auto_delivery_keyphrases")
-        phrases = "</code>, <code>".join(keyphrases)
+        items_frmtd = escape_html(binding_title({"items": data.get("new_auto_delivery_items") or []}))
         msg = message.text
         
         await throw_float_message(
@@ -91,7 +98,7 @@ async def handler_waiting_for_new_auto_delivery_message(message: types.Message, 
             message=message,
             text=templ.new_deliv_float_text(
                 f"✔️ Подтвердите <b>добавление авто-выдачи</b>:"
-                f"\n\n<b>· Ключевые фразы:</b> <code>{phrases}</code>"
+                f"\n\n<b>· Товары:</b> {items_frmtd}"
                 f"\n<b>· Тип выдачи:</b> Сообщением"
                 f"\n<b>· Сообщение:</b> {msg}"
             ),
@@ -119,17 +126,16 @@ async def handler_waiting_for_new_auto_delivery_goods(message: types.Message, st
         goods = await extract_lines(message)
         await state.update_data(new_auto_delivery_goods=goods)
         
-        keyphrases = data.get("new_auto_delivery_keyphrases")
-        phrases = "</code>, <code>".join(keyphrases)
+        items_frmtd = escape_html(binding_title({"items": data.get("new_auto_delivery_items") or []}))
         
         await throw_float_message(
             state=state,
             message=message,
             text=templ.new_deliv_float_text(
                 f"✔️ Подтвердите <b>добавление авто-выдачи</b>:"
-                f"\n\n<b>· Ключевые фразы:</b> <code>{phrases}</code>"
+                f"\n\n<b>· Товары:</b> {items_frmtd}"
                 f"\n<b>· Тип выдачи:</b> Поштучно"
-                f"\n<b>· Товары:</b> {len(goods)} шт."
+                f"\n<b>· Позиции:</b> {len(goods)} шт."
             ),
             reply_markup=templ.confirm_kb(
                 confirm_cb="add_new_auto_delivery", 
@@ -145,27 +151,29 @@ async def handler_waiting_for_new_auto_delivery_goods(message: types.Message, st
         )
 
 
-@router.message(states.AutoDeliveriesStates.waiting_for_auto_delivery_keyphrases, F.text)
-async def handler_waiting_for_auto_delivery_keyphrases(message: types.Message, state: FSMContext):
+@router.message(states.AutoDeliveriesStates.waiting_for_auto_delivery_items, F.text | F.document)
+async def handler_waiting_for_auto_delivery_items(message: types.Message, state: FSMContext):
     data = await state.get_data()
     index = data.get("auto_delivery_index")
     try:
         await state.set_state(None)
 
-        if len(message.text) <= 0:
-            raise Exception("❌ Слишком короткое значение")
-        
+        items, errors = await resolve_item_lines(await extract_lines(message))
+        report = item_refs_report(
+            items, errors,
+            "✅ <b>Товары</b> авто-выдачи изменены на: <b>{name}</b>",
+            "✅ <b>Товары</b> авто-выдачи изменены (выбрано: <b>{count}</b>)"
+        )
+
         auto_deliveries = sett.get("auto_deliveries")
-        keyphrases = [phrase.strip() for phrase in message.text.split(",")]
-        auto_deliveries[index]["keyphrases"] = keyphrases
+        auto_deliveries[index]["items"] = items
+        auto_deliveries[index].pop("keyphrases", None)
         sett.set("auto_deliveries", auto_deliveries)
-        
-        keyphrases_str = "</code>, <code>".join(keyphrases)
         
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.deliv_page_float_text(f"✅ <b>Ключевые фразы</b> были успешно изменены на: <code>{keyphrases_str}</code>"),
+            text=templ.deliv_page_float_text(report),
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=index).pack())
         )
     except Exception as e:

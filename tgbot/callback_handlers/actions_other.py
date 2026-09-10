@@ -703,13 +703,13 @@ async def callback_add_new_auto_delivery(callback: CallbackQuery, state: FSMCont
         data = await state.get_data()
         last_page = data.get("last_page", 0)
         
-        keyphrases = data.get("new_auto_delivery_keyphrases")
+        items = data.get("new_auto_delivery_items")
         piece = data.get("new_auto_delivery_piece")
         message = data.get("new_auto_delivery_message")
         goods = data.get("new_auto_delivery_goods")
         
         if (
-            not keyphrases 
+            not items 
             or piece is None
             or (piece is True and not goods)
             or (piece is False and not message)
@@ -721,7 +721,7 @@ async def callback_add_new_auto_delivery(callback: CallbackQuery, state: FSMCont
         auto_deliveries = sett.get("auto_deliveries")
         auto_deliveries.append({
             "piece": piece,
-            "keyphrases": keyphrases, 
+            "items": items, 
             "message": message.splitlines() if message and not piece else "",
             "goods": goods if goods and piece else [],
         })
@@ -851,10 +851,10 @@ async def callback_add_new_data_replacement(callback: CallbackQuery, state: FSMC
         data = await state.get_data()
         last_page = data.get("last_page", 0)
 
-        keyphrases = data.get("new_data_replacement_keyphrases")
+        items = data.get("new_data_replacement_items")
         values = data.get("new_data_replacement_values")
 
-        if not keyphrases or not values:
+        if not items or not values:
             return await callback_data_replacements_pagination(
                 callback, calls.DataReplacementsPagination(page=last_page), state
             )
@@ -862,7 +862,7 @@ async def callback_add_new_data_replacement(callback: CallbackQuery, state: FSMC
         data_replacement = sett.get("data_replacement")
         data_replacement.append({
             "enabled": True,
-            "keyphrases": keyphrases,
+            "items": items,
             "separator": ":",
             "data": values
         })

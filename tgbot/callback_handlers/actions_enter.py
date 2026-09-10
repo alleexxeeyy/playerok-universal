@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
-from utils import escape_html
+from utils import escape_html, binding_title
 
 from .. import templates as templ
 from .. import callback_datas as calls
@@ -207,73 +207,73 @@ async def callback_enter_watermark_value(callback: CallbackQuery, state: FSMCont
     )
 
 
-@router.callback_query(F.data == "enter_new_included_restore_item_keyphrases")
-async def callback_enter_new_included_restore_item_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_new_included_restore_items")
+async def callback_enter_new_included_restore_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     
-    await state.set_state(states.RestoreItemsStates.waiting_for_new_included_restore_item_keyphrases)
+    await state.set_state(states.RestoreItemsStates.waiting_for_new_included_restore_items)
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.new_restore_included_float_text(
-            f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно включить в авто-восстановление "
-            f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
-            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
+            f"🔗 Отправьте <b>ссылку на товар</b>, который нужно включить в авто-восстановление "
+            f"(например, <code>https://playerok.com/products/samp-akkaunt</code>):"
+            f"\n\n📄 Несколько товаров — 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
         ),
         reply_markup=templ.back_kb(calls.IncludedRestoreItemsPagination(page=last_page).pack())
     )
 
 
-@router.callback_query(F.data == "enter_new_excluded_restore_item_keyphrases")
-async def callback_enter_new_excluded_restore_item_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_new_excluded_restore_items")
+async def callback_enter_new_excluded_restore_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     
-    await state.set_state(states.RestoreItemsStates.waiting_for_new_excluded_restore_item_keyphrases)
+    await state.set_state(states.RestoreItemsStates.waiting_for_new_excluded_restore_items)
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.new_restore_excluded_float_text(
-            f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно исключить из авто-восстановления "
-            f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
-            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
+            f"🔗 Отправьте <b>ссылку на товар</b>, который нужно исключить из авто-восстановления "
+            f"(например, <code>https://playerok.com/products/samp-akkaunt</code>):"
+            f"\n\n📄 Несколько товаров — 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
         ),
         reply_markup=templ.back_kb(calls.ExcludedRestoreItemsPagination(page=last_page).pack())
     )
 
 
-@router.callback_query(F.data == "enter_new_included_complete_deal_keyphrases")
-async def callback_enter_new_included_complete_deal_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_new_included_complete_deal_items")
+async def callback_enter_new_included_complete_deal_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     
-    await state.set_state(states.CompleteDealsStates.waiting_for_new_included_complete_deal_keyphrases)
+    await state.set_state(states.CompleteDealsStates.waiting_for_new_included_complete_deal_items)
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.new_complete_included_float_text(
-            f"🔑 Введите <b>ключевые фразы</b> названия товара, сделку по которому нужно включить в авто-подтверждение "
-            f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
-            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
+            f"🔗 Отправьте <b>ссылку на товар</b>, сделку по которому нужно включить в авто-подтверждение "
+            f"(например, <code>https://playerok.com/products/samp-akkaunt</code>):"
+            f"\n\n📄 Несколько товаров — 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
         ),
         reply_markup=templ.back_kb(calls.IncludedCompleteDealsPagination(page=last_page).pack())
     )
 
 
-@router.callback_query(F.data == "enter_new_excluded_complete_deal_keyphrases")
-async def callback_enter_new_excluded_complete_deal_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_new_excluded_complete_deal_items")
+async def callback_enter_new_excluded_complete_deal_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     
-    await state.set_state(states.CompleteDealsStates.waiting_for_new_excluded_complete_deal_keyphrases)
+    await state.set_state(states.CompleteDealsStates.waiting_for_new_excluded_complete_deal_items)
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.new_complete_excluded_float_text(
-            f"🔑 Введите <b>ключевые фразы</b> названия товара, сделку по которому нужно исключить из авто-подтверждения "
-            f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
-            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
+            f"🔗 Отправьте <b>ссылку на товар</b>, сделку по которому нужно исключить из авто-подтверждения "
+            f"(например, <code>https://playerok.com/products/samp-akkaunt</code>):"
+            f"\n\n📄 Несколько товаров — 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
         ),
         reply_markup=templ.back_kb(calls.ExcludedCompleteDealsPagination(page=last_page).pack())
     )
@@ -405,37 +405,37 @@ async def callback_enter_auto_bump_items_night_time_to(callback: CallbackQuery, 
     )
 
 
-@router.callback_query(F.data == "enter_new_included_bump_item_keyphrases")
-async def callback_enter_new_included_bump_item_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_new_included_bump_items")
+async def callback_enter_new_included_bump_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     
-    await state.set_state(states.BumpItemsStates.waiting_for_new_included_bump_item_keyphrases)
+    await state.set_state(states.BumpItemsStates.waiting_for_new_included_bump_items)
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.new_bump_included_float_text(
-            f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно включить в авто-поднятие "
-            f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
-            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
+            f"🔗 Отправьте <b>ссылку на товар</b>, который нужно включить в авто-поднятие "
+            f"(например, <code>https://playerok.com/products/samp-akkaunt</code>):"
+            f"\n\n📄 Несколько товаров — 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
         ),
         reply_markup=templ.back_kb(calls.IncludedBumpItemsPagination(page=last_page).pack())
     )
 
 
-@router.callback_query(F.data == "enter_new_excluded_bump_item_keyphrases")
-async def callback_enter_new_excluded_bump_item_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_new_excluded_bump_items")
+async def callback_enter_new_excluded_bump_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     
-    await state.set_state(states.BumpItemsStates.waiting_for_new_excluded_bump_item_keyphrases)
+    await state.set_state(states.BumpItemsStates.waiting_for_new_excluded_bump_items)
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.new_bump_excluded_float_text(
-            f"🔑 Введите <b>ключевые фразы</b> названия товара, который нужно исключить из авто-поднятия "
-            f"(указываются через запятую, например, \"samp аккаунт, со всеми данными\"):"
-            f"\n\n📄 Можно прислать <b>.txt файл</b> — 1 строка = 1 товар"
+            f"🔗 Отправьте <b>ссылку на товар</b>, который нужно исключить из авто-поднятия "
+            f"(например, <code>https://playerok.com/products/samp-akkaunt</code>):"
+            f"\n\n📄 Несколько товаров — 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
         ),
         reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
     )
@@ -519,25 +519,26 @@ async def callback_enter_auto_deliveries_page(callback: CallbackQuery, state: FS
     )
 
 
-@router.callback_query(F.data == "enter_new_auto_delivery_keyphrases")
-async def callback_enter_new_auto_delivery_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_new_auto_delivery_items")
+async def callback_enter_new_auto_delivery_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     
-    await state.set_state(states.AutoDeliveriesStates.waiting_for_new_auto_delivery_keyphrases)
+    await state.set_state(states.AutoDeliveriesStates.waiting_for_new_auto_delivery_items)
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.new_deliv_float_text(
-            f"🔑 Введите <b>ключевые фразы</b> названия товара, на который нужно добавить авто-выдачу "
-            f"(указываются через запятую, например, \"telegram подписчики, авто-выдача\"):"
+            f"🔗 Отправьте <b>ссылку на товар</b>, на который нужно добавить авто-выдачу "
+            f"(например, <code>https://playerok.com/products/telegram-podpischiki</code>):"
+            f"\n\n📄 Несколько товаров — 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
         ),
         reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
     )
 
 
-@router.callback_query(F.data == "enter_auto_delivery_keyphrases")
-async def callback_enter_auto_delivery_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_auto_delivery_items")
+async def callback_enter_auto_delivery_items(callback: CallbackQuery, state: FSMContext):
     try:
         data = await state.get_data()
         last_page = data.get("last_page", 0)
@@ -548,16 +549,17 @@ async def callback_enter_auto_delivery_keyphrases(callback: CallbackQuery, state
                 callback, calls.AutoDeliveriesPagination(page=last_page), state
             )
         
-        await state.set_state(states.AutoDeliveriesStates.waiting_for_auto_delivery_keyphrases)
+        await state.set_state(states.AutoDeliveriesStates.waiting_for_auto_delivery_items)
         auto_deliveries = sett.get("auto_deliveries")
-        auto_delivery_message = "</code>, <code>".join(auto_deliveries[index]["keyphrases"]) or "❌ Не задано"
+        current = escape_html(binding_title(auto_deliveries[index]))
         
         await throw_float_message(
             state=state,
             message=callback.message,
             text=templ.deliv_page_float_text(
-                f"🔑 Введите новые <b>ключевые фразы</b> названия товара, на который авто-выдачи (указываются через запятую):"
-                f"\n\n・ <b>Текущее:</b> <code>{auto_delivery_message}</code>"
+                f"🔗 Отправьте <b>ссылки на товары</b>, на которые нужно повесить эту авто-выдачу:"
+                f"\n\n📄 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
+                f"\n\n・ <b>Текущее:</b> {current}"
             ),
             reply_markup=templ.back_kb(calls.AutoDeliveryPage(index=index).pack())
         )
@@ -649,25 +651,26 @@ async def callback_enter_data_replacements_page(callback: CallbackQuery, state: 
     )
 
 
-@router.callback_query(F.data == "enter_new_data_replacement_keyphrases")
-async def callback_enter_new_data_replacement_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_new_data_replacement_items")
+async def callback_enter_new_data_replacement_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
 
-    await state.set_state(states.DataReplacementStates.waiting_for_new_data_replacement_keyphrases)
+    await state.set_state(states.DataReplacementStates.waiting_for_new_data_replacement_items)
     await throw_float_message(
         state=state,
         message=callback.message,
         text=templ.new_data_replacement_float_text(
-            f"🔑 Введите <b>ключевые фразы</b> названия товара, которому нужно заменять данные при восстановлении "
-            f"(указываются через запятую, например, \"steam аккаунт, стим\"):"
+            f"🔗 Отправьте <b>ссылку на товар</b>, которому нужно заменять данные при восстановлении "
+            f"(например, <code>https://playerok.com/products/steam-akkaunt</code>):"
+            f"\n\n📄 Несколько товаров — 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
         ),
         reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
     )
 
 
-@router.callback_query(F.data == "enter_data_replacement_keyphrases")
-async def callback_enter_data_replacement_keyphrases(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "enter_data_replacement_items")
+async def callback_enter_data_replacement_items(callback: CallbackQuery, state: FSMContext):
     try:
         data = await state.get_data()
         last_page = data.get("last_page", 0)
@@ -678,18 +681,17 @@ async def callback_enter_data_replacement_keyphrases(callback: CallbackQuery, st
                 callback, calls.DataReplacementsPagination(page=last_page), state
             )
 
-        await state.set_state(states.DataReplacementStates.waiting_for_data_replacement_keyphrases)
+        await state.set_state(states.DataReplacementStates.waiting_for_data_replacement_items)
         data_replacement = sett.get("data_replacement")
-        keyphrases = "</code>, <code>".join(
-            escape_html(p) for p in data_replacement[index]["keyphrases"]
-        ) or "❌ Не задано"
+        current = escape_html(binding_title(data_replacement[index]))
 
         await throw_float_message(
             state=state,
             message=callback.message,
             text=templ.data_replacement_float_text(
-                f"🔑 Введите новые <b>ключевые фразы</b> названия товара, которому нужно заменять данные (указываются через запятую):"
-                f"\n\n・ <b>Текущее:</b> <code>{keyphrases}</code>"
+                f"🔗 Отправьте <b>ссылки на товары</b>, которым нужно заменять данные:"
+                f"\n\n📄 1 строка = 1 ссылка, можно прислать <b>.txt файл</b>"
+                f"\n\n・ <b>Текущее:</b> {current}"
             ),
             reply_markup=templ.back_kb(calls.DataReplacementPage(index=index).pack())
         )

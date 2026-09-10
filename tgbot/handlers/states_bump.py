@@ -2,12 +2,17 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
-from utils import escape_html, parse_day_time
+from utils import parse_day_time, split_new_items
 
 from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states
-from ..helpful import throw_float_message, extract_lines, parse_keyphrases_lines
+from ..helpful import (
+    throw_float_message,
+    extract_lines,
+    resolve_item_lines,
+    item_refs_report
+)
 
 
 router = Router()
@@ -241,24 +246,25 @@ async def handler_waiting_for_bump_items_night_time_to(message: types.Message, s
         )
 
 
-@router.message(states.BumpItemsStates.waiting_for_new_included_bump_item_keyphrases, F.text | F.document)
-async def handler_waiting_for_new_included_bump_item_keyphrases(message: types.Message, state: FSMContext):
+@router.message(states.BumpItemsStates.waiting_for_new_included_bump_items, F.text | F.document)
+async def handler_waiting_for_new_included_bump_items(message: types.Message, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
 
-        keyphrases_list = parse_keyphrases_lines(await extract_lines(message))
+        items, errors = await resolve_item_lines(await extract_lines(message))
 
         auto_bump_items = sett.get("auto_bump_items")
-        auto_bump_items["included"].extend(keyphrases_list)
-        sett.set("auto_bump_items", auto_bump_items)
+        items, dupes = split_new_items(items, auto_bump_items["included"])
+        text = item_refs_report(
+            items, errors + dupes,
+            "✅ Товар <b>{name}</b> успешно включён в поднятие",
+            "✅ Успешно включено <b>{count}</b> товаров в поднятие"
+        )
 
-        if len(keyphrases_list) == 1:
-            phrases = "</code>, <code>".join(escape_html(p) for p in keyphrases_list[0])
-            text = f"✅ Товар с ключевыми фразами <code>{phrases}</code> успешно включён в поднятие"
-        else:
-            text = f"✅ Успешно включено <b>{len(keyphrases_list)}</b> товаров в поднятие"
+        auto_bump_items["included"].extend({"items": [item]} for item in items)
+        sett.set("auto_bump_items", auto_bump_items)
 
         await throw_float_message(
             state=state,
@@ -275,24 +281,25 @@ async def handler_waiting_for_new_included_bump_item_keyphrases(message: types.M
         )
 
 
-@router.message(states.BumpItemsStates.waiting_for_new_excluded_bump_item_keyphrases, F.text | F.document)
-async def handler_waiting_for_new_excluded_bump_item_keyphrases(message: types.Message, state: FSMContext):
+@router.message(states.BumpItemsStates.waiting_for_new_excluded_bump_items, F.text | F.document)
+async def handler_waiting_for_new_excluded_bump_items(message: types.Message, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
 
-        keyphrases_list = parse_keyphrases_lines(await extract_lines(message))
+        items, errors = await resolve_item_lines(await extract_lines(message))
 
         auto_bump_items = sett.get("auto_bump_items")
-        auto_bump_items["excluded"].extend(keyphrases_list)
-        sett.set("auto_bump_items", auto_bump_items)
+        items, dupes = split_new_items(items, auto_bump_items["excluded"])
+        text = item_refs_report(
+            items, errors + dupes,
+            "✅ Товар <b>{name}</b> успешно исключён из поднятия",
+            "✅ Успешно исключено <b>{count}</b> товаров из поднятия"
+        )
 
-        if len(keyphrases_list) == 1:
-            phrases = "</code>, <code>".join(escape_html(p) for p in keyphrases_list[0])
-            text = f"✅ Товар с ключевыми фразами <code>{phrases}</code> успешно исключён из поднятия"
-        else:
-            text = f"✅ Успешно исключено <b>{len(keyphrases_list)}</b> товаров из поднятия"
+        auto_bump_items["excluded"].extend({"items": [item]} for item in items)
+        sett.set("auto_bump_items", auto_bump_items)
 
         await throw_float_message(
             state=state,

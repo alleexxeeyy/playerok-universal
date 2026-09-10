@@ -2,12 +2,17 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
-from utils import escape_html
+from utils import escape_html, binding_title
 
 from .. import templates as templ
 from .. import states
 from .. import callback_datas as calls
-from ..helpful import throw_float_message, extract_lines
+from ..helpful import (
+    throw_float_message,
+    extract_lines,
+    resolve_item_lines,
+    item_refs_report
+)
 
 
 router = Router()
@@ -41,25 +46,29 @@ async def handler_waiting_for_data_replacements_page(message: types.Message, sta
         )
 
 
-@router.message(states.DataReplacementStates.waiting_for_new_data_replacement_keyphrases, F.text)
-async def handler_waiting_for_new_data_replacement_keyphrases(message: types.Message, state: FSMContext):
+@router.message(states.DataReplacementStates.waiting_for_new_data_replacement_items, F.text | F.document)
+async def handler_waiting_for_new_data_replacement_items(message: types.Message, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
 
-        keyphrases = [phrase.strip() for phrase in message.text.split(",") if phrase.strip()]
-        if not keyphrases:
-            raise Exception("❌ Не удалось извлечь ключевые фразы")
+        items, errors = await resolve_item_lines(await extract_lines(message))
+        report = item_refs_report(
+            items, errors,
+            "🛍️ Выбран товар <b>{name}</b>",
+            "🛍️ Выбрано товаров: <b>{count}</b>"
+        )
 
-        await state.update_data(new_data_replacement_keyphrases=keyphrases)
+        await state.update_data(new_data_replacement_items=items)
         await state.set_state(states.DataReplacementStates.waiting_for_new_data_replacement_values)
 
         await throw_float_message(
             state=state,
             message=message,
             text=templ.new_data_replacement_float_text(
-                f"💽 Отправьте <b>данные</b> для замены (1 строка = 1 набор данных для одного товара, "
+                f"{report}"
+                f"\n\n💽 Отправьте <b>данные</b> для замены (1 строка = 1 набор данных для одного товара, "
                 f"значения разделяются двоеточием, например, \"login:password:mail\"):"
                 f"\n\n📄 Можно прислать <b>.txt файл</b>"
             ),
@@ -84,15 +93,14 @@ async def handler_waiting_for_new_data_replacement_values(message: types.Message
         values = await extract_lines(message)
         await state.update_data(new_data_replacement_values=values)
 
-        keyphrases = data.get("new_data_replacement_keyphrases") or []
-        phrases = "</code>, <code>".join(escape_html(p) for p in keyphrases)
+        items_frmtd = escape_html(binding_title({"items": data.get("new_data_replacement_items") or []}))
 
         await throw_float_message(
             state=state,
             message=message,
             text=templ.new_data_replacement_float_text(
                 f"✔️ Подтвердите <b>добавление замены данных</b>:"
-                f"\n\n<b>· Ключевые фразы:</b> <code>{phrases}</code>"
+                f"\n\n<b>· Товары:</b> {items_frmtd}"
                 f"\n<b>· Разделитель:</b> <code>:</code>"
                 f"\n<b>· Данные:</b> {len(values)} шт."
             ),
@@ -110,27 +118,29 @@ async def handler_waiting_for_new_data_replacement_values(message: types.Message
         )
 
 
-@router.message(states.DataReplacementStates.waiting_for_data_replacement_keyphrases, F.text)
-async def handler_waiting_for_data_replacement_keyphrases(message: types.Message, state: FSMContext):
+@router.message(states.DataReplacementStates.waiting_for_data_replacement_items, F.text | F.document)
+async def handler_waiting_for_data_replacement_items(message: types.Message, state: FSMContext):
     data = await state.get_data()
     index = data.get("data_replacement_index")
     try:
         await state.set_state(None)
 
-        keyphrases = [phrase.strip() for phrase in message.text.split(",") if phrase.strip()]
-        if not keyphrases:
-            raise Exception("❌ Не удалось извлечь ключевые фразы")
+        items, errors = await resolve_item_lines(await extract_lines(message))
+        report = item_refs_report(
+            items, errors,
+            "✅ <b>Товары</b> замены данных изменены на: <b>{name}</b>",
+            "✅ <b>Товары</b> замены данных изменены (выбрано: <b>{count}</b>)"
+        )
 
         data_replacement = sett.get("data_replacement")
-        data_replacement[index]["keyphrases"] = keyphrases
+        data_replacement[index]["items"] = items
+        data_replacement[index].pop("keyphrases", None)
         sett.set("data_replacement", data_replacement)
-
-        keyphrases_str = "</code>, <code>".join(escape_html(p) for p in keyphrases)
 
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.data_replacement_float_text(f"✅ <b>Ключевые фразы</b> были успешно изменены на: <code>{keyphrases_str}</code>"),
+            text=templ.data_replacement_float_text(report),
             reply_markup=templ.back_kb(calls.DataReplacementPage(index=index).pack())
         )
     except Exception as e:

@@ -1,10 +1,14 @@
+import os
+import json
+import glob
+import time
 import pytz
 import re
 import sys
 import base64
 import string
 import requests
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 from logging import getLogger
 from colorama import Fore
 from datetime import datetime, timedelta, timezone
@@ -13,7 +17,7 @@ from collections import Counter
 from playerokapi.account import Account
 from playerokapi.exceptions import BotCheckDetectedException
 
-from settings import Settings as sett
+from settings import Settings as sett, set_json
 from data import Data as data
 
 
@@ -356,6 +360,264 @@ def is_password_valid(password: str) -> bool:
     if password.lower() in common_passwords:
         return False
     return True
+
+
+ITEM_UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+ITEM_SLUG_RE = re.compile(r"^[^\s/\\]{1,200}$")
+ITEM_REFS_LIMIT = 50
+ITEM_REFS_DELAY = 0.34
+BINDING_SETTINGS = (
+    "auto_deliveries",
+    "data_replacement",
+    "auto_bump_items",
+    "auto_restore_items",
+    "auto_complete_deals"
+)
+MODULES_DIRS = ("modules", "modules_off", "modules_clients")
+
+
+def parse_item_ref(text: str) -> tuple[str, str]:
+    ref = (text or "").strip()
+    if not ref:
+        raise Exception("пустая строка")
+
+    if "/" in ref or "playerok.com" in ref.lower():
+        parsed = urlparse(ref if "://" in ref else f"https://{ref}")
+        host = (parsed.netloc or "").split("@")[-1].split(":")[0].lower()
+        if host.startswith("www."):
+            host = host[4:]
+        if host != "playerok.com":
+            raise Exception("ссылка не с playerok.com")
+
+        parts = [part for part in (parsed.path or "").split("/") if part]
+        if len(parts) < 2 or parts[-2] not in ("products", "product"):
+            raise Exception("в ссылке нет пути /products/")
+        ref = unquote(parts[-1])
+
+    if ITEM_UUID_RE.match(ref):
+        return "id", ref.lower()
+    if ITEM_SLUG_RE.match(ref):
+        return "slug", ref
+    raise Exception("не похоже ни на ссылку, ни на slug, ни на ID")
+
+
+def resolve_item_ref(account: Account, text: str) -> dict:
+    kind, value = parse_item_ref(text)
+
+    try:
+        item = account.get_item(**{kind: value})
+    except Exception as e:
+        raise Exception(f"не удалось получить товар ({e})")
+    if not item:
+        raise Exception("товар не найден")
+
+    owner_id = getattr(getattr(item, "user", None), "id", None)
+    if not owner_id or not account.id:
+        raise Exception("не удалось определить владельца товара")
+    if owner_id != account.id:
+        raise Exception("это не ваш товар")
+
+    return {
+        "id": item.id,
+        "slug": item.slug,
+        "name": item.name or item.slug or item.id
+    }
+
+
+def resolve_item_refs(
+    account: Account,
+    lines: list[str],
+    limit: int = ITEM_REFS_LIMIT,
+    delay: float = ITEM_REFS_DELAY
+) -> tuple[list[dict], list[str]]:
+    refs = [line.strip() for line in (lines or []) if line.strip()]
+    if not refs:
+        raise Exception("❌ Не удалось извлечь ни одной ссылки на товар")
+    if len(refs) > limit:
+        raise Exception(f"❌ За один раз можно добавить не больше <b>{limit}</b> товаров")
+
+    resolved, errors = [], []
+    for i, ref in enumerate(refs):
+        if i:
+            time.sleep(delay)
+        try:
+            item = resolve_item_ref(account, ref)
+        except Exception as e:
+            errors.append(f"{escape_html(ref[:64])} — {escape_html(str(e))}")
+            continue
+
+        if any(r["id"] == item["id"] for r in resolved):
+            errors.append(f"{escape_html(ref[:64])} — указан дважды")
+            continue
+        resolved.append(item)
+
+    return resolved, errors
+
+
+def normalize_binding(entry) -> dict:
+    if isinstance(entry, dict):
+        return entry
+    if isinstance(entry, list):
+        return {"keyphrases": [str(phrase) for phrase in entry]}
+    return {}
+
+
+def binding_items(entry) -> list[dict]:
+    items = normalize_binding(entry).get("items")
+    if not isinstance(items, list):
+        return []
+    return [bound for bound in items if isinstance(bound, dict)]
+
+
+def binding_phrases(entry) -> list[str]:
+    phrases = normalize_binding(entry).get("keyphrases")
+    if not isinstance(phrases, list):
+        return []
+    return [str(phrase) for phrase in phrases if phrase]
+
+
+def item_matches_binding(item, entry) -> bool:
+    item_id = getattr(item, "id", None)
+    item_slug = getattr(item, "slug", None)
+    for bound in binding_items(entry):
+        if item_id and bound.get("id") == item_id:
+            return True
+        if item_slug and bound.get("slug") == item_slug:
+            return True
+
+    name = (getattr(item, "name", None) or "").lower()
+    if name:
+        for phrase in binding_phrases(entry):
+            if phrase.lower() in name:
+                return True
+    return False
+
+
+def item_matches_any_binding(item, entries: list) -> bool:
+    return any(item_matches_binding(item, entry) for entry in (entries or []))
+
+
+def collect_binding_ids(entries: list) -> set:
+    return {
+        bound.get("id")
+        for entry in (entries or [])
+        for bound in binding_items(entry)
+        if bound.get("id")
+    }
+
+
+def split_new_items(items: list[dict], entries: list) -> tuple[list[dict], list[str]]:
+    existing = collect_binding_ids(entries)
+    fresh, dupes = [], []
+
+    for item in items:
+        if item.get("id") in existing:
+            name = item.get("name") or item.get("slug") or item.get("id")
+            dupes.append(f"{escape_html(str(name))} — уже добавлен")
+            continue
+        fresh.append(item)
+        existing.add(item.get("id"))
+
+    return fresh, dupes
+
+
+def binding_key(entry) -> tuple:
+    entry = normalize_binding(entry)
+    ids = tuple(sorted(
+        str(bound.get("id") or bound.get("slug") or "")
+        for bound in binding_items(entry)
+    ))
+    phrases = tuple(sorted(phrase.lower() for phrase in binding_phrases(entry)))
+    return ids, phrases
+
+
+def binding_title(entry, empty: str = "❌ Не указано") -> str:
+    names = [
+        (bound.get("name") or bound.get("slug") or bound.get("id") or "").strip()
+        for bound in binding_items(entry)
+    ]
+    names = [name for name in names if name]
+    if names:
+        return ", ".join(names)
+
+    phrases = binding_phrases(entry)
+    if phrases:
+        return "🔑 " + ", ".join(phrases)
+    return empty
+
+
+def _rebind_in_obj(obj, old_id: str, new: dict) -> int:
+    changed = 0
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if key == "items" and isinstance(value, list):
+                # список items бывает и списком привязок (аккаунты autosteamoffline),
+                # поэтому не-товары обходим дальше вглубь
+                for bound in value:
+                    if isinstance(bound, dict) and bound.get("id") == old_id:
+                        bound.update(new)
+                        changed += 1
+                        continue
+                    changed += _rebind_in_obj(bound, old_id, new)
+                continue
+            changed += _rebind_in_obj(value, old_id, new)
+    elif isinstance(obj, list):
+        for value in obj:
+            changed += _rebind_in_obj(value, old_id, new)
+    return changed
+
+
+def rebind_item(old_id: str, new: dict) -> int:
+    new_id = (new or {}).get("id")
+    if not old_id or not new_id or old_id == new_id:
+        return 0
+
+    payload = {"id": new_id}
+    if new.get("slug"):
+        payload["slug"] = new["slug"]
+    if new.get("name"):
+        payload["name"] = new["name"]
+    changed = 0
+
+    for name in BINDING_SETTINGS:
+        try:
+            settings = sett.get(name)
+            if settings is None:
+                continue
+            cnt = _rebind_in_obj(settings, old_id, payload)
+            if cnt:
+                sett.set(name, settings)
+                changed += cnt
+        except Exception as e:
+            logger.error(
+                f"{Fore.LIGHTRED_EX}Не удалось перепривязать товар в настройке "
+                f"{Fore.WHITE}{name}{Fore.LIGHTRED_EX}: {Fore.WHITE}{e}"
+            )
+
+    root = os.path.dirname(os.path.abspath(__file__))
+    for modules_dir in MODULES_DIRS:
+        pattern = os.path.join(root, modules_dir, "*", "module_settings", "*.json")
+        for path in glob.glob(pattern):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    settings = json.load(f)
+            except Exception:
+                continue
+
+            try:
+                cnt = _rebind_in_obj(settings, old_id, payload)
+                if not cnt:
+                    continue
+                set_json(path, settings)
+                changed += cnt
+            except Exception as e:
+                logger.error(
+                    f"{Fore.LIGHTRED_EX}Не удалось перепривязать товар в {Fore.WHITE}{path}"
+                    f"{Fore.LIGHTRED_EX}: {Fore.WHITE}{e}"
+                )
+
+    return changed
+
 
 
 def configure_config():

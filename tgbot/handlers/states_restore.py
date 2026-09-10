@@ -2,38 +2,44 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 
 from settings import Settings as sett
-from utils import escape_html
+from utils import split_new_items
 
 from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states
-from ..helpful import throw_float_message, extract_lines, parse_keyphrases_lines
+from ..helpful import (
+    throw_float_message,
+    extract_lines,
+    resolve_item_lines,
+    item_refs_report
+)
 
 
 router = Router()
 
 
 @router.message(
-    states.RestoreItemsStates.waiting_for_new_included_restore_item_keyphrases,
+    states.RestoreItemsStates.waiting_for_new_included_restore_items,
     F.text | F.document
 )
-async def handler_waiting_for_new_included_restore_item_keyphrases(message: types.Message, state: FSMContext):
+async def handler_waiting_for_new_included_restore_items(message: types.Message, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
 
-        keyphrases_list = parse_keyphrases_lines(await extract_lines(message))
+        items, errors = await resolve_item_lines(await extract_lines(message))
 
         auto_restore_items = sett.get("auto_restore_items")
-        auto_restore_items["included"].extend(keyphrases_list)
-        sett.set("auto_restore_items", auto_restore_items)
+        items, dupes = split_new_items(items, auto_restore_items["included"])
+        text = item_refs_report(
+            items, errors + dupes,
+            "✅ Товар <b>{name}</b> успешно включён в восстановление",
+            "✅ Успешно включено <b>{count}</b> товаров в восстановление"
+        )
 
-        if len(keyphrases_list) > 1:
-            text = f"✅ Успешно включено <b>{len(keyphrases_list)}</b> товаров в восстановление"
-        else:
-            phrases = "</code>, <code>".join(escape_html(p) for p in keyphrases_list[0])
-            text = f"✅ Товар с ключевыми фразами <code>{phrases}</code> успешно включён в восстановление"
+        auto_restore_items["included"].extend({"items": [item]} for item in items)
+        sett.set("auto_restore_items", auto_restore_items)
 
         await throw_float_message(
             state=state,
@@ -51,26 +57,27 @@ async def handler_waiting_for_new_included_restore_item_keyphrases(message: type
 
 
 @router.message(
-    states.RestoreItemsStates.waiting_for_new_excluded_restore_item_keyphrases,
+    states.RestoreItemsStates.waiting_for_new_excluded_restore_items,
     F.text | F.document
 )
-async def handler_waiting_for_new_excluded_restore_item_keyphrases(message: types.Message, state: FSMContext):
+async def handler_waiting_for_new_excluded_restore_items(message: types.Message, state: FSMContext):
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
 
-        keyphrases_list = parse_keyphrases_lines(await extract_lines(message))
+        items, errors = await resolve_item_lines(await extract_lines(message))
 
         auto_restore_items = sett.get("auto_restore_items")
-        auto_restore_items["excluded"].extend(keyphrases_list)
-        sett.set("auto_restore_items", auto_restore_items)
+        items, dupes = split_new_items(items, auto_restore_items["excluded"])
+        text = item_refs_report(
+            items, errors + dupes,
+            "✅ Товар <b>{name}</b> успешно добавлен в исключения для восстановления",
+            "✅ Успешно добавлено <b>{count}</b> товаров в исключения для восстановления"
+        )
 
-        if len(keyphrases_list) > 1:
-            text = f"✅ Успешно добавлено <b>{len(keyphrases_list)}</b> товаров в исключения для восстановления"
-        else:
-            phrases = "</code>, <code>".join(escape_html(p) for p in keyphrases_list[0])
-            text = f"✅ Товар с ключевыми фразами <code>{phrases}</code> успешно добавлен в исключения для восстановления"
+        auto_restore_items["excluded"].extend({"items": [item]} for item in items)
+        sett.set("auto_restore_items", auto_restore_items)
 
         await throw_float_message(
             state=state,

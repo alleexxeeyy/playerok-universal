@@ -3,6 +3,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
+from utils import binding_title
 
 from .. import callback_datas as calls
 
@@ -33,18 +34,18 @@ def delivs_kb(page=0):
     for deliv in list(auto_deliveries)[start_offset:end_offset]:
         piece = deliv.get("piece")
         sym = "📦" if piece else "💬"
-        keyphrases = ", ".join(deliv.get("keyphrases")) or "❌ Не задано"
-        keyphrases_frmtd = keyphrases[:32] + ("..." if len(keyphrases) > 32 else "")
+        title = binding_title(deliv, "❌ Не задано")
+        title_frmtd = title[:32] + ("..." if len(title) > 32 else "")
         
         if piece:
             goods = deliv.get("goods", [])
-            part = f"{len(goods)} товаров"
+            part = f"{len(goods)} позиций"
         else:
             message = deliv.get("message", [])
             part = "\n".join(message) or "❌ Не задано"
         
         rows.append([InlineKeyboardButton(
-            text=f"{sym} {keyphrases_frmtd} ・ {part}", 
+            text=f"{sym} {title_frmtd} ・ {part}", 
             callback_data=calls.AutoDeliveryPage(index=auto_deliveries.index(deliv)).pack()
         )])
 
@@ -60,7 +61,7 @@ def delivs_kb(page=0):
         buttons_row.append(btn_next)
         rows.append(buttons_row)
 
-    rows.append([InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_auto_delivery_keyphrases")])
+    rows.append([InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_auto_delivery_items")])
     rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="default").pack())])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)

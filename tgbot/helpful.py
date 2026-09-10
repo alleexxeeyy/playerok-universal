@@ -1,3 +1,4 @@
+import asyncio
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     InlineKeyboardMarkup, 
@@ -72,16 +73,48 @@ async def extract_lines(message: Message) -> list[str]:
     return lines
 
 
-def parse_keyphrases_lines(lines: list[str]) -> list[list[str]]:
-    keyphrases_list = []
-    for line in lines:
-        keyphrases = [phrase.strip() for phrase in line.split(",") if phrase.strip()]
-        if keyphrases:
-            keyphrases_list.append(keyphrases)
+MAX_SHOWN_ITEM_ERRORS = 10
 
-    if not keyphrases_list:
-        raise Exception("❌ Не удалось извлечь ключевые фразы")
-    return keyphrases_list
+
+async def resolve_item_lines(lines: list[str]) -> tuple[list[dict], list[str]]:
+    from plbot.playerokbot import get_playerok_bot
+    from utils import resolve_item_refs
+
+    account = getattr(get_playerok_bot(), "account", None)
+    if not account:
+        raise Exception("❌ Аккаунт Playerok ещё не подключён, попробуйте позже")
+
+    return await asyncio.to_thread(resolve_item_refs, account, lines)
+
+
+def _item_errors_block(errors: list[str]) -> str:
+    shown = errors[:MAX_SHOWN_ITEM_ERRORS]
+    block = "\n".join(f"・ {error}" for error in shown)
+    if len(errors) > len(shown):
+        block += f"\n・ ...и ещё {len(errors) - len(shown)}"
+    return block
+
+
+def item_refs_report(items: list[dict], errors: list[str], one: str, many: str) -> str:
+    from utils import escape_html
+
+    if not items:
+        raise Exception(
+            "❌ Не удалось добавить ни одного товара:"
+            f"\n\n{_item_errors_block(errors)}"
+        )
+
+    if len(items) == 1:
+        text = one.format(name=escape_html(items[0].get("name") or "-"))
+    else:
+        text = many.format(count=len(items))
+
+    if errors:
+        text += (
+            f"\n\n⚠️ Не удалось добавить <b>{len(errors)}</b>:"
+            f"\n{_item_errors_block(errors)}"
+        )
+    return text
 
 
 async def get_accent_message_id(state: FSMContext, message: Message, bot) -> int | None:

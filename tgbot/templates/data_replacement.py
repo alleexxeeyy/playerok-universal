@@ -2,7 +2,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
-from utils import escape_html
+from utils import escape_html, binding_title
 
 from .. import callback_datas as calls
 
@@ -11,7 +11,7 @@ def data_replacement_text(index: int):
     repl = sett.get("data_replacement")[index]
 
     enabled = "✅" if repl.get("enabled") else "❌"
-    keyphrases = "</code>, <code>".join(escape_html(p) for p in repl.get("keyphrases", [])) or "❌ Не задано"
+    items_frmtd = escape_html(binding_title(repl, "❌ Не задано"))
     separator = escape_html(repl.get("separator") or ":")
     total_data = len(repl.get("data", []))
 
@@ -19,7 +19,7 @@ def data_replacement_text(index: int):
         <b>📄🔄 Страница замены данных</b>
 
         <b>⚡ Активна:</b> {enabled}
-        <b>🔑 Ключевые фразы:</b> <code>{keyphrases}</code>
+        <b>🛍️ Товары:</b> {items_frmtd}
         <b>🔣 Разделитель:</b> <code>{separator}</code>
         <blockquote><b>(?)</b> Символ, которым разделены значения в строке данных. Значения раскладываются по полям товара в том же порядке, в котором вы заполняли их при создании товара на Playerok.</blockquote>
 
@@ -32,13 +32,14 @@ def data_replacement_kb(index: int, page: int = 0):
     repl = sett.get("data_replacement")[index]
 
     enabled = "✅" if repl.get("enabled") else "❌"
-    keyphrases = ", ".join(repl.get("keyphrases", [])) or "❌ Не задано"
+    title = binding_title(repl, "❌ Не задано")
+    title_frmtd = title[:32] + ("..." if len(title) > 32 else "")
     separator = repl.get("separator") or ":"
     total_data = len(repl.get("data", []))
 
     rows = [
         [InlineKeyboardButton(text=f"⚡ Активна: {enabled}", callback_data="switch_data_replacement_enabled")],
-        [InlineKeyboardButton(text=f"🔑 Ключевые фразы: {keyphrases}", callback_data="enter_data_replacement_keyphrases")],
+        [InlineKeyboardButton(text=f"🛍️ Товары: {title_frmtd}", callback_data="enter_data_replacement_items")],
         [InlineKeyboardButton(text=f"🔣 Разделитель: {separator}", callback_data="enter_data_replacement_separator")],
         [InlineKeyboardButton(text=f"💽 Данные: {total_data} шт. | 👈 Нажми для редактирования", callback_data=calls.DataReplacementValuesPagination(page=0).pack())],
         [InlineKeyboardButton(text="🗑️ Удалить", callback_data="confirm_deleting_data_replacement")],

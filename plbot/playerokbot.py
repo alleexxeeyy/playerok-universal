@@ -34,7 +34,14 @@ from core.handlers import (
 from settings import DATA, Settings as sett
 from logging import getLogger
 from data import Data as data
-from utils import get_current_bump_interval, get_current_bump_position
+from utils import (
+    get_current_bump_interval,
+    get_current_bump_position,
+    item_matches_binding,
+    item_matches_any_binding,
+    binding_key,
+    rebind_item
+)
 from tgbot.telegrambot import (
     get_telegram_bot, 
     get_telegram_bot_loop
@@ -354,22 +361,8 @@ class PlayerokBot:
 
 
     def is_bump_item_matched(self, item: ItemProfile | MyItem) -> bool:
-        included = any(
-            any(
-                phrase.lower() in item.name.lower()
-                or item.name.lower() == phrase.lower()
-                for phrase in included_item
-            )
-            for included_item in self.auto_bump_items["included"]
-        )
-        excluded = any(
-            any(
-                phrase.lower() in item.name.lower()
-                or item.name.lower() == phrase.lower()
-                for phrase in excluded_item
-            )
-            for excluded_item in self.auto_bump_items["excluded"]
-        )
+        included = item_matches_any_binding(item, self.auto_bump_items["included"])
+        excluded = item_matches_any_binding(item, self.auto_bump_items["excluded"])
 
         return (
             self.config["playerok"]["auto_bump_items"]["all"]
@@ -552,12 +545,7 @@ class PlayerokBot:
         data_replacement = sett.get("data_replacement") or []
         repl = next((
             r for r in data_replacement
-            if r.get("enabled")
-            and any(
-                phrase.lower() in item.name.lower()
-                or item.name.lower() == phrase.lower()
-                for phrase in r.get("keyphrases", [])
-            )
+            if r.get("enabled") and item_matches_binding(item, r)
         ), None)
         if not repl:
             return None
@@ -584,20 +572,23 @@ class PlayerokBot:
         for field, value in zip(fields, new_values):
             field.value = value.strip()
 
-        return repl.get("keyphrases"), values[0], fields
+        return repl, values[0], fields
 
-    def consume_item_data(self, keyphrases: list, value: str) -> int:
+    def consume_item_data(self, binding: dict, value: str) -> int:
         # перечитываем перед списанием: за время запроса тг-бот мог изменить замены
         data_replacement = sett.get("data_replacement") or []
+        key = binding_key(binding)
         repl = next(
-            (r for r in data_replacement if r.get("keyphrases") == keyphrases),
+            (
+                r for r in data_replacement
+                if binding_key(r) == key and value in (r.get("data") or [])
+            ),
             None
         )
         if repl is None:
             return 0
 
-        if value in repl.get("data", []):
-            repl["data"].remove(value)
+        repl["data"].remove(value)
         self.data_replacement = data_replacement
         sett.set("data_replacement", data_replacement)
         return len(repl.get("data", []))
@@ -607,9 +598,9 @@ class PlayerokBot:
         if not prepared:
             return None
 
-        keyphrases, value, fields = prepared
+        binding, value, fields = prepared
         self.account.update_item(item.id, data_fields=fields)
-        return True, self.consume_item_data(keyphrases, value)
+        return True, self.consume_item_data(binding, value)
 
     def publish_restored_item(self, item_id: str, raw_price: int, is_premium: bool, name_frmtd: str):
         time.sleep(1)
@@ -706,22 +697,8 @@ class PlayerokBot:
         try:
             name_frmtd = item.name[:32] + ("..." if len(item.name) > 32 else "")
             
-            included = any(
-                any(
-                    phrase.lower() in item.name.lower()
-                    or item.name.lower() == phrase.lower()
-                    for phrase in included_item
-                )
-                for included_item in self.auto_restore_items["included"]
-            )
-            excluded = any(
-                any(
-                    phrase.lower() in item.name.lower()
-                    or item.name.lower() == phrase.lower()
-                    for phrase in excluded_item
-                )
-                for excluded_item in self.auto_restore_items["excluded"]
-            )
+            included = item_matches_any_binding(item, self.auto_restore_items["included"])
+            excluded = item_matches_any_binding(item, self.auto_restore_items["excluded"])
 
             if (
                 self.config["playerok"]["auto_restore_items"]["all"]
@@ -775,6 +752,18 @@ class PlayerokBot:
 
                     self.recreated_items.add(item.id)
                     replaced = (True, self.consume_item_data(*prepared[:2])) if prepared else None
+
+                    rebound = rebind_item(item.id, {
+                        "id": new_item.id,
+                        "slug": new_item.slug or item.slug,
+                        "name": new_item.name or item.name
+                    })
+                    if rebound:
+                        logger.info(
+                            f"{Fore.LIGHTWHITE_EX}«{name_frmtd}» {Fore.WHITE}— "
+                            f"{Fore.YELLOW}привязки перенесены на пересозданный товар "
+                            f"{Fore.WHITE}(записей: {Fore.LIGHTWHITE_EX}{rebound}{Fore.WHITE})"
+                        )
 
                     old_removed = self.remove_item_quietly(item.id, name_frmtd, "старый товар после пересоздания")
                     if old_removed:
@@ -1288,59 +1277,41 @@ class PlayerokBot:
             self.initialized_users.append(event.deal.user.id)
                 
         for i, auto_delivery in enumerate(list(self.auto_deliveries)):
-            for phrase in auto_delivery["keyphrases"]:
-                if (
-                    phrase.lower() in (event.deal.item.name or "").lower() 
-                    or (event.deal.item.name or "").lower() == phrase.lower()
-                ):
-                    piece = auto_delivery.get("piece", False)
-                    if piece:
-                        goods =  auto_delivery.get("goods", [])
-                        try: good = goods[0]
-                        except: break
+            if not item_matches_binding(event.deal.item, auto_delivery):
+                continue
 
-                        mess = self.send_message(event.chat.id, good)
-                        if mess:
-                            logger.info(
-                                f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "
-                                f"{Fore.YELLOW}выдан товар {Fore.LIGHTYELLOW_EX}«{good}»{Fore.YELLOW}. "
-                                f"Остаток: {Fore.LIGHTYELLOW_EX}{len(goods)-1}"
-                            )
-                            self.auto_deliveries[i]["goods"].pop(goods.index(good))
-                            sett.set("auto_deliveries", self.auto_deliveries)
-                    else:
-                        msg = auto_delivery.get("message", "")
-                        if msg:
-                            mess = self.send_message(event.chat.id, "\n".join(msg))
-                            if mess:
-                                logger.info(
-                                    f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "
-                                    f"{Fore.YELLOW}отправлено сообщение авто-выдачи {Fore.LIGHTYELLOW_EX}«{' '.join(msg)}»"
-                                )
-                    
-                    break
+            piece = auto_delivery.get("piece", False)
+            if piece:
+                goods = auto_delivery.get("goods", [])
+                try: good = goods[0]
+                except: continue
+
+                mess = self.send_message(event.chat.id, good)
+                if mess:
+                    logger.info(
+                        f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "
+                        f"{Fore.YELLOW}выдан товар {Fore.LIGHTYELLOW_EX}«{good}»{Fore.YELLOW}. "
+                        f"Остаток: {Fore.LIGHTYELLOW_EX}{len(goods)-1}"
+                    )
+                    self.auto_deliveries[i]["goods"].pop(goods.index(good))
+                    sett.set("auto_deliveries", self.auto_deliveries)
+            else:
+                msg = auto_delivery.get("message", "")
+                if msg:
+                    mess = self.send_message(event.chat.id, "\n".join(msg))
+                    if mess:
+                        logger.info(
+                            f"{Fore.YELLOW}Покупателю {Fore.LIGHTYELLOW_EX}{event.deal.user.username or '?'} "
+                            f"{Fore.YELLOW}отправлено сообщение авто-выдачи {Fore.LIGHTYELLOW_EX}«{' '.join(msg)}»"
+                        )
         
         if self.config["playerok"]["auto_complete_deals"]["enabled"]:
             if not event.deal.item.name:
                 try: event.deal.item = self.account.get_item(event.deal.item.id)
                 except: return
 
-            included = any(
-                any(
-                    phrase.lower() in event.deal.item.name.lower()
-                    or event.deal.item.name.lower() == phrase.lower()
-                    for phrase in included_item
-                )
-                for included_item in self.auto_complete_deals["included"]
-            )
-            excluded = any(
-                any(
-                    phrase.lower() in event.deal.item.name.lower()
-                    or event.deal.item.name.lower() == phrase.lower()
-                    for phrase in excluded_item
-                )
-                for excluded_item in self.auto_complete_deals["excluded"]
-            )
+            included = item_matches_any_binding(event.deal.item, self.auto_complete_deals["included"])
+            excluded = item_matches_any_binding(event.deal.item, self.auto_complete_deals["excluded"])
 
             if (
                 self.config["playerok"]["auto_complete_deals"]["all"]

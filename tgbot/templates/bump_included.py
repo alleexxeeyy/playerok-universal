@@ -3,6 +3,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
+from utils import binding_title
 
 from .. import callback_datas as calls
 
@@ -30,10 +31,11 @@ def bump_included_kb(page=0):
     start_offset = page * items_per_page
     end_offset = start_offset + items_per_page
 
-    for i, keyphrases in enumerate(list(included_bump_items)[start_offset:end_offset], start=start_offset):
-        keyphrases_frmtd = ", ".join(keyphrases) or "❌ Не указано"
+    for i, entry in enumerate(list(included_bump_items)[start_offset:end_offset], start=start_offset):
+        title = binding_title(entry, "❌ Не указано")
+        title_frmtd = title[:32] + ("..." if len(title) > 32 else "")
         rows.append([
-            InlineKeyboardButton(text=f"{keyphrases_frmtd}", callback_data="null_answer"),
+            InlineKeyboardButton(text=f"{title_frmtd}", callback_data="null_answer"),
             InlineKeyboardButton(text=f"🗑️", callback_data=calls.DeleteIncludedBumpItem(index=i).pack()),
         ])
 
@@ -50,7 +52,7 @@ def bump_included_kb(page=0):
         rows.append(buttons_row)
 
     rows.append([
-        InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_included_bump_item_keyphrases")
+        InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_included_bump_items")
     ])
     rows.append([
         InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="bump").pack()),

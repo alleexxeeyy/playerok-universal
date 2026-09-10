@@ -3,6 +3,7 @@ import textwrap
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from settings import Settings as sett
+from utils import binding_title
 
 from .. import callback_datas as calls
 
@@ -32,12 +33,12 @@ def data_replacements_kb(page=0):
 
     for i, repl in enumerate(data_replacement[start_offset:end_offset], start=start_offset):
         sym = "✅" if repl.get("enabled") else "❌"
-        keyphrases = ", ".join(repl.get("keyphrases", [])) or "❌ Не задано"
-        keyphrases_frmtd = keyphrases[:32] + ("..." if len(keyphrases) > 32 else "")
+        title = binding_title(repl, "❌ Не задано")
+        title_frmtd = title[:32] + ("..." if len(title) > 32 else "")
         total_data = len(repl.get("data", []))
 
         rows.append([InlineKeyboardButton(
-            text=f"{sym} {keyphrases_frmtd} ・ {total_data} данных",
+            text=f"{sym} {title_frmtd} ・ {total_data} данных",
             callback_data=calls.DataReplacementPage(index=i).pack()
         )])
 
@@ -53,7 +54,7 @@ def data_replacements_kb(page=0):
         buttons_row.append(btn_next)
         rows.append(buttons_row)
 
-    rows.append([InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_data_replacement_keyphrases")])
+    rows.append([InlineKeyboardButton(text="➕ Добавить", callback_data="enter_new_data_replacement_items")])
     rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="restore").pack())])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)

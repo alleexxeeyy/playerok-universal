@@ -15,11 +15,15 @@ router = Router()
 async def handler_waiting_for_page(message: types.Message, state: FSMContext):
     data = await state.get_data()
     enter = data.get("page_enter")
+    if not enter or enter.get("to") not in PAGES:
+        await state.set_state(None)
+        return
+
     render, float_text = PAGES[enter["to"]]
     try:
         await state.set_state(enter["state"])
 
-        if not message.text.strip().isdigit():
+        if not message.text.strip().isdecimal():
             raise Exception("❌ Вы должны ввести числовое значение")
 
         page = max(int(message.text.strip()), 1) - 1

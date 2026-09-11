@@ -412,7 +412,7 @@ async def load_cursor_list(state: FSMContext, message: Message, key: str, page: 
 
         batch, end_cursor = await asyncio.to_thread(fetch, end_cursor)
         objects.extend(batch or [])
-        if len(batch or []) < 24:
+        if len(batch or []) < 24 or not end_cursor:
             is_all_loaded = True
         requests += 1
 

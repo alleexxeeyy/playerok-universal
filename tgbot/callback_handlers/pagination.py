@@ -1,6 +1,7 @@
 import copy
+import math
 from aiogram import Router
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 
 import asyncio
@@ -10,24 +11,39 @@ from playerokapi.enums import MessageTemplateTypes, SortDirections, ReviewStatus
 
 from .. import templates as templ
 from .. import callback_datas as calls
+from .. import states
 from ..helpful import throw_float_message
 
 
 router = Router()
 
 
-@router.callback_query(calls.SignedUsersPagination.filter())
-async def callback_signed_users_pagination(callback: CallbackQuery, callback_data: calls.SignedUsersPagination, state: FSMContext):
-    await state.set_state(None)
-    
-    page = callback_data.page
+async def render_signed_users(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
+        message=message,
         text=templ.signed_users_text(),
         reply_markup=await templ.signed_users_kb(page),
+        callback=callback
+    )
+
+
+@router.callback_query(calls.SignedUsersPagination.filter())
+async def callback_signed_users_pagination(callback: CallbackQuery, callback_data: calls.SignedUsersPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_signed_users(callback.message, state, callback_data.page, callback)
+
+
+async def render_restore_included(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    await state.update_data(last_page=page)
+    
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.restore_included_text(),
+        reply_markup=templ.restore_included_kb(page),
         callback=callback
     )
 
@@ -35,15 +51,17 @@ async def callback_signed_users_pagination(callback: CallbackQuery, callback_dat
 @router.callback_query(calls.IncludedRestoreItemsPagination.filter())
 async def callback_included_restore_items_pagination(callback: CallbackQuery, callback_data: calls.IncludedRestoreItemsPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_restore_included(callback.message, state, callback_data.page, callback)
+
+
+async def render_restore_excluded(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.restore_included_text(),
-        reply_markup=templ.restore_included_kb(page),
+        message=message,
+        text=templ.restore_excluded_text(),
+        reply_markup=templ.restore_excluded_kb(page),
         callback=callback
     )
 
@@ -51,15 +69,17 @@ async def callback_included_restore_items_pagination(callback: CallbackQuery, ca
 @router.callback_query(calls.ExcludedRestoreItemsPagination.filter())
 async def callback_excluded_restore_items_pagination(callback: CallbackQuery, callback_data: calls.ExcludedRestoreItemsPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_restore_excluded(callback.message, state, callback_data.page, callback)
+
+
+async def render_complete_included(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.restore_excluded_text(),
-        reply_markup=templ.restore_excluded_kb(page),
+        message=message,
+        text=templ.complete_included_text(),
+        reply_markup=templ.complete_included_kb(page),
         callback=callback
     )
 
@@ -67,15 +87,17 @@ async def callback_excluded_restore_items_pagination(callback: CallbackQuery, ca
 @router.callback_query(calls.IncludedCompleteDealsPagination.filter())
 async def callback_included_complete_deals_pagination(callback: CallbackQuery, callback_data: calls.IncludedCompleteDealsPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_complete_included(callback.message, state, callback_data.page, callback)
+
+
+async def render_complete_excluded(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.complete_included_text(),
-        reply_markup=templ.complete_included_kb(page),
+        message=message,
+        text=templ.complete_excluded_text(),
+        reply_markup=templ.complete_excluded_kb(page),
         callback=callback
     )
 
@@ -83,15 +105,17 @@ async def callback_included_complete_deals_pagination(callback: CallbackQuery, c
 @router.callback_query(calls.ExcludedCompleteDealsPagination.filter())
 async def callback_excluded_complete_deals_pagination(callback: CallbackQuery, callback_data: calls.ExcludedCompleteDealsPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_complete_excluded(callback.message, state, callback_data.page, callback)
+
+
+async def render_bump_included(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.complete_excluded_text(),
-        reply_markup=templ.complete_excluded_kb(page),
+        message=message,
+        text=templ.bump_included_text(),
+        reply_markup=templ.bump_included_kb(page),
         callback=callback
     )
 
@@ -99,15 +123,17 @@ async def callback_excluded_complete_deals_pagination(callback: CallbackQuery, c
 @router.callback_query(calls.IncludedBumpItemsPagination.filter())
 async def callback_included_bump_items_pagination(callback: CallbackQuery, callback_data: calls.IncludedBumpItemsPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_bump_included(callback.message, state, callback_data.page, callback)
+
+
+async def render_bump_excluded(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.bump_included_text(),
-        reply_markup=templ.bump_included_kb(page),
+        message=message,
+        text=templ.bump_excluded_text(),
+        reply_markup=templ.bump_excluded_kb(page),
         callback=callback
     )
 
@@ -115,15 +141,17 @@ async def callback_included_bump_items_pagination(callback: CallbackQuery, callb
 @router.callback_query(calls.ExcludedBumpItemsPagination.filter())
 async def callback_excluded_bump_items_pagination(callback: CallbackQuery, callback_data: calls.ExcludedBumpItemsPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_bump_excluded(callback.message, state, callback_data.page, callback)
+
+
+async def render_bump_positions(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
-    
+
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.bump_excluded_text(),
-        reply_markup=templ.bump_excluded_kb(page),
+        message=message,
+        text=templ.bump_positions_text(),
+        reply_markup=templ.bump_positions_kb(page),
         callback=callback
     )
 
@@ -131,15 +159,17 @@ async def callback_excluded_bump_items_pagination(callback: CallbackQuery, callb
 @router.callback_query(calls.BumpItemsPositionsPagination.filter())
 async def callback_bump_items_positions_pagination(callback: CallbackQuery, callback_data: calls.BumpItemsPositionsPagination, state: FSMContext):
     await state.set_state(None)
+    await render_bump_positions(callback.message, state, callback_data.page, callback)
 
-    page = callback_data.page
+
+async def render_custom_commands(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
-
+    
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.bump_positions_text(),
-        reply_markup=templ.bump_positions_kb(page),
+        message=message,
+        text=templ.comms_text(),
+        reply_markup=templ.comms_kb(page),
         callback=callback
     )
 
@@ -147,50 +177,56 @@ async def callback_bump_items_positions_pagination(callback: CallbackQuery, call
 @router.callback_query(calls.CustomCommandsPagination.filter())
 async def callback_custom_commands_pagination(callback: CallbackQuery, callback_data: calls.CustomCommandsPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_custom_commands(callback.message, state, callback_data.page, callback)
+
+
+async def render_auto_deliveries(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.comms_text(),
-        reply_markup=templ.comms_kb(page),
-        callback=callback
-    )
-
-
-@router.callback_query(calls.AutoDeliveriesPagination.filter())
-async def callback_auto_deliveries_pagination(callback: CallbackQuery, callback_data: calls.AutoDeliveriesPagination, state: FSMContext):
-    await state.set_state(None)
-    
-    page = callback_data.page
-    await state.update_data(last_page=page)
-    
-    await throw_float_message(
-        state=state,
-        message=callback.message,
+        message=message,
         text=templ.delivs_text(),
         reply_markup=templ.delivs_kb(page),
         callback=callback
         )
 
 
-@router.callback_query(calls.DelivGoodsPagination.filter())
-async def callback_deliv_goods_pagination(callback: CallbackQuery, callback_data: calls.DelivGoodsPagination, state: FSMContext):
+@router.callback_query(calls.AutoDeliveriesPagination.filter())
+async def callback_auto_deliveries_pagination(callback: CallbackQuery, callback_data: calls.AutoDeliveriesPagination, state: FSMContext):
     await state.set_state(None)
+    await render_auto_deliveries(callback.message, state, callback_data.page, callback)
 
+
+async def render_deliv_goods(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     data = await state.get_data()
     index = data.get("auto_delivery_index")
     
-    page = callback_data.page
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
+        message=message,
         text=templ.deliv_goods_text(index),
         reply_markup=templ.deliv_goods_kb(index, page),
+        callback=callback
+    )
+
+
+@router.callback_query(calls.DelivGoodsPagination.filter())
+async def callback_deliv_goods_pagination(callback: CallbackQuery, callback_data: calls.DelivGoodsPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_deliv_goods(callback.message, state, callback_data.page, callback)
+
+
+async def render_data_replacements(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    await state.update_data(last_page=page)
+
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.data_replacements_text(),
+        reply_markup=templ.data_replacements_kb(page),
         callback=callback
     )
 
@@ -198,15 +234,20 @@ async def callback_deliv_goods_pagination(callback: CallbackQuery, callback_data
 @router.callback_query(calls.DataReplacementsPagination.filter())
 async def callback_data_replacements_pagination(callback: CallbackQuery, callback_data: calls.DataReplacementsPagination, state: FSMContext):
     await state.set_state(None)
+    await render_data_replacements(callback.message, state, callback_data.page, callback)
 
-    page = callback_data.page
-    await state.update_data(last_page=page)
+
+async def render_data_replacement_values(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    data = await state.get_data()
+    index = data.get("data_replacement_index")
+
+    await state.update_data(data_replacement_values_page=page)
 
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.data_replacements_text(),
-        reply_markup=templ.data_replacements_kb(page),
+        message=message,
+        text=templ.data_replacement_values_text(index),
+        reply_markup=templ.data_replacement_values_kb(index, page),
         callback=callback
     )
 
@@ -214,18 +255,17 @@ async def callback_data_replacements_pagination(callback: CallbackQuery, callbac
 @router.callback_query(calls.DataReplacementValuesPagination.filter())
 async def callback_data_replacement_values_pagination(callback: CallbackQuery, callback_data: calls.DataReplacementValuesPagination, state: FSMContext):
     await state.set_state(None)
+    await render_data_replacement_values(callback.message, state, callback_data.page, callback)
 
-    data = await state.get_data()
-    index = data.get("data_replacement_index")
 
-    page = callback_data.page
-    await state.update_data(data_replacement_values_page=page)
-
+async def render_messages(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    await state.update_data(last_page=page)
+    
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.data_replacement_values_text(index),
-        reply_markup=templ.data_replacement_values_kb(index, page),
+        message=message,
+        text=templ.mess_text(),
+        reply_markup=templ.mess_kb(page),
         callback=callback
     )
 
@@ -233,15 +273,17 @@ async def callback_data_replacement_values_pagination(callback: CallbackQuery, c
 @router.callback_query(calls.MessagesPagination.filter())
 async def callback_messages_pagination(callback: CallbackQuery, callback_data: calls.MessagesPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_messages(callback.message, state, callback_data.page, callback)
+
+
+async def render_fast_replies(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.mess_text(),
-        reply_markup=templ.mess_kb(page),
+        message=message,
+        text=templ.fast_replies_text(),
+        reply_markup=templ.fast_replies_kb(page),
         callback=callback
     )
 
@@ -249,15 +291,19 @@ async def callback_messages_pagination(callback: CallbackQuery, callback_data: c
 @router.callback_query(calls.FastRepliesPagination.filter())
 async def callback_fast_replies_pagination(callback: CallbackQuery, callback_data: calls.FastRepliesPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_fast_replies(callback.message, state, callback_data.page, callback)
+
+
+async def render_fast_sel_fast_reply(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    data = await state.get_data()
+    chat_id = data.get("fast_reply_chat_id")
     await state.update_data(last_page=page)
-    
+
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.fast_replies_text(),
-        reply_markup=templ.fast_replies_kb(page),
+        message=message,
+        text=templ.do_action_text(f"⚡ Выберите <b>быстрый ответ</b> для отправки:"),
+        reply_markup=templ.fast_sel_fast_reply_kb(chat_id, page),
         callback=callback
     )
 
@@ -265,16 +311,20 @@ async def callback_fast_replies_pagination(callback: CallbackQuery, callback_dat
 @router.callback_query(calls.FastSelFastReplyPagination.filter())
 async def callback_fast_sel_fast_replies_pagination(callback: CallbackQuery, callback_data: calls.FastSelFastReplyPagination, state: FSMContext):
     await state.set_state(None)
-    
-    chat_id = callback_data.id
-    page = callback_data.page
+    await state.update_data(fast_reply_chat_id=callback_data.id)
+    await render_fast_sel_fast_reply(callback.message, state, callback_data.page, callback)
+
+
+async def render_sel_fast_reply(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    data = await state.get_data()
+    chat_id = data.get("fast_reply_chat_id")
     await state.update_data(last_page=page)
 
     await throw_float_message(
         state=state,
-        message=callback.message,
+        message=message,
         text=templ.do_action_text(f"⚡ Выберите <b>быстрый ответ</b> для отправки:"),
-        reply_markup=templ.fast_sel_fast_reply_kb(chat_id, page),
+        reply_markup=templ.sel_fast_reply_kb(chat_id, page),
         callback=callback
     )
 
@@ -282,16 +332,18 @@ async def callback_fast_sel_fast_replies_pagination(callback: CallbackQuery, cal
 @router.callback_query(calls.SelFastReplyPagination.filter())
 async def callback_sel_fast_replies_pagination(callback: CallbackQuery, callback_data: calls.SelFastReplyPagination, state: FSMContext):
     await state.set_state(None)
-    
-    chat_id = callback_data.id
-    page = callback_data.page
-    await state.update_data(last_page=page)
+    await state.update_data(fast_reply_chat_id=callback_data.id)
+    await render_sel_fast_reply(callback.message, state, callback_data.page, callback)
 
+
+async def render_modules(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    await state.update_data(last_page=page)
+    
     await throw_float_message(
         state=state,
-        message=callback.message,
-        text=templ.do_action_text(f"⚡ Выберите <b>быстрый ответ</b> для отправки:"),
-        reply_markup=templ.sel_fast_reply_kb(chat_id, page),
+        message=message,
+        text=templ.modules_text(),
+        reply_markup=templ.modules_kb(page),
         callback=callback
     )
 
@@ -299,24 +351,10 @@ async def callback_sel_fast_replies_pagination(callback: CallbackQuery, callback
 @router.callback_query(calls.ModulesPagination.filter())
 async def callback_modules_pagination(callback: CallbackQuery, callback_data: calls.ModulesPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
-    await state.update_data(last_page=page)
-    
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.modules_text(),
-        reply_markup=templ.modules_kb(page),
-        callback=callback
-    )
+    await render_modules(callback.message, state, callback_data.page, callback)
 
 
-@router.callback_query(calls.BankCardsPagination.filter())
-async def callback_bank_cards_pagination(callback: CallbackQuery, callback_data: calls.BankCardsPagination, state: FSMContext):
-    await state.set_state(None)
-    
-    page = callback_data.page
+async def render_bank_cards(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     data = await state.get_data()
@@ -324,18 +362,20 @@ async def callback_bank_cards_pagination(callback: CallbackQuery, callback_data:
     
     await throw_float_message(
         state=state,
-        message=callback.message,
+        message=message,
         text=templ.withdrawal_cards_text(bank_cards),
         reply_markup=templ.withdrawal_cards_kb(bank_cards, page),
         callback=callback
     )
 
 
-@router.callback_query(calls.SbpBanksPagination.filter())
-async def callback_sbp_banks_pagination(callback: CallbackQuery, callback_data: calls.SbpBanksPagination, state: FSMContext):
+@router.callback_query(calls.BankCardsPagination.filter())
+async def callback_bank_cards_pagination(callback: CallbackQuery, callback_data: calls.BankCardsPagination, state: FSMContext):
     await state.set_state(None)
-    
-    page = callback_data.page
+    await render_bank_cards(callback.message, state, callback_data.page, callback)
+
+
+async def render_sbp_banks(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
     data = await state.get_data()
@@ -343,59 +383,66 @@ async def callback_sbp_banks_pagination(callback: CallbackQuery, callback_data: 
     
     await throw_float_message(
         state=state,
-        message=callback.message,
+        message=message,
         text=templ.withdrawal_sbp_text(sbp_banks),
         reply_markup=templ.withdrawal_sbp_kb(sbp_banks, page),
         callback=callback
     )
 
 
-@router.callback_query(calls.ChatsPagination.filter())
-async def callback_chats_pagination(callback: CallbackQuery, callback_data: calls.ChatsPagination, state: FSMContext):
+@router.callback_query(calls.SbpBanksPagination.filter())
+async def callback_sbp_banks_pagination(callback: CallbackQuery, callback_data: calls.SbpBanksPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_sbp_banks(callback.message, state, callback_data.page, callback)
+
+
+MAX_PAGE_LOAD_REQUESTS = 10
+
+
+async def load_cursor_list(state: FSMContext, message: Message, key: str, page: int, fetch, reset: bool = False) -> list:
+    data = await state.get_data()
+    objects = [] if reset else (data.get(key) or [])
+    end_cursor = None if reset else data.get(f"{key}_end_cursor")
+    is_all_loaded = False if reset else (data.get(f"is_all_{key}_loaded") or False)
+
+    requests = 0
+    while not is_all_loaded and len(objects) < (page + 1) * 12 + 1 and requests < MAX_PAGE_LOAD_REQUESTS:
+        if requests == 0:
+            await throw_float_message(state, message, "⌛️")
+
+        batch, end_cursor = await asyncio.to_thread(fetch, end_cursor)
+        objects.extend(batch or [])
+        if len(batch or []) < 24:
+            is_all_loaded = True
+        requests += 1
+
+    if requests:
+        await state.update_data(**{
+            key: objects,
+            f"{key}_end_cursor": end_cursor,
+            f"is_all_{key}_loaded": is_all_loaded
+        })
+    return objects
+
+
+async def render_chats(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None, upd: bool = False):
     try:
-        await state.set_state(None)
-        
-        page = callback_data.page
-        upd = callback_data.upd
+        from plbot.playerokbot import get_playerok_bot as plbot
+
+        def fetch(after_cursor):
+            chat_lst = plbot().account.get_chats(
+                count=24,
+                after_cursor=after_cursor
+            )
+            return chat_lst.chats, chat_lst.page_info.end_cursor
+
+        chats = await load_cursor_list(state, message, "chats", page, fetch, reset=upd)
+        page = min(page, max(math.ceil(len(chats) / 12), 1) - 1)
         await state.update_data(last_page=page)
 
-        data = await state.get_data()
-        chats = data.get("chats") or []
-        end_cursor = data.get("chats_end_cursor")
-        is_all_chats_loaded = data.get("is_all_chats_loaded") or False
-
-        next_page_start = (page + 1) * 12
-        need_more = len(chats) < next_page_start + 1
-
-        if upd:
-            end_cursor = None
-
-        if (not is_all_chats_loaded and need_more) or upd:
-            await throw_float_message(state, callback.message, "⌛️")
-            from plbot.playerokbot import get_playerok_bot as plbot
-            
-            chat_lst = plbot().account.get_chats(
-                count=24, 
-                after_cursor=end_cursor
-            ) 
-            
-            if upd:
-                chats = chat_lst.chats
-            else:
-                chats.extend(chat_lst.chats or [])
-
-            if len(chat_lst.chats or []) < 24:
-                is_all_chats_loaded = True
-
-            await state.update_data(
-                is_all_chats_loaded=is_all_chats_loaded,
-                chats_end_cursor=chat_lst.page_info.end_cursor,
-                chats=chats
-            )
-        
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.chats_text(chats, page),
             reply_markup=templ.chats_kb(chats, page),
             callback=callback
@@ -403,27 +450,22 @@ async def callback_chats_pagination(callback: CallbackQuery, callback_data: call
     except Exception as e:
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.chats_float_text(e),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="default").pack()),
             callback=callback
         )
 
 
-@router.callback_query(calls.DealsPagination.filter())
-async def callback_deals_pagination(callback: CallbackQuery, callback_data: calls.DealsPagination, state: FSMContext):
-    try:
-        await state.set_state(None)
-        
-        page = callback_data.page
-        upd = callback_data.upd
-        await state.update_data(last_page=page)
+@router.callback_query(calls.ChatsPagination.filter())
+async def callback_chats_pagination(callback: CallbackQuery, callback_data: calls.ChatsPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_chats(callback.message, state, callback_data.page, callback, upd=callback_data.upd)
 
+
+async def render_deals(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None, upd: bool = False):
+    try:
         data = await state.get_data()
-        deals = data.get("deals") or []
-        end_cursor = data.get("deals_end_cursor")
-        is_all_deals_loaded = data.get("is_all_deals_loaded") or False
-        
         deals_filter = data.get("deals_filter")
         last_deals_filter = data.get("last_deals_filter")
 
@@ -432,42 +474,26 @@ async def callback_deals_pagination(callback: CallbackQuery, callback_data: call
             await state.update_data(deals_filter=deals_filter)
 
         await state.update_data(last_deals_filter=copy.deepcopy(deals_filter))
-
-        next_page_start = (page + 1) * 12
-        need_more = len(deals) < next_page_start + 1
         filter_updated = deals_filter != last_deals_filter
 
-        if upd:
-            end_cursor = None
+        from plbot.playerokbot import get_playerok_bot as plbot
 
-        if (not is_all_deals_loaded and need_more) or filter_updated or upd:
-            await throw_float_message(state, callback.message, "⌛️")
-            from plbot.playerokbot import get_playerok_bot as plbot
-            
+        def fetch(after_cursor):
             deal_lst = plbot().account.get_deals(
-                count=24, 
+                count=24,
                 direction=deals_filter["direction"],
                 statuses=deals_filter["statuses"] or None,
-                after_cursor=end_cursor
+                after_cursor=after_cursor
             )
+            return deal_lst.deals, deal_lst.page_info.end_cursor
 
-            if filter_updated or upd:
-                deals = deal_lst.deals
-            else:
-                deals.extend(deal_lst.deals or [])
+        deals = await load_cursor_list(state, message, "deals", page, fetch, reset=upd or filter_updated)
+        page = min(page, max(math.ceil(len(deals) / 12), 1) - 1)
+        await state.update_data(last_page=page)
 
-            if len(deal_lst.deals or []) < 24:
-                is_all_deals_loaded = True
-
-            await state.update_data(
-                is_all_deals_loaded=is_all_deals_loaded,
-                deals_end_cursor=deal_lst.page_info.end_cursor,
-                deals=deals
-            )
-        
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.deals_text(deals, page),
             reply_markup=templ.deals_kb(deals, page),
             callback=callback
@@ -475,26 +501,28 @@ async def callback_deals_pagination(callback: CallbackQuery, callback_data: call
     except Exception as e:
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.deals_float_text(e),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="default").pack()),
             callback=callback
         )
 
 
-@router.callback_query(calls.SelMessageTemplatePagination.filter())
-async def callback_sel_message_template_pagination(callback: CallbackQuery, callback_data: calls.SelMessageTemplatePagination, state: FSMContext):
+@router.callback_query(calls.DealsPagination.filter())
+async def callback_deals_pagination(callback: CallbackQuery, callback_data: calls.DealsPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_deals(callback.message, state, callback_data.page, callback, upd=callback_data.upd)
+
+
+async def render_sel_message_template(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    data = await state.get_data()
+    deal_id = data.get("deal_id")
+    type_int = data.get("message_template_type")
     try:
-        await state.set_state(None)
-        data = await state.get_data()
-        
         from plbot.playerokbot import get_playerok_bot as plbot
         acc = plbot().account
-        
-        deal_id = callback_data.id
-        type_int = callback_data.type
-        page = callback_data.page
-        await state.update_data(deal_id=deal_id, last_page=page)
+
+        await state.update_data(last_page=page)
 
         if type_int == 0:
             type = MessageTemplateTypes.ACTIVE_DEAL_PROBLEM
@@ -509,41 +537,44 @@ async def callback_sel_message_template_pagination(callback: CallbackQuery, call
         mt = data.get("mts") or []
 
         if not mt:
-            await throw_float_message(state, callback.message, "⌛️")
+            await throw_float_message(state, message, "⌛️")
             mt_list = acc.get_message_templates(count=24, type=type)
             mt = mt_list.message_templates
             await state.update_data(mts=mt)
-        
+
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.deal_float_text("🗂️ Выберите <b>категорию проблемы</b>:"),
-            reply_markup=templ.sel_message_template_kb(mt, deal_id, page),
+            reply_markup=templ.sel_message_template_kb(mt, deal_id, type_int, page),
             callback=callback
         )
     except Exception as e:
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.deal_float_text(e),
             reply_markup=templ.back_kb(calls.DealPage(id=deal_id).pack()),
             callback=callback
         )
 
 
-@router.callback_query(calls.FastSelMessageTemplatePagination.filter())
-async def callback_fast_sel_message_template_pagination(callback: CallbackQuery, callback_data: calls.FastSelMessageTemplatePagination, state: FSMContext):
+@router.callback_query(calls.SelMessageTemplatePagination.filter())
+async def callback_sel_message_template_pagination(callback: CallbackQuery, callback_data: calls.SelMessageTemplatePagination, state: FSMContext):
+    await state.set_state(None)
+    await state.update_data(deal_id=callback_data.id, message_template_type=callback_data.type)
+    await render_sel_message_template(callback.message, state, callback_data.page, callback)
+
+
+async def render_fast_sel_message_template(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    data = await state.get_data()
+    deal_id = data.get("deal_id")
+    type_int = data.get("message_template_type")
     try:
-        await state.set_state(None)
-        data = await state.get_data()
-        
         from plbot.playerokbot import get_playerok_bot as plbot
         acc = plbot().account
-        
-        deal_id = callback_data.id
-        type_int = callback_data.type
-        page = callback_data.page
-        await state.update_data(deal_id=deal_id, last_page=page)
+
+        await state.update_data(last_page=page)
 
         if type_int == 0:
             type = MessageTemplateTypes.ACTIVE_DEAL_PROBLEM
@@ -554,42 +585,38 @@ async def callback_fast_sel_message_template_pagination(callback: CallbackQuery,
         mt = data.get("mts") or []
 
         if not mt:
-            await throw_float_message(state, callback.message, "⌛️")
+            await throw_float_message(state, message, "⌛️")
             mt_list = acc.get_message_templates(count=24, type=type)
             mt = mt_list.message_templates
             await state.update_data(mts=mt)
-        
+
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.deal_float_text("🗂️ Выберите <b>категорию проблемы</b>:"),
-            reply_markup=templ.fast_sel_message_template_kb(mt, page),
+            reply_markup=templ.fast_sel_message_template_kb(mt, deal_id, type_int, page),
             callback=callback
         )
     except Exception as e:
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.deal_float_text(e),
             reply_markup=templ.back_kb(calls.DealPage(id=deal_id).pack()),
             callback=callback
         )
 
 
-@router.callback_query(calls.ItemsPagination.filter())
-async def callback_items_pagination(callback: CallbackQuery, callback_data: calls.ItemsPagination, state: FSMContext):
-    try:
-        await state.set_state(None)
-        
-        page = callback_data.page
-        upd = callback_data.upd
-        await state.update_data(last_page=page)
+@router.callback_query(calls.FastSelMessageTemplatePagination.filter())
+async def callback_fast_sel_message_template_pagination(callback: CallbackQuery, callback_data: calls.FastSelMessageTemplatePagination, state: FSMContext):
+    await state.set_state(None)
+    await state.update_data(deal_id=callback_data.id, message_template_type=callback_data.type)
+    await render_fast_sel_message_template(callback.message, state, callback_data.page, callback)
 
+
+async def render_items(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None, upd: bool = False):
+    try:
         data = await state.get_data()
-        items = data.get("items") or []
-        end_cursor = data.get("items_end_cursor")
-        is_all_items_loaded = data.get("is_all_items_loaded") or False
-        
         items_filter = data.get("items_filter")
         last_items_filter = data.get("last_items_filter")
 
@@ -598,43 +625,27 @@ async def callback_items_pagination(callback: CallbackQuery, callback_data: call
             await state.update_data(items_filter=items_filter)
 
         await state.update_data(last_items_filter=copy.deepcopy(items_filter))
-
-        next_page_start = (page + 1) * 12
-        need_more = len(items) < next_page_start + 1
         filter_updated = items_filter != last_items_filter
 
-        if upd:
-            end_cursor = None
+        from plbot.playerokbot import get_playerok_bot as plbot
 
-        if (not is_all_items_loaded and need_more) or filter_updated or upd:
-            await throw_float_message(state, callback.message, "⌛️")
-            from plbot.playerokbot import get_playerok_bot as plbot
-            
+        def fetch(after_cursor):
             item_lst = plbot().account.get_my_items(
                 game_id=items_filter["game_id"],
                 category_id=items_filter["category_id"],
                 statuses=items_filter["statuses"] or None,
-                count=24, 
-                after_cursor=end_cursor
+                count=24,
+                after_cursor=after_cursor
             )
+            return item_lst.items, item_lst.page_info.end_cursor
 
-            if filter_updated or upd:
-                items = item_lst.items
-            else:
-                items.extend(item_lst.items or [])
+        items = await load_cursor_list(state, message, "items", page, fetch, reset=upd or filter_updated)
+        page = min(page, max(math.ceil(len(items) / 12), 1) - 1)
+        await state.update_data(last_page=page)
 
-            if len(item_lst.items or []) < 24:
-                is_all_items_loaded = True
-
-            await state.update_data(
-                is_all_items_loaded=is_all_items_loaded,
-                items_end_cursor=item_lst.page_info.end_cursor,
-                items=items
-            )
-        
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.items_text(items, page),
             reply_markup=templ.items_kb(items, page),
             callback=callback
@@ -642,55 +653,43 @@ async def callback_items_pagination(callback: CallbackQuery, callback_data: call
     except Exception as e:
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.items_float_text(e),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="default").pack()),
             callback=callback
         )
 
 
-@router.callback_query(calls.TransactionsPagination.filter())
-async def callback_transactions_pagination(callback: CallbackQuery, callback_data: calls.TransactionsPagination, state: FSMContext):
-    try:
-        await state.set_state(None)
-        
-        page = callback_data.page
-        upd = callback_data.upd
-        await state.update_data(last_page=page)
+@router.callback_query(calls.ItemsPagination.filter())
+async def callback_items_pagination(callback: CallbackQuery, callback_data: calls.ItemsPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_items(callback.message, state, callback_data.page, callback, upd=callback_data.upd)
 
+
+async def render_transactions(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None, upd: bool = False):
+    try:
         data = await state.get_data()
-        transactions = data.get("transactions") or []
-        end_cursor = data.get("transactions_end_cursor")
-        is_all_transactions_loaded = data.get("is_all_transactions_loaded") or False
-        
         transactions_filter = data.get("transactions_filter")
         last_transactions_filter = data.get("last_transactions_filter")
 
         if not transactions_filter:
             transactions_filter = {
-                "operation": None, 
-                "status": None, 
-                "provider_id": None, 
-                "min_value": None, 
+                "operation": None,
+                "status": None,
+                "provider_id": None,
+                "min_value": None,
                 "max_value": None,
-                "from_date": None, 
+                "from_date": None,
                 "to_date": None
             }
             await state.update_data(transactions_filter=transactions_filter)
 
         await state.update_data(last_transactions_filter=copy.deepcopy(transactions_filter))
-
-        next_page_start = (page + 1) * 12
-        need_more = len(transactions) < next_page_start + 1
         filter_updated = transactions_filter != last_transactions_filter
 
-        if upd:
-            end_cursor = None
+        from plbot.playerokbot import get_playerok_bot as plbot
 
-        if (not is_all_transactions_loaded and need_more) or filter_updated or upd:
-            await throw_float_message(state, callback.message, "⌛️")
-            from plbot.playerokbot import get_playerok_bot as plbot
-            
+        def fetch(after_cursor):
             transaction_lst = plbot().account.get_transactions(
                 status=transactions_filter["status"],
                 operation=transactions_filter["operation"],
@@ -699,27 +698,18 @@ async def callback_transactions_pagination(callback: CallbackQuery, callback_dat
                 max_value=transactions_filter["max_value"],
                 from_date=transactions_filter["from_date"],
                 to_date=transactions_filter["to_date"],
-                count=24, 
-                after_cursor=end_cursor
+                count=24,
+                after_cursor=after_cursor
             )
+            return transaction_lst.transactions, transaction_lst.page_info.end_cursor
 
-            if filter_updated or upd:
-                transactions = transaction_lst.transactions
-            else:
-                transactions.extend(transaction_lst.transactions or [])
+        transactions = await load_cursor_list(state, message, "transactions", page, fetch, reset=upd or filter_updated)
+        page = min(page, max(math.ceil(len(transactions) / 12), 1) - 1)
+        await state.update_data(last_page=page)
 
-            if len(transaction_lst.transactions or []) < 24:
-                is_all_transactions_loaded = True
-
-            await state.update_data(
-                is_all_transactions_loaded=is_all_transactions_loaded,
-                transactions_end_cursor=transaction_lst.page_info.end_cursor,
-                transactions=transactions
-            )
-        
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.transactions_text(transactions, page),
             reply_markup=templ.transactions_kb(transactions, page),
             callback=callback
@@ -727,39 +717,34 @@ async def callback_transactions_pagination(callback: CallbackQuery, callback_dat
     except Exception as e:
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.transactions_float_text(e),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="default").pack()),
             callback=callback
         )
 
 
-@router.callback_query(calls.ReviewsPagination.filter())
-async def callback_reviews_pagination(callback: CallbackQuery, callback_data: calls.ReviewsPagination, state: FSMContext):
-    try:
-        await state.set_state(None)
-        
-        page = callback_data.page
-        upd = callback_data.upd
-        await state.update_data(last_page=page)
+@router.callback_query(calls.TransactionsPagination.filter())
+async def callback_transactions_pagination(callback: CallbackQuery, callback_data: calls.TransactionsPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_transactions(callback.message, state, callback_data.page, callback, upd=callback_data.upd)
 
+
+async def render_reviews(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None, upd: bool = False):
+    try:
         data = await state.get_data()
-        reviews = data.get("reviews") or []
-        end_cursor = data.get("reviews_end_cursor")
-        is_all_reviews_loaded = data.get("is_all_reviews_loaded") or False
-        
         reviews_filter = data.get("reviews_filter")
         last_reviews_filter = data.get("last_reviews_filter")
 
         if not reviews_filter:
             reviews_filter = {
-                "status": None, 
-                "comment_required": False, 
-                "rating": None, 
-                "game_id": None, 
-                "game_name": None, 
-                "category_id": None, 
-                "category_name": None, 
+                "status": None,
+                "comment_required": False,
+                "rating": None,
+                "game_id": None,
+                "game_name": None,
+                "category_id": None,
+                "category_name": None,
                 "min_item_price": None,
                 "max_item_price": None,
                 "sort_direction": SortDirections.DESC
@@ -767,18 +752,11 @@ async def callback_reviews_pagination(callback: CallbackQuery, callback_data: ca
             await state.update_data(reviews_filter=reviews_filter)
 
         await state.update_data(last_reviews_filter=copy.deepcopy(reviews_filter))
-
-        next_page_start = (page + 1) * 12
-        need_more = len(reviews) < next_page_start + 1
         filter_updated = reviews_filter != last_reviews_filter
 
-        if upd:
-            end_cursor = None
+        from plbot.playerokbot import get_playerok_bot as plbot
 
-        if (not is_all_reviews_loaded and need_more) or filter_updated or upd:
-            await throw_float_message(state, callback.message, "⌛️")
-            from plbot.playerokbot import get_playerok_bot as plbot
-            
+        def fetch(after_cursor):
             review_lst = plbot().account.get_my_reviews(
                 status=reviews_filter["status"],
                 comment_required=reviews_filter["comment_required"],
@@ -788,27 +766,18 @@ async def callback_reviews_pagination(callback: CallbackQuery, callback_data: ca
                 min_item_price=reviews_filter["min_item_price"],
                 max_item_price=reviews_filter["max_item_price"],
                 sort_direction=reviews_filter["sort_direction"],
-                count=24, 
-                after_cursor=end_cursor
+                count=24,
+                after_cursor=after_cursor
             )
+            return review_lst.reviews, review_lst.page_info.end_cursor
 
-            if filter_updated or upd:
-                reviews = review_lst.reviews
-            else:
-                reviews.extend(review_lst.reviews or [])
+        reviews = await load_cursor_list(state, message, "reviews", page, fetch, reset=upd or filter_updated)
+        page = min(page, max(math.ceil(len(reviews) / 12), 1) - 1)
+        await state.update_data(last_page=page)
 
-            if len(review_lst.reviews or []) < 24:
-                is_all_reviews_loaded = True
-
-            await state.update_data(
-                is_all_reviews_loaded=is_all_reviews_loaded,
-                reviews_end_cursor=review_lst.page_info.end_cursor,
-                reviews=reviews
-            )
-        
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.reviews_text(reviews, page),
             reply_markup=templ.reviews_kb(reviews, page),
             callback=callback
@@ -816,20 +785,22 @@ async def callback_reviews_pagination(callback: CallbackQuery, callback_data: ca
     except Exception as e:
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.reviews_float_text(e),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="default").pack()),
             callback=callback
         )
 
 
-@router.callback_query(calls.ReleasesPagination.filter())
-async def callback_releases_pagination(callback: CallbackQuery, callback_data: calls.ReleasesPagination, state: FSMContext):
+@router.callback_query(calls.ReviewsPagination.filter())
+async def callback_reviews_pagination(callback: CallbackQuery, callback_data: calls.ReviewsPagination, state: FSMContext):
     await state.set_state(None)
+    await render_reviews(callback.message, state, callback_data.page, callback, upd=callback_data.upd)
 
+
+async def render_releases(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     from updater import get_cached_releases
 
-    page = callback_data.page
     await state.update_data(rel_last_page=page)
 
     try:
@@ -837,7 +808,7 @@ async def callback_releases_pagination(callback: CallbackQuery, callback_data: c
     except Exception as e:
         await throw_float_message(
             state=state,
-            message=callback.message,
+            message=message,
             text=templ.releases_float_text(e),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="updates").pack()),
             callback=callback
@@ -846,8 +817,74 @@ async def callback_releases_pagination(callback: CallbackQuery, callback_data: c
 
     await throw_float_message(
         state=state,
-        message=callback.message,
+        message=message,
         text=templ.releases_text(releases),
         reply_markup=templ.releases_kb(releases, page),
         callback=callback
     )
+
+
+@router.callback_query(calls.ReleasesPagination.filter())
+async def callback_releases_pagination(callback: CallbackQuery, callback_data: calls.ReleasesPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_releases(callback.message, state, callback_data.page, callback)
+
+
+PAGES = {
+    "signed_users": (render_signed_users, templ.signed_users_float_text),
+    "restore_included": (render_restore_included, templ.restore_included_float_text),
+    "restore_excluded": (render_restore_excluded, templ.restore_excluded_float_text),
+    "complete_included": (render_complete_included, templ.complete_included_float_text),
+    "complete_excluded": (render_complete_excluded, templ.complete_excluded_float_text),
+    "bump_included": (render_bump_included, templ.bump_included_float_text),
+    "bump_excluded": (render_bump_excluded, templ.bump_excluded_float_text),
+    "bump_positions": (render_bump_positions, templ.bump_positions_float_text),
+    "custom_commands": (render_custom_commands, templ.comms_float_text),
+    "auto_deliveries": (render_auto_deliveries, templ.deliv_float_text),
+    "deliv_goods": (render_deliv_goods, templ.deliv_goods_float_text),
+    "data_replacements": (render_data_replacements, templ.data_replacements_float_text),
+    "data_replacement_values": (render_data_replacement_values, templ.data_replacement_values_float_text),
+    "messages": (render_messages, templ.mess_float_text),
+    "fast_replies": (render_fast_replies, templ.fast_replies_float_text),
+    "fast_sel_fast_reply": (render_fast_sel_fast_reply, templ.do_action_text),
+    "sel_fast_reply": (render_sel_fast_reply, templ.do_action_text),
+    "modules": (render_modules, templ.modules_float_text),
+    "bank_cards": (render_bank_cards, templ.withdrawal_cards_float_text),
+    "sbp_banks": (render_sbp_banks, templ.withdrawal_sbp_float_text),
+    "chats": (render_chats, templ.chats_float_text),
+    "deals": (render_deals, templ.deals_float_text),
+    "sel_message_template": (render_sel_message_template, templ.deal_float_text),
+    "fast_sel_message_template": (render_fast_sel_message_template, templ.deal_float_text),
+    "items": (render_items, templ.items_float_text),
+    "transactions": (render_transactions, templ.transactions_float_text),
+    "reviews": (render_reviews, templ.reviews_float_text),
+    "releases": (render_releases, templ.releases_float_text)
+}
+
+
+@router.callback_query(calls.PageEnter.filter())
+async def callback_page_enter(callback: CallbackQuery, callback_data: calls.PageEnter, state: FSMContext):
+    enter = callback_data.model_dump()
+    enter["state"] = await state.get_state()
+    await state.update_data(page_enter=enter)
+    await state.set_state(states.PageStates.waiting_for_page)
+
+    _, float_text = PAGES[callback_data.to]
+    pages_range = f" (1–{callback_data.total})" if callback_data.total else ""
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=float_text(f"📃 Введите <b>номер страницы</b> для перехода{pages_range}:"),
+        reply_markup=templ.back_kb(calls.PageBack(to=callback_data.to, page=callback_data.page).pack()),
+        callback=callback
+    )
+
+
+@router.callback_query(calls.PageBack.filter())
+async def callback_page_back(callback: CallbackQuery, callback_data: calls.PageBack, state: FSMContext):
+    if await state.get_state() == states.PageStates.waiting_for_page:
+        data = await state.get_data()
+        await state.set_state(data["page_enter"]["state"])
+
+    render, _ = PAGES[callback_data.to]
+    await render(callback.message, state, callback_data.page, callback)

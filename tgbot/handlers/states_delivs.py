@@ -18,34 +18,6 @@ from ..helpful import (
 router = Router()
 
 
-@router.message(states.AutoDeliveriesStates.waiting_for_page, F.text)
-async def handler_waiting_for_auto_deliveries_page(message: types.Message, state: FSMContext):
-    try:
-        await state.set_state(None)
-        
-        if not message.text.isdigit():
-            raise Exception("❌ Вы должны ввести числовое значение")
-        
-        page = int(message.text) - 1
-        await state.update_data(last_page=page)
-        
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.delivs_float_text(f"📃 Введите номер страницы для перехода:"),
-            reply_markup=templ.delivs_kb(page)
-        )
-    except Exception as e:
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.delivs_float_text(e), 
-            reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
-        )
-
-
 @router.message(states.AutoDeliveriesStates.waiting_for_new_auto_delivery_items, F.text | F.document)
 async def handler_waiting_for_new_auto_delivery_items(message: types.Message, state: FSMContext):
     data = await state.get_data()

@@ -23,7 +23,7 @@ async def signed_users_kb(page=0):
     signed_users = config["telegram"]["bot"]["signed_users"]
     
     rows = []
-    items_per_page = 7
+    items_per_page = 10
     total_pages = math.ceil(len(signed_users) / items_per_page)
     total_pages = total_pages if total_pages > 0 else 1
 
@@ -52,7 +52,7 @@ async def signed_users_kb(page=0):
         btn_back = InlineKeyboardButton(text="←", callback_data=calls.SignedUsersPagination(page=page - 1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_back)
 
-        btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="null_answer")
+        btn_pages = InlineKeyboardButton(text=f"📃 {page+1}/{total_pages}", callback_data=calls.PageEnter(to="signed_users", page=page, total=total_pages).pack())
         buttons_row.append(btn_pages)
 
         btn_next = InlineKeyboardButton(text="→", callback_data=calls.SignedUsersPagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")

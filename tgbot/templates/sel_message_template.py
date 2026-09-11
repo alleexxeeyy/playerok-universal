@@ -7,7 +7,7 @@ from settings import Settings as sett
 from .. import callback_datas as calls
 
 
-def fast_sel_message_template_kb(message_templates, page=0):
+def fast_sel_message_template_kb(message_templates, deal_id, type, page=0):
     rows = []
     items_per_page = 12
     
@@ -28,13 +28,13 @@ def fast_sel_message_template_kb(message_templates, page=0):
 
     if total_pages > 1:
         buttons_row = []
-        btn_back = InlineKeyboardButton(text="←", callback_data=calls.FastSelMessageTemplatePagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
+        btn_back = InlineKeyboardButton(text="←", callback_data=calls.FastSelMessageTemplatePagination(id=deal_id, type=type, page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_back)
         
-        btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="null_answer")
+        btn_pages = InlineKeyboardButton(text=f"📃 {page+1}/{total_pages}", callback_data=calls.PageEnter(to="fast_sel_message_template", page=page, total=total_pages).pack())
         buttons_row.append(btn_pages)
 
-        btn_next = InlineKeyboardButton(text="→", callback_data=calls.FastSelMessageTemplatePagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
+        btn_next = InlineKeyboardButton(text="→", callback_data=calls.FastSelMessageTemplatePagination(id=deal_id, type=type, page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_next)
         rows.append(buttons_row)
 
@@ -44,7 +44,7 @@ def fast_sel_message_template_kb(message_templates, page=0):
     return kb
 
 
-def sel_message_template_kb(message_templates, deal_id, page=0):
+def sel_message_template_kb(message_templates, deal_id, type, page=0):
     rows = []
     items_per_page = 12
     
@@ -65,13 +65,13 @@ def sel_message_template_kb(message_templates, deal_id, page=0):
 
     if total_pages > 1:
         buttons_row = []
-        btn_back = InlineKeyboardButton(text="←", callback_data=calls.SelMessageTemplatePagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
+        btn_back = InlineKeyboardButton(text="←", callback_data=calls.SelMessageTemplatePagination(id=deal_id, type=type, page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_back)
         
-        btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="null_answer")
+        btn_pages = InlineKeyboardButton(text=f"📃 {page+1}/{total_pages}", callback_data=calls.PageEnter(to="sel_message_template", page=page, total=total_pages).pack())
         buttons_row.append(btn_pages)
 
-        btn_next = InlineKeyboardButton(text="→", callback_data=calls.SelMessageTemplatePagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
+        btn_next = InlineKeyboardButton(text="→", callback_data=calls.SelMessageTemplatePagination(id=deal_id, type=type, page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_next)
         rows.append(buttons_row)
 

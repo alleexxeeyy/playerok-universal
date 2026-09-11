@@ -18,34 +18,6 @@ from ..helpful import (
 router = Router()
 
 
-@router.message(states.DataReplacementStates.waiting_for_page, F.text)
-async def handler_waiting_for_data_replacements_page(message: types.Message, state: FSMContext):
-    try:
-        await state.set_state(None)
-
-        if not message.text.isdigit():
-            raise Exception("❌ Вы должны ввести числовое значение")
-
-        page = int(message.text) - 1
-        await state.update_data(last_page=page)
-
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.data_replacements_text(),
-            reply_markup=templ.data_replacements_kb(page)
-        )
-    except Exception as e:
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.data_replacements_float_text(e),
-            reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
-        )
-
-
 @router.message(states.DataReplacementStates.waiting_for_new_data_replacement_items, F.text | F.document)
 async def handler_waiting_for_new_data_replacement_items(message: types.Message, state: FSMContext):
     data = await state.get_data()

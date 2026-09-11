@@ -56,7 +56,7 @@ def bump_positions_kb(page=0):
     positions = get_item_positions()
 
     rows = []
-    items_per_page = 7
+    items_per_page = 10
     total_pages = math.ceil(len(positions) / items_per_page)
     total_pages = total_pages if total_pages > 0 else 1
 
@@ -78,7 +78,7 @@ def bump_positions_kb(page=0):
         btn_back = InlineKeyboardButton(text="←", callback_data=calls.BumpItemsPositionsPagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_back)
 
-        btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="null_answer")
+        btn_pages = InlineKeyboardButton(text=f"📃 {page+1}/{total_pages}", callback_data=calls.PageEnter(to="bump_positions", page=page, total=total_pages).pack())
         buttons_row.append(btn_pages)
 
         btn_next = InlineKeyboardButton(text="→", callback_data=calls.BumpItemsPositionsPagination(page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
@@ -91,3 +91,10 @@ def bump_positions_kb(page=0):
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
+
+
+def bump_positions_float_text(placeholder: str):
+    txt = textwrap.dedent(f"""
+        <b>⬆️📊 Позиции товаров</b>
+    """) + f"\n{placeholder}\n"
+    return txt

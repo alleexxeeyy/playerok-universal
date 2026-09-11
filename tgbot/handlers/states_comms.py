@@ -12,32 +12,6 @@ from ..helpful import throw_float_message
 router = Router()
 
 
-@router.message(states.CustomCommandsStates.waiting_for_page, F.text)
-async def handler_waiting_for_custom_commands_page(message: types.Message, state: FSMContext):
-    try: 
-        await state.set_state(None)
-        
-        if not message.text.strip().isdigit():
-            raise Exception("❌ Вы должны ввести числовое значение")
-        
-        await state.update_data(last_page=int(message.text.strip()) - 1)
-        
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.comms_text(),
-            reply_markup=templ.comms_kb(page=int(message.text) - 1)
-        )
-    except Exception as e:
-        data = await state.get_data()
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.comms_float_text(e), 
-            reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=data.get("last_page", 0)).pack())
-        )
-        
-        
 @router.message(states.CustomCommandsStates.waiting_for_new_custom_command, F.text)
 async def handler_waiting_for_new_custom_command(message: types.Message, state: FSMContext):
     try:

@@ -11,7 +11,7 @@ def fast_sel_fast_reply_kb(chat_id, page=0):
     fast_replies = sett.get("fast_replies")
     
     rows = []
-    items_per_page = 8
+    items_per_page = 10
     total_pages = math.ceil(len(fast_replies) / items_per_page)
     total_pages = total_pages if total_pages > 0 else 1
 
@@ -32,7 +32,7 @@ def fast_sel_fast_reply_kb(chat_id, page=0):
         btn_back = InlineKeyboardButton(text="←", callback_data=calls.FastSelFastReplyPagination(id=chat_id, page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_back)
 
-        btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="null_answer")
+        btn_pages = InlineKeyboardButton(text=f"📃 {page+1}/{total_pages}", callback_data=calls.PageEnter(to="fast_sel_fast_reply", page=page, total=total_pages).pack())
         buttons_row.append(btn_pages)
 
         btn_next = InlineKeyboardButton(text="→", callback_data=calls.FastSelFastReplyPagination(id=chat_id, page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
@@ -50,7 +50,7 @@ def sel_fast_reply_kb(chat_id, page=0):
     fast_replies = sett.get("fast_replies")
     
     rows = []
-    items_per_page = 8
+    items_per_page = 10
     total_pages = math.ceil(len(fast_replies) / items_per_page)
     total_pages = total_pages if total_pages > 0 else 1
 
@@ -71,7 +71,7 @@ def sel_fast_reply_kb(chat_id, page=0):
         btn_back = InlineKeyboardButton(text="←", callback_data=calls.SelFastReplyPagination(id=chat_id, page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="null_answer")
         buttons_row.append(btn_back)
 
-        btn_pages = InlineKeyboardButton(text=f"{page+1}/{total_pages}", callback_data="null_answer")
+        btn_pages = InlineKeyboardButton(text=f"📃 {page+1}/{total_pages}", callback_data=calls.PageEnter(to="sel_fast_reply", page=page, total=total_pages).pack())
         buttons_row.append(btn_pages)
 
         btn_next = InlineKeyboardButton(text="→", callback_data=calls.SelFastReplyPagination(id=chat_id, page=page+1).pack()) if page < total_pages - 1 else InlineKeyboardButton(text="🛑", callback_data="null_answer")

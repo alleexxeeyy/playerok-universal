@@ -439,20 +439,6 @@ async def callback_enter_new_excluded_bump_items(callback: CallbackQuery, state:
         ),
         reply_markup=templ.back_kb(calls.ExcludedBumpItemsPagination(page=last_page).pack())
     )
-        
-
-@router.callback_query(F.data == "enter_custom_commands_page")
-async def callback_enter_custom_commands_page(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.CustomCommandsStates.waiting_for_page)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.comms_float_text(f"📃 Введите номер страницы для перехода:"),
-        reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=last_page).pack())
-    )
 
 
 @router.callback_query(F.data == "enter_new_custom_command")
@@ -503,20 +489,6 @@ async def callback_enter_custom_command_answer(callback: CallbackQuery, state: F
             text=templ.comm_page_float_text(e),
             reply_markup=templ.back_kb(calls.CustomCommandsPagination(page=last_page).pack())
         )
-
-
-@router.callback_query(F.data == "enter_auto_deliveries_page")
-async def callback_enter_auto_deliveries_page(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.AutoDeliveriesStates.waiting_for_page)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.delivs_float_text(f"📃 Введите номер страницы для перехода:"),
-        reply_markup=templ.back_kb(calls.AutoDeliveriesPagination(page=last_page).pack())
-    )
 
 
 @router.callback_query(F.data == "enter_new_auto_delivery_items")
@@ -635,20 +607,6 @@ async def callback_enter_auto_delivery_goods_add(callback: CallbackQuery, state:
             text=templ.new_deliv_goods_float_text(e),
             reply_markup=templ.back_kb(calls.DelivGoodsPagination(page=last_page).pack())
         )
-
-
-@router.callback_query(F.data == "enter_data_replacements_page")
-async def callback_enter_data_replacements_page(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-
-    await state.set_state(states.DataReplacementStates.waiting_for_page)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.data_replacements_float_text(f"📃 Введите номер страницы для перехода:"),
-        reply_markup=templ.back_kb(calls.DataReplacementsPagination(page=last_page).pack())
-    )
 
 
 @router.callback_query(F.data == "enter_new_data_replacement_items")
@@ -803,20 +761,6 @@ async def callback_enter_usdt_address(callback: CallbackQuery, state: FSMContext
             f"💲 Введите <b>адрес кошелька</b> USDT (TRC20):"
         ),
         reply_markup=templ.back_kb(calls.MenuNavigation(to="withdrawal").pack())
-    )
-
-
-@router.callback_query(F.data == "enter_messages_page")
-async def callback_enter_messages_page(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    
-    await state.set_state(states.MessagesStates.waiting_for_page)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.mess_float_text(f"📃 Введите номер страницы для перехода:"),
-        reply_markup=templ.back_kb(calls.MessagesPagination(page=last_page).pack())
     )
 
 

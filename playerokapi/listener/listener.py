@@ -127,8 +127,14 @@ class EventListener:
         | DealProblemResolvedEvent
         | DealStatusChangedEvent
     ]:
-        if not message or not message.text:
+        if not message:
             return []
+        
+        if not message.text: # фото без подписи (CHAT_STARTED/CHAT_FINISHED тоже без текста, но и без картинок)
+            if not message.images:
+                return []
+            message.text = None # модули отсекают сообщения без текста по `is None`, пустая строка пролезет в их логику
+            return [NewMessageEvent(message, chat)]
         
         if message.text == "{{ITEM_PAID}}":
             actual_msg = self._get_actual_message(message.id, chat.id) or message

@@ -66,7 +66,7 @@
    ```bash
    brew install python@3.12
    ```
-2. Скачайте [последнюю Release версию](https://github.com/alleexxeeyy/funpay-universal/releases/latest) и распакуйте в любое удобное место.
+2. Скачайте [последнюю Release версию](https://github.com/alleexxeeyy/playerok-universal/releases/latest) и распакуйте в любое удобное место.
 3. Дважды кликните `install_mac.command` — откроется Terminal, дождитесь установки зависимостей.
 4. Запустите бота двойным кликом по `start_mac.command`.
 5. Следуйте инструкциям в консоли.

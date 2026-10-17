@@ -1,10 +1,12 @@
 curl-cffi==0.13.0
 wrapper-tls-requests==1.1.4
 websocket-client==1.8.0
+python-socks>=2,<3
 requests[socks]==2.32.3
 requests-toolbelt==0.10.1
 validators==0.34.0
 aiogram>=3.11,<4
+packaging>=23,<27
 aiohttp>=3.12.2,<3.14
 aiohttp-socks
 lxml==5.2.2

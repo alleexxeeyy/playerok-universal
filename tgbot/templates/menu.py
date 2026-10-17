@@ -7,14 +7,30 @@ from .. import callback_datas as calls
 
 
 def menu_text():
+    from plbot.playerokbot import get_playerok_bot
+    playerok_bot = get_playerok_bot()
+    playerok_status = (
+        "🟢 Playerok подключён" if getattr(playerok_bot, "account", None) is not None
+        and not getattr(playerok_bot, "connection_unavailable", False)
+        else "⚠️ Playerok недоступен. Проверьте прокси и Cookie-данные; при необходимости выполните /restart."
+    )
     txt = textwrap.dedent(f"""
         <b>🏠 Playerok Universal</b> v{VERSION}
         Ваш бот-помощник для Playerok
+        {playerok_status}
     """)
     return txt
 
 
 def menu_kb():
+    from plbot.playerokbot import get_playerok_bot
+    playerok_bot = get_playerok_bot()
+    if getattr(playerok_bot, "account", None) is None or getattr(playerok_bot, "connection_unavailable", False):
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔒 Авторизация", callback_data=calls.MenuNavigation(to="auth").pack())],
+            [InlineKeyboardButton(text="🛜 Соединение", callback_data=calls.MenuNavigation(to="conn").pack())],
+            [InlineKeyboardButton(text="🗒️ Логи", callback_data=calls.MenuNavigation(to="logs").pack())],
+        ])
     rows = [
         [InlineKeyboardButton(text="━━━  НАСТРОЙКИ  ━━━", callback_data="null_answer")],
         #[InlineKeyboardButton(text="🎯 Ивенты УБРАТЬ ПОТОМ", callback_data=calls.MenuNavigation(to="events").pack())],

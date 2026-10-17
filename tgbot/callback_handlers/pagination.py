@@ -426,35 +426,66 @@ async def load_cursor_list(state: FSMContext, message: Message, key: str, page: 
     return objects
 
 
-async def render_chats(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None, upd: bool = False):
+async def show_chats_error(message: Message, state: FSMContext, text: str, callback: CallbackQuery = None):
+    kwargs = {
+        "state": state,
+        "message": message,
+        "text": templ.chats_float_text(text),
+        "reply_markup": templ.back_kb(calls.MenuNavigation(to="default").pack()),
+        "callback": callback,
+    }
     try:
-        from plbot.playerokbot import get_playerok_bot as plbot
+        await throw_float_message(**kwargs)
+    except Exception:
+        # If the loading message cannot be edited, still show an actionable reply.
+        await throw_float_message(**kwargs, send=True)
 
-        def fetch(after_cursor):
-            chat_lst = plbot().account.get_chats(
-                count=24,
-                after_cursor=after_cursor
-            )
-            return chat_lst.chats, chat_lst.page_info.end_cursor
 
-        chats = await load_cursor_list(state, message, "chats", page, fetch, reset=upd)
+async def render_chats(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None, upd: bool = False):
+    from plbot.playerokbot import get_playerok_bot
+
+    playerok_bot = get_playerok_bot()
+    account = getattr(playerok_bot, "account", None)
+    if account is None or getattr(playerok_bot, "connection_unavailable", False):
+        await show_chats_error(
+            message, state,
+            "⚠️ Playerok сейчас недоступен. Проверьте прокси в разделе «Соединение» и попробуйте позже.",
+            callback,
+        )
+        return
+
+    request_timeout = sett.get("config")["playerok"]["api"]["requests_timeout"]
+    timeout = max(1, min(request_timeout, 30))
+
+    def fetch(after_cursor):
+        chat_lst = account.get_chats(count=24, after_cursor=after_cursor)
+        return chat_lst.chats, chat_lst.page_info.end_cursor
+
+    try:
+        chats = await asyncio.wait_for(
+            load_cursor_list(state, message, "chats", page, fetch, reset=upd),
+            timeout=timeout,
+        )
         page = min(page, max(math.ceil(len(chats) / 12), 1) - 1)
         await state.update_data(last_page=page)
-
         await throw_float_message(
             state=state,
             message=message,
             text=templ.chats_text(chats, page),
             reply_markup=templ.chats_kb(chats, page),
-            callback=callback
+            callback=callback,
         )
-    except Exception as e:
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.chats_float_text(e),
-            reply_markup=templ.back_kb(calls.MenuNavigation(to="default").pack()),
-            callback=callback
+    except asyncio.TimeoutError:
+        await show_chats_error(
+            message, state,
+            f"⚠️ Playerok не ответил за {timeout} сек. Telegram-бот работает; попробуйте позже или проверьте прокси.",
+            callback,
+        )
+    except Exception:
+        await show_chats_error(
+            message, state,
+            "⚠️ Не удалось загрузить чаты. Проверьте соединение с Playerok и попробуйте позже.",
+            callback,
         )
 
 

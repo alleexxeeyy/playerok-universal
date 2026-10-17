@@ -1431,12 +1431,10 @@ class PlayerokBot:
         
         proxy = self.config["playerok"]["api"]["proxy"]
         if proxy:
-            if "@" in proxy:
-                user, password = proxy.split("@")[0].split(":")
-                ip, port = proxy.split("@")[1].split(":")
-            else:
-                user, password = None, None
-                ip, port = proxy.split(":")
+            from proxy_utils import parse_proxy
+            parsed_proxy = parse_proxy(proxy)
+            user, password = parsed_proxy.username, parsed_proxy.password
+            ip, port = parsed_proxy.hostname, str(parsed_proxy.port)
             
             ip = ".".join([("*" * len(nums)) if i >= 3 else nums for i, nums in enumerate(ip.split("."), start=1)])
             port = f"{port[:3]}**"

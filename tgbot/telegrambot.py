@@ -13,6 +13,7 @@ from settings import Settings as sett
 from core.modules import get_modules
 from core.handlers import call_bot_event
 from utils import normalize_custom_api_url
+from proxy_utils import normalize_proxy, parse_proxy
 
 from . import router as main_router
 from . import templates as templ
@@ -48,7 +49,7 @@ class TelegramBot:
         self.custom_api_url = config["telegram"]["api"]["custom_api_url"]
 
         if self.proxy:
-            session = AiohttpSession(proxy=f"http://{self.proxy}")
+            session = AiohttpSession(proxy=normalize_proxy(self.proxy))
         else:
             session = None
 
@@ -120,7 +121,7 @@ class TelegramBot:
         except:
             pass
 
-    async def run_bot(self, from_tg=False):
+    async def run_bot(self):
         self.loop = asyncio.get_running_loop()
 
         await self._set_main_menu()
@@ -134,12 +135,9 @@ class TelegramBot:
         logger.info(f"{Fore.LIGHTBLUE_EX}Telegram бот {Fore.LIGHTWHITE_EX}@{self.me.username} {Fore.LIGHTBLUE_EX}запущен и активен")
         
         if self.proxy:
-            if "@" in self.proxy:
-                user, password = self.proxy.split("@")[0].split(":")
-                ip, port = self.proxy.split("@")[1].split(":")
-            else:
-                user, password = None, None
-                ip, port = self.proxy.split(":")
+            parsed_proxy = parse_proxy(self.proxy)
+            user, password = parsed_proxy.username, parsed_proxy.password
+            ip, port = parsed_proxy.hostname, str(parsed_proxy.port)
             
             ip = ".".join([("*" * len(nums)) if i >= 3 else nums for i, nums in enumerate(ip.split("."), start=1)])
             port = f"{port[:3]}**"
@@ -154,23 +152,10 @@ class TelegramBot:
             logger.info(f" · Пароль: {Fore.LIGHTWHITE_EX}{password}")
             logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
 
-        if from_tg:
-            await self.notify_bot_restarted()
-
         while True:
             await self.bot.delete_webhook(drop_pending_updates=True)
             try: await self.dp.start_polling(self.bot, skip_updates=True, handle_signals=False)
             except: pass
-
-    async def notify_bot_restarted(self):
-        config = sett.get("config")
-        for user_id in config["telegram"]["bot"]["signed_users"]:
-            await self.bot.send_message(
-                chat_id=user_id, 
-                text="✅ Бот был <b>успешно перезагружен</b>",
-                reply_markup=templ.destroy_kb(),
-                parse_mode="HTML"
-            )
 
     async def call_seller(self, username: str, chat_id: int | str):
         config = sett.get("config")

@@ -13,6 +13,13 @@ class SettingsFile:
     default: list | dict
 
 
+PROXY_CHECK_LIMITS = {
+    "proxy_check_interval": (10, 3600),
+    "proxy_check_timeout": (1, 120),
+    "proxy_check_failures": (1, 30),
+}
+
+
 CONFIG = SettingsFile(
     name="config",
     path="bot_settings/config.json",
@@ -23,7 +30,10 @@ CONFIG = SettingsFile(
                 "cookies": "",
                 "user_agent": "",
                 "proxy": "",
-                "requests_timeout": 30
+                "requests_timeout": 30,
+                "proxy_check_failures": 2,
+                "proxy_check_timeout": 10,
+                "proxy_check_interval": 60
             },
             "watermark": {
                 "enabled": True,

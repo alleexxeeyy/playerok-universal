@@ -11,6 +11,7 @@ from threading import Event as ThreadingEvent
 from collections import deque
 
 import websocket
+from proxy_utils import websocket_proxy_options
 
 from ..account import Account
 from ..types import (
@@ -421,15 +422,7 @@ class EventListener:
             "user-agent": self.account.user_agent
         }
 
-        proxy_host, proxy_port, proxy_auth = None, None, None
-        
-        if self.account.proxy:
-            if "@" in self.account.proxy:
-                proxy_host, proxy_port = self.account.proxy.split("@")[1].split(":")
-                proxy_username, proxy_password = self.account.proxy.split("@")[0].split(":")
-                proxy_auth = (proxy_username, proxy_password)
-            else:
-                proxy_host, proxy_port = self.account.proxy.split(":")
+        proxy_options = websocket_proxy_options(self.account.proxy) if self.account.proxy else {}
 
         # try:
         #     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -462,9 +455,7 @@ class EventListener:
                     url="wss://ws.playerok.com/graphql",
                     header=[f"{k}: {v}" for k, v in headers.items()],
                     subprotocols=["graphql-transport-ws"],
-                    http_proxy_host=proxy_host,
-                    http_proxy_port=proxy_port,
-                    http_proxy_auth=proxy_auth
+                    **proxy_options
                 )
                 self._send_connection_init()          
 

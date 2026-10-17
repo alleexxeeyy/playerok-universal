@@ -36,6 +36,9 @@ class SettingsStates(StatesGroup):
     waiting_for_user_agent = State()
 
     waiting_for_requests_timeout = State()
+    waiting_for_proxy_check_interval = State()
+    waiting_for_proxy_check_timeout = State()
+    waiting_for_proxy_check_failures = State()
     waiting_for_listener_requests_delay = State()
     waiting_for_pl_proxy = State()
     waiting_for_tg_proxy = State()

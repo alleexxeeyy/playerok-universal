@@ -5,7 +5,8 @@ from logging import getLogger
 from aiogram import types, Router, Bot, F
 from aiogram.fsm.context import FSMContext
 
-from settings import Settings as sett
+from settings import Settings as sett, PROXY_CHECK_LIMITS
+from proxy_utils import normalize_proxy
 from core.configs import (
     MAX_IMPORT_SIZE,
     SUPPORTED_EXTENSIONS,
@@ -67,7 +68,7 @@ async def handler_waiting_for_cookies(message: types.Message, state: FSMContext)
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.auth_float_text(f"🍪 <b>Cookie-данные</b> были успешно изменены на: <blockquote>{str_cookies}</blockquote>"),
+            text=templ.auth_float_text("✅ <b>Cookie-данные</b> сохранены. Для подключения выполните /restart."),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="auth").pack())
         )
     except Exception as e:
@@ -96,7 +97,7 @@ async def handler_waiting_for_user_agent(message: types.Message, state: FSMConte
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.auth_float_text(f"✅ <b>User Agent</b> был успешно изменён на <b>{user_agent}</b>"),
+            text=templ.auth_float_text("✅ <b>User Agent</b> сохранён. Для подключения выполните /restart."),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="auth").pack())
         )
     except Exception as e:
@@ -118,18 +119,18 @@ async def handler_waiting_for_pl_proxy(message: types.Message, state: FSMContext
         if len(proxy) <= 3:
             raise Exception("❌ Слишком короткое значение")
         if not is_proxy_valid(proxy):
-            raise Exception("❌ Неверный формат прокси. Правильный формат: user:pass@ip:port или ip:port")
+            raise Exception("❌ Неверный формат. Укажите http:// или socks5:// перед user:pass@host:port или host:port")
         if not is_proxy_working(proxy):
             raise Exception("❌ Указанный вами прокси не работает. Нет подключения к playerok.com")
 
         config = sett.get("config")
-        config["playerok"]["api"]["proxy"] = proxy
+        config["playerok"]["api"]["proxy"] = normalize_proxy(proxy)
         sett.set("config", config)
         
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.auth_float_text(f"✅ <b>Прокси для Playerok</b> был успешно изменён на <b>{proxy}</b>"),
+            text=templ.conn_float_text("✅ <b>Прокси для Playerok</b> сохранён. Для подключения выполните /restart."),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
     except Exception as e:
@@ -151,12 +152,12 @@ async def handler_waiting_for_tg_proxy(message: types.Message, state: FSMContext
         if len(proxy) <= 3:
             raise Exception("❌ Слишком короткое значение")
         if not is_proxy_valid(proxy):
-            raise Exception("❌ Неверный формат прокси. Правильный формат: user:pass@ip:port или ip:port")
+            raise Exception("❌ Неверный формат. Укажите http:// или socks5:// перед user:pass@host:port или host:port")
         if not is_proxy_working(proxy, "https://api.telegram.org/"):
             raise Exception("❌ Указанный вами прокси не работает. Нет подключения к api.telegram.org")
 
         config = sett.get("config")
-        config["telegram"]["api"]["proxy"] = proxy
+        config["telegram"]["api"]["proxy"] = normalize_proxy(proxy)
         sett.set("config", config)
         
         await throw_float_message(
@@ -237,6 +238,43 @@ async def handler_waiting_for_requests_timeout(message: types.Message, state: FS
             text=templ.conn_float_text(e), 
             reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
         )
+
+
+@router.message(states.SettingsStates.waiting_for_proxy_check_interval, F.text)
+@router.message(states.SettingsStates.waiting_for_proxy_check_timeout, F.text)
+@router.message(states.SettingsStates.waiting_for_proxy_check_failures, F.text)
+async def handler_waiting_for_proxy_check_setting(message: types.Message, state: FSMContext):
+    options = {
+        states.SettingsStates.waiting_for_proxy_check_interval.state: ("proxy_check_interval", "Пауза между проверками", "сек."),
+        states.SettingsStates.waiting_for_proxy_check_timeout.state: ("proxy_check_timeout", "Ожидание ответа проверки", "сек."),
+        states.SettingsStates.waiting_for_proxy_check_failures.state: ("proxy_check_failures", "Число неудачных проверок", ""),
+    }
+    key, label, unit = options[await state.get_state()]
+    minimum, maximum = PROXY_CHECK_LIMITS[key]
+    try:
+        value = int(message.text.strip())
+    except ValueError:
+        value = None
+
+    if value is None or not minimum <= value <= maximum:
+        await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.conn_float_text(f"❌ Введите целое число от {minimum} до {maximum} {unit}."),
+            reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
+        )
+        return
+
+    config = sett.get("config")
+    config["playerok"]["api"][key] = value
+    sett.set("config", config)
+    await state.set_state(None)
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.conn_float_text(f"✅ <b>{label}</b>: {value} {unit}. Новое значение будет применено без перезапуска бота."),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
+    )
 
 
 @router.message(states.SettingsStates.waiting_for_listener_requests_delay, F.text)

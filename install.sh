@@ -491,10 +491,16 @@ echo -e "  ${GREEN}${BOLD}Установка завершена успешно!$
 echo ""
 
 if [[ "$CONFIGURED" == "false" ]]; then
-  echo -e "  ${YELLOW}⚠${NC}  Конфиг не заполнен — запустите настройку:"
-  echo ""
-  echo -e "      ${CYAN}${BOLD}pluniversal setup${NC}"
-  echo ""
+  if [[ -t 0 ]]; then
+    echo -e "  ${CYAN}◈${NC}  Запускаю первоначальную настройку..."
+    echo ""
+    "$CMD" setup
+  else
+    echo -e "  ${YELLOW}⚠${NC}  Конфиг не заполнен — запустите настройку:"
+    echo ""
+    echo -e "      ${CYAN}${BOLD}pluniversal setup${NC}"
+    echo ""
+  fi
 else
   echo -e "  ${GREEN}✔${NC}  Бот работает в фоне"
   echo ""

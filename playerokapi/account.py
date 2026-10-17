@@ -14,6 +14,7 @@ import mimetypes
 import traceback
 
 import tls_requests
+from proxy_utils import normalize_proxy, requests_proxy
 import curl_cffi
 
 from . import types
@@ -56,7 +57,7 @@ class Account:
     :param user_agent: Юзер-агент браузера.
     :type user_agent: `str` or `None`
 
-    :param proxy: IPV4 прокси в формате: `user:pass@ip:port` или `ip:port`, _опционально_.
+    :param proxy: HTTP или SOCKS5 прокси: `http://host:port`, `socks5://user:pass@host:port`; без схемы используется HTTP.
     :type proxy: `str` or `None`
 
     :param requests_timeout: Таймаут ожидания ответов на запросы.
@@ -110,7 +111,7 @@ class Account:
         self.proxy = proxy
         """Прокси."""
 
-        self.__proxy_string = f"http://{self.proxy.replace('https://', '').replace('http://', '')}" if self.proxy else None
+        self.__proxy_string = normalize_proxy(self.proxy) if self.proxy else None
         """Строка прокси."""
 
         self.base_url = "https://playerok.com"
@@ -172,7 +173,7 @@ class Account:
         self.__curl_session = curl_cffi.Session(
             impersonate="chrome",
             timeout=self.requests_timeout,
-            proxy=self.__proxy_string,
+            proxy=requests_proxy(self.proxy) if self.proxy else None,
             verify=self._tmp_cert_path
         )
 

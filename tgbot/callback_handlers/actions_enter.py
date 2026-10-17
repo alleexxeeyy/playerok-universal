@@ -2,7 +2,7 @@ from aiogram import F, Router
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from settings import Settings as sett
+from settings import Settings as sett, PROXY_CHECK_LIMITS
 from utils import escape_html, binding_links
 
 from .. import templates as templ
@@ -126,7 +126,7 @@ async def callback_enter_pl_proxy(callback: CallbackQuery, state: FSMContext):
         state=state,
         message=callback.message,
         text=templ.conn_float_text(
-            f"🌐 Введите новый <b>прокси для Playerok</b> (формат: user:pass@ip:port или ip:port):"
+            f"🌐 Введите новый <b>прокси для Playerok</b>: <code>socks5://user:pass@host:port</code> или <code>http://host:port</code>. Без префикса используется HTTP."
             f"\n\n・ <b>Текущий:</b> <code>{proxy}</code>"
         ),
         reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
@@ -144,7 +144,7 @@ async def callback_enter_tg_proxy(callback: CallbackQuery, state: FSMContext):
         state=state,
         message=callback.message,
         text=templ.conn_float_text(
-            f"🌐 Введите новый <b>прокси для Telegram</b> (формат: user:pass@ip:port или ip:port):"
+            f"🌐 Введите новый <b>прокси для Telegram</b>: <code>socks5://user:pass@host:port</code> или <code>http://host:port</code>. Без префикса используется HTTP."
             f"\n\n・ <b>Текущий:</b> <code>{proxy}</code>"
         ),
         reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
@@ -184,6 +184,41 @@ async def callback_enter_requests_timeout(callback: CallbackQuery, state: FSMCon
         text=templ.conn_float_text(
             f"📶 Введите новый <b>таймаут подключения</b> (в секундах):"
             f"\n\n・ <b>Текущее:</b> <code>{requests_timeout}</code> сек."
+        ),
+        reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
+    )
+
+
+@router.callback_query(F.data == "enter_proxy_check_interval")
+@router.callback_query(F.data == "enter_proxy_check_timeout")
+@router.callback_query(F.data == "enter_proxy_check_failures")
+async def callback_enter_proxy_check_setting(callback: CallbackQuery, state: FSMContext):
+    options = {
+        "enter_proxy_check_interval": (
+            states.SettingsStates.waiting_for_proxy_check_interval,
+            "паузу между проверками прокси Playerok", "сек.",
+        ),
+        "enter_proxy_check_timeout": (
+            states.SettingsStates.waiting_for_proxy_check_timeout,
+            "ожидание ответа одной проверки прокси", "сек.",
+        ),
+        "enter_proxy_check_failures": (
+            states.SettingsStates.waiting_for_proxy_check_failures,
+            "число неудачных проверок подряд до предупреждения", "",
+        ),
+    }
+    target_state, label, unit = options[callback.data]
+    await state.set_state(target_state)
+
+    key = callback.data.removeprefix("enter_")
+    minimum, maximum = PROXY_CHECK_LIMITS[key]
+    current = sett.get("config")["playerok"]["api"][key]
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.conn_float_text(
+            f"Введите {label}: число от {minimum} до {maximum} {unit}"
+            f"\n\n・ <b>Текущее:</b> <code>{current}</code> {unit}"
         ),
         reply_markup=templ.back_kb(calls.MenuNavigation(to="conn").pack())
     )

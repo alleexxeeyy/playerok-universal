@@ -784,7 +784,7 @@ async def callback_enter_message_text(callback: CallbackQuery, state: FSMContext
             state=state,
             message=callback.message,
             text=templ.mess_float_text(
-                f"💬 Введите новый <b>текст сообщения</b> <code>{message_id}</code>:"
+                f"💬 Введите новый <b>текст сообщения</b> «{sett.get_message_label(message_id)}»:"
                 f"\n\n・ <b>Текущее:</b> <blockquote>{escape_html(mess_text)}</blockquote>"
             ),
             reply_markup=templ.back_kb(calls.MessagePage(message_id=message_id).pack())

@@ -33,7 +33,7 @@ async def handler_waiting_for_message_text(message: types.Message, state: FSMCon
             state=state,
             message=message,
             text=templ.mess_page_float_text(
-                f"✅ <b>Текст сообщения</b> <code>{message_id}</code> "
+                f"✅ <b>Текст сообщения</b> «{sett.get_message_label(message_id)}» "
                 f"был успешно изменён на <blockquote>{escape_html(message.text)}</blockquote>"
             ),
             reply_markup=templ.back_kb(calls.MessagePage(message_id=message_id).pack())

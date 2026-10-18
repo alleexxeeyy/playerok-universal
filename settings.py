@@ -113,6 +113,7 @@ MESSAGES = SettingsFile(
     need_restore=True,
     default={
         "first_message": {
+            "label": "👋 Приветствие",
             "enabled": True,
             "text": [
                 "👋 Привет, {user.username}, я бот-помощник 𝗣𝗹𝗮𝘆𝗲𝗿𝗼𝗸 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗮𝗹",
@@ -121,18 +122,21 @@ MESSAGES = SettingsFile(
             ]
         },
         "cmd_error": {
+            "label": "❌ Ошибка команды",
             "enabled": True,
             "text": [
                 "❌ При вводе команды произошла ошибка: {error}"
             ]
         },
         "cmd_seller": {
+            "label": "💬 Вызов продавца",
             "enabled": True,
             "text": [
                 "💬 Продавец был вызван в этот чат. Ожидайте, пока он подключится к диалогу..."
             ]
         },
         "new_deal": {
+            "label": "📋 Новая сделка",
             "enabled": False,
             "text": [
                 "📋 Спасибо за покупку «{item.name}» за {item.price}₽",
@@ -141,24 +145,28 @@ MESSAGES = SettingsFile(
             ]
         },
         "deal_sent": {
+            "label": "✅ Товар отправлен",
             "enabled": False,
             "text": [
                 "✅ Я подтвердил выполнение вашего заказа! Если вы не получили купленный товар - напишите это в чате"
             ]
         },
         "deal_confirmed": {
+            "label": "🌟 Сделка подтверждена",
             "enabled": False,
             "text": [
                 "🌟 Спасибо за успешную сделку. Буду рад, если оставите отзыв. Жду вас в своём магазине в следующий раз, удачи!"
             ]
         },
         "deal_refunded": {
+            "label": "📦 Возврат сделки",
             "enabled": False,
             "text": [
                 "📦 Заказ был возвращён. Надеюсь, эта сделка не принесла вам неудобств. Жду вас в своём магазине в следующий раз, удачи!"
             ]
         },
         "deal_has_problem": {
+            "label": "🙏 Проблема в сделке",
             "enabled": False,
             "text": [
                 "🙏 Пожалуйста, напишите, с чем у вас возникли проблемы, чтобы я смог вам помочь.",
@@ -167,6 +175,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "new_review": {
+            "label": "✨ Спасибо за отзыв",
             "enabled": False,
             "text": [
                 "✨ Спасибо за {review_rating}⭐ отзыв! Надеюсь, вам понравилось качество выполненной работы"
@@ -360,3 +369,7 @@ class Settings:
             file = [file for file in data if file.name == name][0]
             set_json(file.path, new)
         except: pass
+
+    @staticmethod
+    def get_message_label(message_id: str) -> str:
+        return MESSAGES.default.get(message_id, {}).get("label") or message_id

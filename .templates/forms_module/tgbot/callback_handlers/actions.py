@@ -70,7 +70,7 @@ async def callback_forms_enter_message_text(callback: CallbackQuery, state: FSMC
         mess_text = "\n".join(messages[message_id]["text"]) or "❌ Не задано"
         await throw_float_message(state=state, 
                                   message=callback.message, 
-                                  text=templ.settings_mess_float_text(f"💬 Введите новый <b>текст сообщения</b> <code>{message_id}</code> ↓\n┗ Текущее: <blockquote>{mess_text}</blockquote>"), 
+                                  text=templ.settings_mess_float_text(f"💬 Введите новый <b>текст сообщения</b> «{sett.get_message_label(message_id)}» ↓\n┗ Текущее: <blockquote>{mess_text}</blockquote>"), 
                                   reply_markup=main_templ.back_kb(calls.FORMS_MessagesPagination(page=last_page).pack()))
     except Exception as e:
         if e is not TelegramAPIError:

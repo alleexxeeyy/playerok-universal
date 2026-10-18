@@ -24,6 +24,7 @@ MESSAGES = SettingsFile(
     need_restore=True,
     default={
         "cmd_writein": {
+            "label": "✏️ Ввод ФИО",
             "enabled": True,
             "text": [
                 "✏️ Шаг 1. Ввод фамилии, имени, отчества",
@@ -34,6 +35,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "entering_fullname_error": {
+            "label": "❌ Ошибка ввода ФИО",
             "enabled": True,
             "text": [
                 "❌ Шаг 1. Ошибка ввода ФИО",
@@ -44,6 +46,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "enter_age": {
+            "label": "✏️ Ввод возраста",
             "enabled": True,
             "text": [
                 "✏️ Шаг 2. Ввод возраста",
@@ -54,6 +57,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "entering_age_error": {
+            "label": "❌ Ошибка ввода возраста",
             "enabled": True,
             "text": [
                 "❌ Шаг 2. Ошибка ввода возраста",
@@ -64,6 +68,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "enter_hobby": {
+            "label": "✏️ Ввод хобби",
             "enabled": True,
             "text": [
                 "✏️ Шаг 3. Ввод хобби",
@@ -74,6 +79,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "entering_username_error": {
+            "label": "❌ Ошибка ввода хобби",
             "enabled": True,
             "text": [
                 "❌ Шаг 3. Ошибка ввода хобби",
@@ -84,6 +90,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "form_filled_out": {
+            "label": "✅ Анкета заполнена",
             "enabled": True,
             "text": [
                 "✅ Анкета была заполнена!",
@@ -97,6 +104,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "cmd_myform": {
+            "label": "📝 Команда !мояанкета",
             "enabled": True,
             "text": [
                 "📝 Ваша анкета",
@@ -109,6 +117,7 @@ MESSAGES = SettingsFile(
             ]
         },
         "cmd_myform_error": {
+            "label": "❌ Ошибка !мояанкета",
             "enabled": True,
             "text": [
                 "❌ При открытии вашей анкеты произошла ошибка",
@@ -131,3 +140,7 @@ class Settings:
     @staticmethod
     def set(name: str, new: list | dict) -> dict:
         return sett.set(name, new, DATA)
+
+    @staticmethod
+    def get_message_label(message_id: str) -> str:
+        return MESSAGES.default.get(message_id, {}).get("label") or message_id

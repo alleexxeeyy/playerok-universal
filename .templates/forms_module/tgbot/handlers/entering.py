@@ -28,7 +28,7 @@ async def handler_entering_message_text(message: types.Message, state: FSMContex
         sett.set("messages", messages)
         await throw_float_message(state=state,
                                   message=message,
-                                  text=templ.settings_mess_page_float_text(f"✅ <b>Текст сообщения</b> <code>{data['message_id']}</code> был успешно изменён на <blockquote>{message.text.strip()}</blockquote>"),
+                                  text=templ.settings_mess_page_float_text(f"✅ <b>Текст сообщения</b> «{sett.get_message_label(data['message_id'])}» был успешно изменён на <blockquote>{message.text.strip()}</blockquote>"),
                                   reply_markup=main_templ.back_kb(calls.FORMS_MessagePage(message_id=data.get("message_id")).pack()))
     except Exception as e:
         if e is not TelegramAPIError:

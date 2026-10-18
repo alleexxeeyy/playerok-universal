@@ -32,9 +32,8 @@ def mess_kb(page=0):
 
     for mess_id, info in list(messages.items())[start_offset:end_offset]:
         enabled = "🟢" if info["enabled"] else "🔴"
-        text_joined = "\n".join(info["text"])
         rows.append([InlineKeyboardButton(
-            text=f"{enabled} {mess_id} ・ {text_joined}", 
+            text=f"{enabled} {sett.get_message_label(mess_id)}", 
             callback_data=calls.MessagePage(message_id=mess_id).pack())
         ])
 

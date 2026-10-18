@@ -15,7 +15,7 @@ def mess_page_text(message_id: int):
     
     txt = textwrap.dedent(f"""
         <b>📄💬 Страница сообщения</b>
-        \n<b>🆔 ID:</b> {message_id}\n<b>💡 Включено:</b> {enabled}
+        \n<b>🏷️ Название:</b> {sett.get_message_label(message_id)}\n<b>💡 Включено:</b> {enabled}
         \n<b>💬 Текст:</b> <blockquote>{escape_html(message_text)}</blockquote>
     """)
     return txt

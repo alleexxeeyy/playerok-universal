@@ -136,8 +136,7 @@ def settings_mess_kb(page: int = 0):
 
     for mess_id, info in list(messages.items())[start_offset:end_offset]:
         enabled = "🟢" if info["enabled"] else "🔴"
-        text_joined = "\n".join(info["text"])
-        rows.append([InlineKeyboardButton(text=f"{enabled} {mess_id} | {text_joined}", callback_data=calls.FORMS_MessagePage(message_id=mess_id).pack())])
+        rows.append([InlineKeyboardButton(text=f"{enabled} {sett.get_message_label(mess_id)}", callback_data=calls.FORMS_MessagePage(message_id=mess_id).pack())])
 
     buttons_row = []
     btn_back = InlineKeyboardButton(text="←", callback_data=calls.FORMS_MessagesPagination(page=page-1).pack()) if page > 0 else InlineKeyboardButton(text="🛑", callback_data="123")
@@ -168,7 +167,7 @@ def settings_mess_page_text(message_id: int):
     txt = textwrap.dedent(f"""
         ✒️ <b>Редактирование сообщения</b>
 
-        🆔 <b>ID сообщения:</b> {message_id}
+        🏷️ <b>Название:</b> {sett.get_message_label(message_id)}
         💡 <b>Состояние:</b> {enabled}
         💬 <b>Текст сообщения:</b> <blockquote>{message_text}</blockquote>
 

@@ -8,7 +8,7 @@ from typing import Generator
 from threading import Thread, Lock, RLock
 from queue import Queue
 from threading import Event as ThreadingEvent
-from collections import deque
+from collections import deque, OrderedDict
 
 import websocket
 
@@ -63,6 +63,17 @@ class EventListener:
         self._ws_queue = Queue()
         self._ws_workers_started = False
 
+        self.ws_ping_interval = 30
+        self.ws_connect_timeout = 15
+        self.catch_up_max_age = 600
+        self._started_at = time.time()
+        self._ws_last_recv = 0
+        self._ws_lost_at = None
+        self._ws_alarm = False
+        self._ws_gen = 0
+        self._clock_offset = 0.0 # серверное время − локальное, по свежим сообщениям из WS
+        self._claimed_ids = OrderedDict()
+
     def _parse_iso(self, iso_dt: str):
         if iso_dt.endswith("Z"):
             iso_dt = iso_dt[:-1] + "+00:00"
@@ -113,7 +124,24 @@ class EventListener:
                 msg for msg, _ in self.processed_msgs
                 if msg.id == message_id
             ))
-    
+
+    def _claim_msg(self, message: ChatMessage, chat_id: str) -> bool:
+        if not message:
+            return False
+        with self._state_lock:
+            if message.id in self._claimed_ids or self._is_msg_processed(message.id):
+                return False
+            # processed_msgs держит только 300 последних — догон за 10 минут может выйти за него
+            self._claimed_ids[message.id] = True
+            if len(self._claimed_ids) > 3000:
+                self._claimed_ids.popitem(last=False)
+            self.processed_msgs.append((message, chat_id))
+            return True
+
+    def _msg_timestamp(self, message: ChatMessage) -> float:
+        try: return self._parse_iso(message.created_at).astimezone(timezone.utc).timestamp()
+        except: return 0
+
     def _parse_message_events(
         self, message: ChatMessage, chat: Chat
     ) -> list[
@@ -229,6 +257,14 @@ class EventListener:
                 }
             }))
 
+    def _send_ping(self):
+        with self._send_lock:
+            self.ws.send(json.dumps({"type": "ping"}))
+
+    def _send_pong(self):
+        with self._send_lock:
+            self.ws.send(json.dumps({"type": "pong"}))
+
     def _subscribe_chat_updated(self):
         with self._send_lock:
             self.ws.send(json.dumps({
@@ -284,21 +320,27 @@ class EventListener:
         _uuid = str(uuid.uuid4())
         with self._state_lock:
             self.chat_subscriptions[_uuid] = chat_id
-        with self._send_lock:
-            self.ws.send(json.dumps({
-                "id": _uuid,
-                "type": "subscribe",
-                "payload": {
-                    "extensions": {},
-                    "operationName": "chatMessageCreated",
-                    "query": QUERIES.get("chatMessageCreated"),
-                    "variables": {
-                        "filter": {
-                            "chatId": chat_id
+        try:
+            with self._send_lock:
+                self.ws.send(json.dumps({
+                    "id": _uuid,
+                    "type": "subscribe",
+                    "payload": {
+                        "extensions": {},
+                        "operationName": "chatMessageCreated",
+                        "query": QUERIES.get("chatMessageCreated"),
+                        "variables": {
+                            "filter": {
+                                "chatId": chat_id
+                            }
                         }
                     }
-                }
-            }))
+                }))
+        except Exception:
+            # иначе чат числится подписанным и больше никогда не переподпишется
+            with self._state_lock:
+                self.chat_subscriptions.pop(_uuid, None)
+            raise
 
     def _is_chat_subscribed(self, chat_id):
         with self._state_lock:
@@ -339,22 +381,96 @@ class EventListener:
                     and not self._is_msg_processed(msg.id)
                 ):
                     self.processed_msgs.append((msg, chat.id))
-    
-    def proccess_ws_message(self, msg):
+
+    def _catch_up_messages(self, lost_at: float) -> bool:
+        # подписки не присылают то, что пришло, пока WS был отключён — добираем через историю чатов.
+        # created_at серверный, поэтому окно сдвигаем на расхождение часов ПК с сервером
+        offset = self._clock_offset
+        since = max(lost_at - 30, self._started_at) + offset
+        oldest = time.time() + offset - self.catch_up_max_age
+        if since < oldest:
+            logger.warning(
+                f"Связи с Playerok не было дольше {self.catch_up_max_age // 60} минут — "
+                f"сообщения из чатов раньше этого не восстановлены"
+            )
+            since = oldest
+
+        chats = None
+        for _ in range(3):
+            try:
+                chats = self.account.get_chats(count=24).chats
+                break
+            except Exception:
+                logger.debug(f"Не удалось получить чаты для догона сообщений: {traceback.format_exc()}")
+                time.sleep(2)
+        if chats is None:
+            return False
+
+        for chat_ in chats:
+            if not chat_.last_message or self._msg_timestamp(chat_.last_message) < since:
+                continue
+
+            if not self._is_chat_subscribed(chat_.id):
+                self._subscribe_chat_message_created(chat_.id)
+
+            try: messages = self.account.get_chat_messages(chat_.id, count=24).messages
+            except Exception: messages = [chat_.last_message]
+
+            for message in sorted(messages, key=self._msg_timestamp):
+                if self._msg_timestamp(message) < since:
+                    continue
+                if not self._claim_msg(message, chat_.id):
+                    continue
+                if (
+                    message.user and message.user.id == self.account.id
+                    and not (message.text or "").startswith("{{")
+                ):
+                    continue
+
+                logger.debug(f"Догнал пропущенное сообщение {message.id} в чате {chat_.id}")
+                for event in self._proccess_new_chat_message(chat_, message):
+                    self.q.put(event)
+
+            time.sleep(0.5)
+        return True
+
+    def _on_connection_ack(self):
+        with self._state_lock:
+            # подписки прошлого соединения мертвы — иначе _is_chat_subscribed врёт и чат не переподпишется
+            self.chat_subscriptions.clear()
+            chats_snapshot = list(self.chats)
+            lost_at, self._ws_lost_at = self._ws_lost_at, None
+
+        caught_up = False
+        try:
+            self._subscribe_chat_updated()
+            self._subscribe_user_updated()
+            for chat_ in chats_snapshot:
+                self._subscribe_chat_message_created(chat_.id)
+            caught_up = not lost_at or self._catch_up_messages(lost_at)
+        finally:
+            if lost_at and not caught_up:
+                # не догнали — повторим на следующем подключении с того же места
+                with self._state_lock:
+                    self._ws_lost_at = min(lost_at, self._ws_lost_at or lost_at)
+
+    def proccess_ws_message(self, msg, gen: int | None = None):
         try:
             try: msg_data = json.loads(msg)
             except json.JSONDecodeError: return
-            
-            logger.debug(f"WS -> {msg_data}")
-            
-            if msg_data["type"] == "connection_ack":
-                self._subscribe_chat_updated()
-                self._subscribe_user_updated()
 
-                with self._state_lock:
-                    chats_snapshot = list(self.chats)
-                for chat_ in chats_snapshot:
-                    self._subscribe_chat_message_created(chat_.id)
+            if msg_data.get("type") == "ping":
+                self._send_pong()
+                return
+            if msg_data.get("type") == "pong":
+                return
+
+            logger.debug(f"WS -> {msg_data}")
+
+            if msg_data["type"] == "connection_ack":
+                if gen is not None and gen != self._ws_gen:
+                    return # ack прошлого соединения, пролежавший в очереди
+                self._on_connection_ack()
             else:
                 payload_data = (msg_data.get("payload") or {}).get("data") or {}
                 
@@ -384,6 +500,12 @@ class EventListener:
                         logger.debug(f"Чат {chat_id} ещё не в self.chats — пропуск chatMessageCreated")
                         return
                     _message = chat_message(payload_data["chatMessageCreated"])
+                    # одно сообщение могут прислать дважды (двойная подписка) или его уже выпустил догон
+                    if not self._claim_msg(_message, _chat.id):
+                        return
+                    ts = self._msg_timestamp(_message)
+                    if ts:
+                        self._clock_offset = ts - time.time()
 
                     events = self._proccess_new_chat_message(_chat, _message)
                     for event in events:
@@ -394,9 +516,9 @@ class EventListener:
 
     def _ws_worker(self):
         while True:
-            msg = self._ws_queue.get()
+            gen, msg = self._ws_queue.get()
             try:
-                self.proccess_ws_message(msg)
+                self.proccess_ws_message(msg, gen)
             except Exception:
                 logger.debug(f"Ошибка обработки сообщения в WebSocket`е: {traceback.format_exc()}")
 
@@ -444,7 +566,9 @@ class EventListener:
         try: self.chats = self.account.get_chats(count=24).chats # инициализация первых 24 чатов
         except: self.chats = []
 
-        self._process_chats_last_messages(self.chats)
+        self._started_at = time.time()
+        try: self._process_chats_last_messages(self.chats)
+        except Exception: logger.debug(f"Ошибка разбора последних сообщений чатов: {traceback.format_exc()}")
 
         with self._state_lock:
             chats_snapshot = list(self.chats)
@@ -453,7 +577,10 @@ class EventListener:
 
         self._start_ws_workers()
 
+        fails = 0
         while True:
+            connected_at = time.time()
+            self._ws_gen += 1
             try:
                 self.ws = websocket.WebSocket(
                     sslopt={"ca_certs": self.account._tmp_cert_path}
@@ -464,16 +591,53 @@ class EventListener:
                     subprotocols=["graphql-transport-ws"],
                     http_proxy_host=proxy_host,
                     http_proxy_port=proxy_port,
-                    http_proxy_auth=proxy_auth
+                    http_proxy_auth=proxy_auth,
+                    timeout=self.ws_connect_timeout
                 )
-                self._send_connection_init()          
+                self.ws.settimeout(self.ws_ping_interval)
+                self._send_connection_init()
+                self._recv_ws_messages()
+            except Exception:
+                # ConnectionResetError (WinError 10054), SSLError, OSError — не WebSocketException,
+                # раньше они молча убивали поток и бот переставал видеть сообщения
+                worked = self._ws_last_recv >= connected_at and time.time() - connected_at >= 60 # рвётся сразу — не рабочее
+                fails = 1 if worked else fails + 1
+                with self._state_lock:
+                    if self._ws_lost_at is None:
+                        # не подключились с самого старта — догоняем с момента запуска
+                        self._ws_lost_at = self._ws_last_recv or self._started_at
 
-                while True:
-                    msg = self.ws.recv()
-                    self._ws_queue.put(msg)
-            except websocket._exceptions.WebSocketException:
-                time.sleep(3)
-                pass
+                try: self.ws.shutdown()
+                except Exception: pass
+
+                if fails <= 3:
+                    logger.debug(f"Соединение с WebSocket потеряно (попытка {fails}): {traceback.format_exc()}")
+                else:
+                    logger.debug(f"Соединение с WebSocket потеряно (попытка {fails})")
+                if fails == 3:
+                    self._ws_alarm = True
+                    logger.warning("Нет соединения с Playerok, новые сообщения не приходят. Переподключаюсь...")
+                time.sleep(min(3 * fails, 30))
+
+    def _recv_ws_messages(self):
+        awaiting_pong = False
+        while True:
+            try:
+                msg = self.ws.recv()
+            except websocket._exceptions.WebSocketTimeoutException:
+                # долго тихо — проверяем, живо ли соединение. не ответил на ping — переподключаемся
+                if awaiting_pong:
+                    raise
+                self._send_ping()
+                awaiting_pong = True
+                continue
+
+            awaiting_pong = False
+            self._ws_last_recv = time.time()
+            if self._ws_alarm:
+                self._ws_alarm = False
+                logger.info("Соединение с Playerok восстановлено, сообщения снова приходят")
+            self._ws_queue.put((self._ws_gen, msg))
 
     def _should_check_review_deal(self, deal_id, delay=30, max_tries=30) -> bool:
         with self._state_lock:
@@ -676,17 +840,22 @@ class EventListener:
         
         self.q = Queue()
 
-        def run(gen):
-            for event in gen:
-                self.q.put(event)
+        def run(listen_func):
+            while True:
+                try:
+                    for event in listen_func():
+                        self.q.put(event)
+                except Exception:
+                    logger.error(f"Слушатель {listen_func.__name__} упал, перезапускаю: {traceback.format_exc()}")
+                time.sleep(10)
 
         if get_new_message_events:
-            Thread(target=run, args=(self.listen_new_messages(),), daemon=True).start()
-            Thread(target=run, args=(self.listen_new_deals(),), daemon=True).start()
-            #Thread(target=run, args=(self.listen_deal_statuses(),), daemon=True).start()
+            Thread(target=run, args=(self.listen_new_messages,), daemon=True).start()
+            Thread(target=run, args=(self.listen_new_deals,), daemon=True).start()
+            #Thread(target=run, args=(self.listen_deal_statuses,), daemon=True).start()
         
         if get_new_review_events:
-            Thread(target=run, args=(self.listen_new_reviews(),), daemon=True).start()
+            Thread(target=run, args=(self.listen_new_reviews,), daemon=True).start()
 
         while True:
             yield self.q.get()

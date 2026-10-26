@@ -59,7 +59,7 @@
 4. Чтобы запустить бота, откройте запускатор `start.bat`.
 5. После первого запуска следуйте действиям в консоли.
 
-[Возникли проблемы с установкой? Нажми на меня](https://telegra.ph/FunPay-Universal--chastye-oshibki-i-ih-resheniya-08-26)
+[Возникли проблемы с установкой? Нажми на меня](https://devfried.com/docs/faq/)
 
 ### 🍎 macOS
 1. Установите **Python версии 3.12.x** с [официального сайта](https://www.python.org/downloads/release/python-31210/) или через Homebrew:

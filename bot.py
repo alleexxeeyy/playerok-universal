@@ -143,7 +143,7 @@ if __name__ == "__main__":
         print(
             f"\n\n{Fore.LIGHTRED_EX}Ваш бот словил непредвиденную ошибку и был выключен."
             f"\n\n{Fore.WHITE}Пожалуйста, попробуйте найти свою проблему в нашей статье, в которой собраны все самые частые ошибки.",
-            f"\nСтатья: {Fore.LIGHTWHITE_EX}https://telegra.ph/FunPay-Universal--chastye-oshibki-i-ih-resheniya-08-26 {Fore.WHITE}(CTRL + Клик ЛКМ)\n\n"
+            f"\nСтатья: {Fore.LIGHTWHITE_EX}https://devfried.com/docs/faq/ {Fore.WHITE}(CTRL + Клик ЛКМ)\n\n"
         )
     except KeyboardInterrupt:
         print(

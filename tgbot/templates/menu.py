@@ -42,6 +42,7 @@ def menu_kb():
         InlineKeyboardButton(text="🔔 Уведомления", callback_data=calls.MenuNavigation(to="notifications").pack()),
         InlineKeyboardButton(text="🔧 Прочее", callback_data=calls.MenuNavigation(to="other").pack()),
         ],
+        [InlineKeyboardButton(text="🚫 Чёрный список", callback_data=calls.BlacklistPagination(page=0).pack())],
         [InlineKeyboardButton(text="━━━  УПРАВЛЕНИЕ  ━━━", callback_data="null_answer")],
         [
         InlineKeyboardButton(text="👤 Профиль", callback_data=calls.MenuNavigation(to="profile").pack()),

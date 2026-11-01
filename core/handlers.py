@@ -186,7 +186,18 @@ async def call_bot_event(event: str, args: list = [], func = None):
             logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера «{handler.__module__}.{handler.__qualname__}» для ивента бота «{event}»: {Fore.WHITE}{e}")
 
 
-async def call_playerok_event(event: EventTypes, args: list = []):
+def _modules_playerok_handlers() -> set:
+    from core.modules import get_modules
+    handlers = set()
+    for module in get_modules():
+        for funcs in (module.playerok_event_handlers or {}).values():
+            for func in funcs:
+                try: handlers.add(func)
+                except TypeError: pass
+    return handlers
+
+
+async def call_playerok_event(event: EventTypes, args: list = [], skip_modules: bool = False):
     """
     Вызывает ивент бота.
 
@@ -195,9 +206,18 @@ async def call_playerok_event(event: EventTypes, args: list = []):
 
     :param args: Аргументы.
     :type args: `list`
+
+    :param skip_modules: Не вызывать хендлеры модулей (только хендлеры самого бота).
+    :type skip_modules: `bool`
     """
     handlers = _playerok_event_handlers.get(event, [])
+    modules_handlers = _modules_playerok_handlers() if skip_modules else set()
     for handler in handlers:
+        if skip_modules and (
+            handler in modules_handlers
+            or str(getattr(handler, "__module__", "")).startswith("modules.")
+        ):
+            continue
         try:
             await handler(*args)
         except Exception as e:

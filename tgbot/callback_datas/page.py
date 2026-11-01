@@ -11,6 +11,9 @@ class MessagePage(CallbackData, prefix="messpage"):
 class CustomCommandPage(CallbackData, prefix="cucopage"):
     command: str
 
+class BlacklistUserPage(CallbackData, prefix="blpage"):
+    index: int
+
 class AutoDeliveryPage(CallbackData, prefix="audepage"):
     index: int
 

@@ -35,6 +35,9 @@ class BumpItemsPositionsPagination(CallbackData, prefix="bupospag"):
 class CustomCommandsPagination(CallbackData, prefix="cucopag"):
     page: int
 
+class BlacklistPagination(CallbackData, prefix="blpag"):
+    page: int
+
 class AutoDeliveriesPagination(CallbackData, prefix="audepag"):
     page: int
 

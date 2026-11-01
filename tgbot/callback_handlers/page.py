@@ -4,6 +4,8 @@ from aiogram.fsm.context import FSMContext
 
 import asyncio
 
+from core.blacklist import get_blacklist
+
 from .. import templates as templ
 from .. import callback_datas as calls
 from ..helpful import throw_float_message
@@ -27,6 +29,33 @@ async def callback_custom_command_page(callback: CallbackQuery, callback_data: c
         message=callback.message,
         text=templ.comm_page_text(command),
         reply_markup=templ.comm_page_kb(command, last_page),
+        callback=callback
+    )
+
+
+@router.callback_query(calls.BlacklistUserPage.filter())
+async def callback_blacklist_user_page(callback: CallbackQuery, callback_data: calls.BlacklistUserPage, state: FSMContext):
+    await state.set_state(None)
+    data = await state.get_data()
+    last_page = data.get("last_page") or 0
+
+    users = list(get_blacklist().keys())
+    if not 0 <= callback_data.index < len(users):
+        return await throw_float_message(
+            state=state, 
+            message=callback.message, 
+            text=templ.blacklist_page_float_text("❌ Покупатель не найден, список уже изменился"), 
+            reply_markup=templ.back_kb(calls.BlacklistPagination(page=last_page).pack()), 
+            callback=callback
+        )
+    username = users[callback_data.index]
+    await state.update_data(blacklist_user=username, blacklist_index=callback_data.index)
+    
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.blacklist_page_text(username), 
+        reply_markup=templ.blacklist_page_kb(last_page), 
         callback=callback
     )
 

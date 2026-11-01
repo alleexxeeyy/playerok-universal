@@ -13,6 +13,7 @@ from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states as states
 from ..helpful import throw_float_message
+from .pagination import callback_blacklist_pagination
 from ..callback_handlers.page import (
     callback_message_page,
     callback_module_page,
@@ -24,6 +25,17 @@ from .pagination import *
 
 
 router = Router()
+
+
+@router.callback_query(F.data == "switch_blacklist_auto_refund")
+async def callback_switch_blacklist_auto_refund(callback: CallbackQuery, state: FSMContext):
+    config = sett.get("config")
+    config["playerok"]["blacklist"]["auto_refund"] = not config["playerok"]["blacklist"]["auto_refund"]
+    sett.set("config", config)
+    data = await state.get_data()
+    return await callback_blacklist_pagination(
+        callback, calls.BlacklistPagination(page=data.get("last_page", 0)), state
+    )
 
 
 @router.callback_query(F.data == "switch_auto_restore_items_sold")

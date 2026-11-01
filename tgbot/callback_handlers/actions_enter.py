@@ -455,6 +455,22 @@ async def callback_enter_new_custom_command(callback: CallbackQuery, state: FSMC
     )
 
 
+@router.callback_query(F.data == "enter_new_blacklist_user")
+async def callback_enter_new_blacklist_user(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+    await state.set_state(states.BlacklistStates.waiting_for_new_blacklist_username)
+    await throw_float_message(
+        state=state, 
+        message=callback.message, 
+        text=templ.new_blacklist_user_float_text(
+            "👤 Введите <b>никнейм покупателя</b>, которого нужно добавить в чёрный список:"
+        ), 
+        reply_markup=templ.back_kb(calls.BlacklistPagination(page=last_page).pack()),
+        callback=callback
+    )
+
+
 @router.callback_query(F.data == "enter_custom_command_answer")
 async def callback_enter_custom_command_answer(callback: CallbackQuery, state: FSMContext):
     try:

@@ -90,7 +90,10 @@ def log_new_mess_kb(chat_id: str):
         InlineKeyboardButton(text="✏️ Ответить", callback_data=calls.RememberChatId(id=chat_id, do="send_mess").pack()),
         InlineKeyboardButton(text="⚡ Быстрый ответ", callback_data=calls.RememberChatId(id=chat_id, do="send_fast_reply").pack())
         ],
-        [InlineKeyboardButton(text="💬 Диалог", callback_data=calls.ChatPage(id=chat_id).pack())],
+        [
+        InlineKeyboardButton(text="💬 Диалог", callback_data=calls.ChatPage(id=chat_id).pack()),
+        InlineKeyboardButton(text="🚫 В ЧС", callback_data=calls.RememberChatId(id=chat_id, do="blacklist").pack())
+        ],
         [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -111,6 +114,7 @@ def log_new_deal_kb(chat_id: str, deal_id: str):
         InlineKeyboardButton(text="💬 Диалог", callback_data=calls.ChatPage(id=chat_id).pack()),
         InlineKeyboardButton(text="📋 Сделка", callback_data=calls.DealPage(id=deal_id).pack())
         ],
+        [InlineKeyboardButton(text="🚫 В ЧС", callback_data=calls.RememberChatId(id=chat_id, do="blacklist").pack())],
         [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -127,6 +131,7 @@ def log_new_problem_kb(chat_id: str, deal_id: str):
         InlineKeyboardButton(text="💬 Диалог", callback_data=calls.ChatPage(id=chat_id).pack()),
         InlineKeyboardButton(text="📋 Сделка", callback_data=calls.DealPage(id=deal_id).pack())
         ],
+        [InlineKeyboardButton(text="🚫 В ЧС", callback_data=calls.RememberChatId(id=chat_id, do="blacklist").pack())],
         [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -142,11 +147,25 @@ def log_item_kb(item_id: str):
     return kb
 
 
-def log_deal_kb(deal_id: str):
-    rows = [
-        [InlineKeyboardButton(text="📋 Сделка", callback_data=calls.DealPage(id=deal_id).pack())],
-        [InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")]
-    ]
+def log_deal_kb(deal_id: str, chat_id: str | None = None):
+    rows = [[InlineKeyboardButton(text="📋 Сделка", callback_data=calls.DealPage(id=deal_id).pack())]]
+    if chat_id:
+        rows.append([InlineKeyboardButton(text="🚫 В ЧС", callback_data=calls.RememberChatId(id=chat_id, do="blacklist").pack())])
+    rows.append([InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")])
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    return kb
+
+
+def log_blacklisted_deal_kb(chat_id: str, deal_id: str, refunded: bool = False):
+    rows = []
+    if not refunded:
+        rows.append([InlineKeyboardButton(text="📦 Возврат", callback_data=calls.RememberDealId(de_id=deal_id, do="refund").pack())])
+    rows.append([
+        InlineKeyboardButton(text="💬 Диалог", callback_data=calls.ChatPage(id=chat_id).pack()),
+        InlineKeyboardButton(text="📋 Сделка", callback_data=calls.DealPage(id=deal_id).pack())
+    ])
+    rows.append([InlineKeyboardButton(text="🗑️ Убрать из ЧС", callback_data=calls.RememberChatId(id=chat_id, do="blacklist").pack())])
+    rows.append([InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")])
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     return kb
 

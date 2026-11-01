@@ -180,6 +180,20 @@ async def callback_custom_commands_pagination(callback: CallbackQuery, callback_
     await render_custom_commands(callback.message, state, callback_data.page, callback)
 
 
+async def render_blacklist(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
+    await state.update_data(last_page=page)
+    
+    await throw_float_message(
+        state, message, templ.blacklist_text(), templ.blacklist_kb(page), callback
+    )
+
+
+@router.callback_query(calls.BlacklistPagination.filter())
+async def callback_blacklist_pagination(callback: CallbackQuery, callback_data: calls.BlacklistPagination, state: FSMContext):
+    await state.set_state(None)
+    await render_blacklist(callback.message, state, callback_data.page, callback)
+
+
 async def render_auto_deliveries(message: Message, state: FSMContext, page: int, callback: CallbackQuery = None):
     await state.update_data(last_page=page)
     
@@ -832,6 +846,7 @@ async def callback_releases_pagination(callback: CallbackQuery, callback_data: c
 
 
 PAGES = {
+    "blacklist": (render_blacklist, templ.blacklist_float_text),
     "signed_users": (render_signed_users, templ.signed_users_float_text),
     "restore_included": (render_restore_included, templ.restore_included_float_text),
     "restore_excluded": (render_restore_excluded, templ.restore_excluded_float_text),

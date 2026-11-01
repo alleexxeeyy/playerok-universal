@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import pytz
 from threading import Thread, RLock
 import textwrap
+from html import escape
 import shutil
 import copy
 from colorama import Fore
@@ -31,6 +32,7 @@ from core.handlers import (
     call_bot_event, 
     call_playerok_event
 )
+from core.blacklist import is_blacklisted, get_blacklist_entry
 from settings import DATA, Settings as sett
 from logging import getLogger
 from data import Data as data
@@ -54,6 +56,7 @@ from tgbot.templates import (
     log_item_kb,
     log_deal_kb,
     log_transaction_kb,
+    log_blacklisted_deal_kb,
     destroy_kb
 )
 
@@ -1076,6 +1079,65 @@ class PlayerokBot:
         Thread(target=bump_items_loop, daemon=True).start()
         Thread(target=withdrawal_loop, daemon=True).start()
 
+    def chat_username(self, chat) -> str | None:
+        try:
+            user = next((u for u in chat.users if u.id != self.account.id), None)
+            return user.username if user else None
+        except Exception:
+            return None
+
+    def deal_username(self, event) -> str | None:
+        try: username = event.deal.user.username
+        except Exception: username = None
+        return username or self.chat_username(getattr(event, "chat", None))
+
+    def is_blacklisted_event(self, event) -> bool:
+        try:
+            if event.type in (EventTypes.NEW_DEAL, EventTypes.ITEM_PAID, EventTypes.NEW_REVIEW):
+                return is_blacklisted(self.deal_username(event))
+            if event.type is EventTypes.NEW_MESSAGE:
+                if event.chat.id in (self.account.system_chat_id, self.account.support_chat_id):
+                    return False
+                return is_blacklisted(self.chat_username(event.chat))
+        except Exception as e:
+            logger.debug(f"Не удалось проверить событие {getattr(event, 'type', '?')} по чёрному списку: {e}")
+        return False
+
+    def handle_blacklisted_deal(self, event: NewDealEvent, entry: dict):
+        refunded = False
+        if self.config["playerok"]["blacklist"]["auto_refund"]:
+            try:
+                self.account.update_deal(event.deal.id, ItemDealStatuses.ROLLED_BACK)
+                refunded = True
+            except Exception as e:
+                logger.error(f"{Fore.LIGHTRED_EX}Не удалось вернуть сделку {event.deal.id} покупателя из чёрного списка: {Fore.WHITE}{e}")
+            if refunded:
+                self.send_message(event.chat.id, self.msg(
+                    "blacklist_deal_refunded",
+                    user=msg_user_from_chat(event.chat),
+                    chat=msg_chat(event.chat),
+                    deal=msg_deal(event.deal),
+                    item=msg_item(event.deal.item)
+                ))
+
+        logger.warning(
+            f"{Fore.LIGHTRED_EX}Сделка {event.deal.id} от покупателя {Fore.LIGHTWHITE_EX}{event.deal.user.username} "
+            f"{Fore.LIGHTRED_EX}из чёрного списка {Fore.WHITE}— {'возвращена' if refunded else 'модули её не обрабатывают'}"
+        )
+        if self.config["playerok"]["notifications"]["enabled"]:
+            reason = escape(entry.get("reason") or "") or "не указана"
+            self.log_to_tg(
+                log_text(
+                    f'🚫 <a href="https://playerok.com/deal/{event.deal.id}">Сделка</a> от покупателя из ЧС', 
+                    (f"<b>👤 Покупатель:</b> {escape(event.deal.user.username or '')}"
+                    f"\n<b>📝 Причина ЧС:</b> {reason}"
+                    f"\n<b>🛍️ Товар:</b> {escape(event.deal.item.name or '-')}"
+                    f"\n<b>💰 Сумма:</b> {event.deal.item.price or '?'}₽"
+                    f"\n\n{'📦 Сделка автоматически возвращена' if refunded else '⚠️ Модули эту сделку не обрабатывают, решите вручную'}")
+                ),
+                log_blacklisted_deal_kb(event.chat.id, event.deal.id, refunded)
+            )
+
     async def _on_new_message(self, event: NewMessageEvent):
         if not event.message.user:
             return
@@ -1086,6 +1148,7 @@ class PlayerokBot:
             return
 
         is_support_chat = event.chat.id in (self.account.system_chat_id, self.account.support_chat_id)
+        blacklisted = not is_support_chat and is_blacklisted(self.chat_username(event.chat))
         if (
             self.config["playerok"]["notifications"]["enabled"]
             and (self.config["playerok"]["notifications"]["events"]["new_user_message"] 
@@ -1110,7 +1173,7 @@ class PlayerokBot:
                 
                 self.log_to_tg(
                     log_text(
-                        f'💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>', 
+                        f'{"🚫 " if blacklisted else ""}💬 Новое сообщение в <a href="https://playerok.com/chats/{event.chat.id}">чате</a>{" (покупатель в ЧС)" if blacklisted else ""}', 
                         f"<b>{event.message.user.username}:</b> <blockquote>{text.strip()}</blockquote>"
                     ),
                     log_new_mess_kb(event.chat.id)
@@ -1118,6 +1181,7 @@ class PlayerokBot:
 
         if (
             not is_support_chat
+            and not blacklisted
             and event.message.text is not None
         ):
             if event.message.user.id not in self.initialized_users:
@@ -1164,6 +1228,8 @@ class PlayerokBot:
                 log_new_mess_kb(event.chat.id)
             )
 
+        if is_blacklisted(self.deal_username(event)):
+            return
         self.send_message(event.chat.id, self.msg(
             "new_review", 
             user=msg_user_from_chat(event.chat),
@@ -1178,13 +1244,14 @@ class PlayerokBot:
             return
 
         self.log_new_problem(event.deal)
-        self.send_message(event.chat.id, self.msg(
-            "deal_has_problem", 
-            user=msg_user_from_chat(event.chat),
-            chat=msg_chat(event.chat),
-            deal=msg_deal(event.deal),
-            item=msg_item(event.deal.item)
-        ))
+        if not is_blacklisted(self.deal_username(event)):
+            self.send_message(event.chat.id, self.msg(
+                "deal_has_problem", 
+                user=msg_user_from_chat(event.chat),
+                chat=msg_chat(event.chat),
+                deal=msg_deal(event.deal),
+                item=msg_item(event.deal.item)
+            ))
 
         if (
             self.config["playerok"]["notifications"]["enabled"] 
@@ -1196,11 +1263,11 @@ class PlayerokBot:
                     (f"<b>👤 Покупатель:</b> {event.deal.user.username}"
                     f"\n<b>🛍️ Товар:</b> {event.deal.item.name}")
                 ),
-                log_new_problem_kb(event.chat.id)
+                log_new_problem_kb(event.chat.id, event.deal.id)
             )
 
     async def _on_deal_confirmed(self, event: DealConfirmedEvent):
-        if event.deal.user.id == self.account.id:
+        if event.deal.user.id == self.account.id or is_blacklisted(self.deal_username(event)):
             return
         
         self.send_message(event.chat.id, self.msg(
@@ -1212,7 +1279,7 @@ class PlayerokBot:
         ))
 
     async def _on_deal_rolled_back(self, event: DealRolledBackEvent):
-        if event.deal.user.id == self.account.id:
+        if event.deal.user.id == self.account.id or is_blacklisted(self.deal_username(event)):
             return
         
         self.send_message(event.chat.id, self.msg(
@@ -1240,6 +1307,11 @@ class PlayerokBot:
         }
         
         self.log_new_deal(event.deal)
+
+        blacklist_entry = get_blacklist_entry(self.deal_username(event))
+        if blacklist_entry:
+            return self.handle_blacklisted_deal(event, blacklist_entry)
+
         if (
             self.config["playerok"]["notifications"]["enabled"] 
             and self.config["playerok"]["notifications"]["events"]["new_deal"]
@@ -1356,7 +1428,7 @@ class PlayerokBot:
             self.restore_item(item)
 
     async def _on_item_sent(self, event: ItemSentEvent):
-        if event.deal.user.id == self.account.id:
+        if event.deal.user.id == self.account.id or is_blacklisted(self.deal_username(event)):
             return
         
         self.send_message(event.chat.id, self.msg(
@@ -1393,7 +1465,7 @@ class PlayerokBot:
         ):
             self.log_to_tg(
                 log_text(f'🔃 Статус <a href="https://playerok.com/deal/{event.deal.id}/">сделки</a> изменился на «{status_frmtd}»'),
-                log_deal_kb(event.deal.id)
+                log_deal_kb(event.deal.id, event.chat.id if event.chat else None)
             )
 
 
@@ -1466,7 +1538,7 @@ class PlayerokBot:
         async def listener_loop():
             listener = EventListener(self.account)
             for event in listener.listen():
-                await call_playerok_event(event.type, [self, event])
+                await call_playerok_event(event.type, [self, event], skip_modules=self.is_blacklisted_event(event))
 
         run_async_in_thread(listener_loop)
         await call_bot_event("ON_PLAYEROK_BOT_INIT", [self])

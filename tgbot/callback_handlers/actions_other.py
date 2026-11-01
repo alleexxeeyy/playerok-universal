@@ -1,10 +1,12 @@
 from aiogram import F, Router
+from html import escape
 from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
 from pathlib import Path
 from collections import deque
 
 import shutil
+import asyncio
 import os
 
 from playerokapi.enums import (
@@ -16,6 +18,7 @@ from playerokapi.enums import (
     TransactionProviderIds
 )
 from settings import Settings as sett
+from core.blacklist import get_blacklist_entry, add_to_blacklist, remove_from_blacklist
 
 from .. import templates as templ
 from .. import callback_datas as calls
@@ -308,6 +311,47 @@ async def callback_remember_chat_id(callback: CallbackQuery, callback_data: call
             reply_to=callback.message.message_id
         )
 
+    elif do == "blacklist":
+        from plbot.playerokbot import get_playerok_bot
+        plbot = get_playerok_bot()
+        try:
+            chat = await asyncio.to_thread(plbot.account.get_chat, chat_id)
+            chat_name = plbot.chat_username(chat)
+        except Exception:
+            chat_name = None
+        if not chat_name:
+            return await throw_float_message(
+                state=state,
+                message=callback.message,
+                text=templ.do_action_text("❌ Не удалось определить покупателя в этом чате"),
+                reply_markup=templ.destroy_kb(),
+                callback=callback,
+                reply_to=callback.message.message_id
+            )
+
+        await state.update_data(blacklist_chat_user=chat_name)
+        entry = get_blacklist_entry(chat_name)
+        if entry:
+            await throw_float_message(
+                state=state,
+                message=callback.message,
+                text=templ.do_action_text(f"🚫 Покупатель уже <b>в чёрном списке</b>:\n{templ.blacklist_entry_text(entry)}"),
+                reply_markup=templ.chat_blacklisted_kb(),
+                callback=callback,
+                reply_to=callback.message.message_id
+            )
+        else:
+            await state.update_data(chat_blacklist_reason=None)
+            await state.set_state(states.BlacklistStates.waiting_for_chat_blacklist_reason)
+            await throw_float_message(
+                state=state,
+                message=callback.message,
+                text=templ.do_action_text(f"🚫 Введите <b>причину</b> добавления <code>{escape(chat_name)}</code> в чёрный список:"),
+                reply_markup=templ.chat_blacklist_reason_kb(),
+                callback=callback,
+                reply_to=callback.message.message_id
+            )
+
 
 @router.callback_query(calls.RememberDealId.filter())
 async def callback_remember_deal_id(callback: CallbackQuery, callback_data: calls.RememberDealId, state: FSMContext):
@@ -422,6 +466,125 @@ async def callback_delete_fast_reply(callback: CallbackQuery, callback_data: cal
             message=callback.message,
             text=templ.fast_replies_float_text(e),
             reply_markup=templ.back_kb(calls.FastRepliesPagination(page=last_page).pack())
+        )
+
+
+@router.callback_query(F.data == "add_chat_to_blacklist")
+async def callback_add_chat_to_blacklist(callback: CallbackQuery, state: FSMContext):
+    try:
+        await state.set_state(None)
+        data = await state.get_data()
+        chat_name = data.get("blacklist_chat_user")
+        if not chat_name:
+            raise Exception("❌ Чат не был найден, повторите процесс с самого начала")
+
+        if not add_to_blacklist(chat_name, data.get("chat_blacklist_reason") or ""):
+            raise Exception(f"❌ Покупатель <code>{escape(chat_name)}</code> уже в чёрном списке")
+        await state.update_data(chat_blacklist_reason=None)
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.do_action_text(f"✅ Покупатель <code>{escape(chat_name)}</code> добавлен <b>в чёрный список</b>"),
+            reply_markup=templ.destroy_kb(),
+            callback=callback
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.do_action_text(e),
+            reply_markup=templ.destroy_kb(),
+            callback=callback
+        )
+
+
+@router.callback_query(F.data == "remove_chat_from_blacklist")
+async def callback_remove_chat_from_blacklist(callback: CallbackQuery, state: FSMContext):
+    try:
+        await state.set_state(None)
+        data = await state.get_data()
+        chat_name = data.get("blacklist_chat_user")
+        if not chat_name:
+            raise Exception("❌ Чат не был найден, повторите процесс с самого начала")
+
+        if not remove_from_blacklist(chat_name):
+            raise Exception(f"❌ Покупателя <code>{escape(chat_name)}</code> нет в чёрном списке")
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.do_action_text(f"✅ Покупатель <code>{escape(chat_name)}</code> убран <b>из чёрного списка</b>"),
+            reply_markup=templ.destroy_kb(),
+            callback=callback
+        )
+    except Exception as e:
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.do_action_text(e),
+            reply_markup=templ.destroy_kb(),
+            callback=callback
+        )
+
+
+@router.callback_query(F.data == "add_new_blacklist_user")
+async def callback_add_new_blacklist_user(callback: CallbackQuery, state: FSMContext):
+    try:
+        await state.set_state(None)
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+        username = data.get("new_blacklist_user")
+        if not username:
+            raise Exception("❌ Никнейм покупателя не был найден, повторите процесс с самого начала")
+
+        if not add_to_blacklist(username):
+            raise Exception(f"❌ Покупатель <code>{escape(username)}</code> уже в чёрном списке")
+        await state.update_data(new_blacklist_user=None)
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.new_blacklist_user_float_text(f"✅ Покупатель <code>{escape(username)}</code> добавлен в чёрный список"),
+            reply_markup=templ.back_kb(calls.BlacklistPagination(page=last_page).pack()),
+            callback=callback
+        )
+    except Exception as e:
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.new_blacklist_user_float_text(e),
+            reply_markup=templ.back_kb(calls.BlacklistPagination(page=last_page).pack()),
+            callback=callback
+        )
+
+
+@router.callback_query(F.data == "remove_blacklist_user")
+async def callback_remove_blacklist_user(callback: CallbackQuery, state: FSMContext):
+    try:
+        await state.set_state(None)
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+        username = data.get("blacklist_user")
+        if not username:
+            raise Exception("❌ Покупатель не был найден, повторите процесс с самого начала")
+
+        remove_from_blacklist(username)
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.blacklist_page_float_text(f"✅ Покупатель <code>{escape(username)}</code> убран из чёрного списка"),
+            reply_markup=templ.back_kb(calls.BlacklistPagination(page=last_page).pack()),
+            callback=callback
+        )
+    except Exception as e:
+        data = await state.get_data()
+        last_page = data.get("last_page", 0)
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.blacklist_page_float_text(e),
+            reply_markup=templ.back_kb(calls.BlacklistPagination(page=last_page).pack()),
+            callback=callback
         )
 
 

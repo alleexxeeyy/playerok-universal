@@ -8,6 +8,8 @@ from .logs import *
 from .configs import *
 from .updates import *
 from .signed_users import *
+from .blacklist import *
+from .blacklist_page import *
 
 from .stats_day import *
 from .stats_week import *

@@ -10,6 +10,7 @@ from .states_restore import router as states_restore_router
 from .states_complete import router as states_complete_router
 from .states_bump import router as states_bump_router
 from .states_comms import router as states_comms_router
+from .states_blacklist import router as states_blacklist_router
 from .states_delivs import router as states_delivs_router
 from .states_data_replacement import router as states_data_replacement_router
 from .states_pages import router as states_pages_router
@@ -26,6 +27,7 @@ router.include_routers(
     states_complete_router,
     states_bump_router,
     states_comms_router,
+    states_blacklist_router,
     states_delivs_router,
     states_data_replacement_router,
     states_pages_router

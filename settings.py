@@ -1,6 +1,8 @@
 import os
 import json
 import copy
+import time
+import shutil
 import tempfile
 from dataclasses import dataclass
 
@@ -42,6 +44,9 @@ CONFIG = SettingsFile(
             "auto_complete_deals": {
                 "enabled": False,
                 "all": True
+            },
+            "blacklist": {
+                "auto_refund": False
             },
             "auto_bump_items": {
                 "enabled": False,
@@ -180,6 +185,13 @@ MESSAGES = SettingsFile(
             "text": [
                 "✨ Спасибо за {review_rating}⭐ отзыв! Надеюсь, вам понравилось качество выполненной работы"
             ]
+        },
+        "blacklist_deal_refunded": {
+            "label": "🚫 Возврат сделки из ЧС",
+            "enabled": True,
+            "text": [
+                "🚫 Вы находитесь в чёрном списке продавца, поэтому сделка была возвращена"
+            ]
         }
     }
 )
@@ -234,7 +246,15 @@ DATA_REPLACEMENT = SettingsFile(
     need_restore=False,
     default=[]
 )
-DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_COMPLETE_DEALS, AUTO_BUMP_ITEMS, FAST_REPLIES, DATA_REPLACEMENT]
+BLACKLIST = SettingsFile(
+    name="blacklist",
+    path="bot_settings/blacklist.json",
+    need_restore=True,
+    default={
+        "users": {}
+    }
+)
+DATA = [CONFIG, MESSAGES, CUSTOM_COMMANDS, AUTO_DELIVERIES, AUTO_RESTORE_ITEMS, AUTO_COMPLETE_DEALS, AUTO_BUMP_ITEMS, FAST_REPLIES, DATA_REPLACEMENT, BLACKLIST]
 
 
 def validate_config(config, default):
@@ -281,9 +301,9 @@ def restore_config(config: dict, default: dict):
     def check_default(config, default):
         for key, value in dict(default).items():
             if key not in config:
-                config[key] = value
+                config[key] = copy.deepcopy(value)
             elif type(value) is not type(config[key]):
-                config[key] = value
+                config[key] = copy.deepcopy(value)
             elif isinstance(value, dict) and isinstance(config[key], dict):
                 check_default(config[key], value)
         return config
@@ -311,22 +331,37 @@ def get_json(path: str, default: dict, need_restore: bool = True) -> dict:
     folder_path = os.path.dirname(path)
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-    
+
+    config = None
+    for _ in range(3):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            if need_restore:
+                new_config = restore_config(config, default)
+                if config != new_config:
+                    config = new_config
+                    with open(path, 'w', encoding='utf-8') as f:
+                        json.dump(config, f, indent=4, ensure_ascii=False)
+            return config
+        except FileNotFoundError:
+            break
+        except (PermissionError, BlockingIOError):
+            # файл как раз подменяют атомарной записью (Windows) — читаем ещё раз, а не затираем
+            time.sleep(0.1)
+        except:
+            break
+
+    if os.path.exists(path):
+        try: shutil.copyfile(path, f"{path}.bak")
+        except: pass
+    config = copy.deepcopy(default)
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-        if need_restore:
-            new_config = restore_config(config, default)
-            if config != new_config:
-                config = new_config
-                with open(path, 'w', encoding='utf-8') as f:
-                    json.dump(config, f, indent=4, ensure_ascii=False)
-    except:
-        config = default
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4, ensure_ascii=False)
-    finally:
-        return config
+    except:
+        pass
+    return config
     
 
 def set_json(path: str, new: dict):

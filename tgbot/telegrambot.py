@@ -85,7 +85,7 @@ class TelegramBot:
                 
                 📢 @friedplayerok
                 🤖 @friedshopbot
-                🧑‍💻 @friedfluoride
+                🧑‍💻 @friedauto
             """)
             await self.bot.set_my_short_description(short_description=short_description)
         except:
@@ -114,7 +114,7 @@ class TelegramBot:
                 
                 📢 Новости: @friedplayerok
                 🤖 Плагины: @friedshopbot
-                🧑‍💻 Автор: @friedfluoride
+                🧑‍💻 Разработка: @friedauto
             """)
             await self.bot.set_my_description(description=description)
         except:

@@ -14,13 +14,15 @@ BOOT_STAGES = {
 }
 
 
-def boot_report_text(marker: dict | None, errors: list[dict], working: int, total: int):
+def boot_report_text(marker: dict | None, errors: list[dict], working: int, total: int, notes: list[str] = None):
     marker = marker or {}
     reason = marker.get("reason")
     took = f" за {int(time.time() - marker['time'])} сек" if marker.get("time") else ""
 
     if reason == "update":
         lines = [f"✅ Бот <b>обновлён до v{VERSION}</b>{took}"]
+    elif reason == "setup":
+        lines = ["✅ Playerok подключён, бот <b>запущен</b>"]
     elif reason:
         lines = [f"✅ Бот <b>успешно перезагружен</b>{took}"]
     else:
@@ -28,6 +30,9 @@ def boot_report_text(marker: dict | None, errors: list[dict], working: int, tota
 
     if total:
         lines.append(f"🔌 Модули: работают <b>{working}</b> из <b>{total}</b>")
+
+    for note in notes or []:
+        lines.append(f"\n⚠️ {note}")
 
     if errors:
         lines.append("")

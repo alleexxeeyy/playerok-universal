@@ -14,7 +14,7 @@ def signed_users_text():
     txt = textwrap.dedent(f"""
         <b>🔑 Авторизации</b>
         Всего <b>{len(signed_users)}</b> юзеров:
-    """)
+    """) + "\nЧтобы добавить человека, добавьте его кнопками ниже или попросите написать боту /start — вам придёт запрос"
     return txt
 
 
@@ -39,9 +39,9 @@ async def signed_users_kb(page=0):
     for user_id in list(signed_users)[start_offset:end_offset]:
         try:
             chat = await bot.get_chat(user_id)
-            username = "@" + chat.username.replace("@", "")
+            username = "@" + chat.username.replace("@", "") if chat.username else (chat.full_name or str(user_id))
         except:
-            username = user_id
+            username = str(user_id) # без юзернейма или ни разу не писал боту — get_chat не отдаст
         rows.append([
             InlineKeyboardButton(text=username, callback_data="null_answer"),
             InlineKeyboardButton(text="🗑️", callback_data=calls.DeleteSignedUser(id=user_id).pack())
@@ -59,7 +59,10 @@ async def signed_users_kb(page=0):
         buttons_row.append(btn_next)
         rows.append(buttons_row)
     
-    rows.append([InlineKeyboardButton(text="🔐 Изменить ключ-пароль", callback_data="enter_current_password")])
+    rows.append([
+        InlineKeyboardButton(text="➕ Добавить по ID", callback_data="add_signed_user_id"),
+        InlineKeyboardButton(text="👤 Из контактов", callback_data="pick_signed_user")
+    ])
     rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=calls.MenuNavigation(to="default").pack())])
 
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
@@ -67,8 +70,4 @@ async def signed_users_kb(page=0):
 
 
 def signed_users_float_text(placeholder):
-    txt = textwrap.dedent(f"""
-        <b>🔑 Авторизации</b>
-        \n{placeholder}
-    """)
-    return txt
+    return f"<b>🔑 Авторизации</b>\n\n{placeholder}"

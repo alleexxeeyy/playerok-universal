@@ -1,5 +1,5 @@
 from aiogram import types, Router
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.fsm.context import FSMContext
 from packaging.version import Version
 
@@ -7,17 +7,23 @@ from __init__ import VERSION
 from settings import Settings as sett
 from core.utils import restart
 from core.bootreport import set_marker
+from core import access
 
 from .. import templates as templ
 from ..helpful import throw_float_message, do_auth
+from .setup import open_home
 
 
 router = Router()
 
 
 @router.message(Command("start"))
-async def handler_start(message: types.Message, state: FSMContext):
+async def handler_start(message: types.Message, state: FSMContext, command: CommandObject):
     await state.set_state(None)
+
+    args = command.args or ""
+    if args.startswith(access.OWNER_PREFIX) and access.claim_owner(message.from_user.id, args[len(access.OWNER_PREFIX):]):
+        return await open_home(message, state, welcome=True)
     
     config = sett.get("config")
     if message.from_user.id not in config["telegram"]["bot"]["signed_users"]:
@@ -31,7 +37,7 @@ async def handler_start(message: types.Message, state: FSMContext):
     )
 
     from updater import latest_release
-    if Version(VERSION) < Version(latest_release["tag_name"]):
+    if latest_release and Version(VERSION) < Version(latest_release["tag_name"]): # GitHub мог не ответить при запуске
         await throw_float_message(
             state=state,
             message=message,

@@ -74,24 +74,52 @@ async def callback_delete_signed_user(callback: CallbackQuery, callback_data: ca
         )
 
         
-@router.callback_query(F.data == "change_password")
-async def callback_change_password(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(calls.AccessRequest.filter())
+async def callback_access_request(callback: CallbackQuery, callback_data: calls.AccessRequest, state: FSMContext):
+    from core import access
+
+    if not access.is_signed(callback.from_user.id): # callback_data подделывается — проверяем, кто жмёт
+        return await answer_callback(callback.bot, callback)
+
+    user_id = callback_data.id
+    request = access.get_request(user_id) or {}
+    username, name = request.get("username"), request.get("name")
     await state.set_state(None)
 
-    data = await state.get_data()
-    last_page = data.get("last_page", 0)
-    new_password = data.get("new_password")
-    
-    config = sett.get("config")
-    config["telegram"]["bot"]["password"] = new_password
-    config["telegram"]["bot"]["signed_users"] = [callback.from_user.id]
-    sett.set("config", config)
-    
+    if callback_data.do == "deny":
+        return await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.access_request_text(user_id, username, name, "❌ Запрос отклонён"),
+            reply_markup=templ.destroy_kb(),
+            callback=callback
+        )
+
+    if callback_data.do == "cancel":
+        return await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.access_request_text(user_id, username, name),
+            reply_markup=templ.access_request_kb(user_id),
+            callback=callback
+        )
+
+    if access.is_signed(user_id):
+        return await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.access_request_text(user_id, username, name, "✅ У этого человека уже есть доступ"),
+            reply_markup=templ.destroy_kb(),
+            callback=callback
+        )
+
+    await state.set_state(states.SystemStates.waiting_for_access_confirm)
+    await state.update_data(access_user_id=user_id, access_request={"username": username, "name": name})
     await throw_float_message(
         state=state,
         message=callback.message,
-        text=templ.signed_users_float_text(f"✅ Пароль <b>успешно изменён</b>"),
-        reply_markup=templ.back_kb(calls.SignedUsersPagination(page=last_page).pack()),
+        text=templ.access_confirm_text(user_id, username, name),
+        reply_markup=templ.access_confirm_kb(user_id),
         callback=callback
     )
 

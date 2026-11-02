@@ -38,7 +38,17 @@ BOOT_MARKER = DataFile(
     path="bot_data/boot_marker.json",
     default={}
 )
-SYSTEM_DATA = [BOOT_MARKER]
+OWNER_LINK = DataFile(
+    name="owner_link",
+    path="bot_data/owner_link.json",
+    default={}
+)
+ACCESS_REQUESTS = DataFile(
+    name="access_requests",
+    path="bot_data/access_requests.json",
+    default={}
+)
+SYSTEM_DATA = [BOOT_MARKER, OWNER_LINK, ACCESS_REQUESTS]
 
 
 def get_json(path: str, default: dict | list) -> dict:

@@ -27,6 +27,7 @@ boot_id = int(time.time()) % 100000 # чтобы кнопки из отчёта 
 started_at = time.time()
 
 _errors: list[dict] = []
+_notes: list[str] = []
 _module_logs: dict[str, list[str]] = {}
 _capturing = False
 _log_handler = None
@@ -62,6 +63,22 @@ def stop_capture():
 
 def is_capturing() -> bool:
     return _capturing
+
+
+def reset():
+    global boot_id
+    _errors.clear()
+    _module_logs.clear()
+    boot_id = int(time.time()) % 100000
+
+
+def add_note(text: str):
+    if text not in _notes:
+        _notes.append(text)
+
+
+def get_notes() -> list[str]:
+    return _notes
 
 
 def get_errors() -> list[dict]:
@@ -230,14 +247,14 @@ def send_report(modules: list):
         collect_disabled(modules)
         stop_capture()
 
-        if not marker and not _errors:
+        if not marker and not _errors and not _notes:
             return
 
         working = len([module for module in modules if module.enabled])
         total = len(modules) + len({e["module"] for e in _errors if e["stage"] == "load"})
-        text = templ.boot_report_text(marker, _errors, working, total)
+        text = templ.boot_report_text(marker, _errors, working, total, _notes)
         kb = templ.boot_report_kb(_errors[:MAX_REPORT_ERRORS], boot_id)
-        _deliver(marker, text, kb, to_all=bool(_errors))
+        _deliver(marker, text, kb, to_all=bool(_errors or _notes))
     except Exception as e:
         stop_capture()
         logger.error(f"Не удалось отправить отчёт о запуске в Telegram: {e}")

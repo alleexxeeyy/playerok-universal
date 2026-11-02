@@ -13,17 +13,18 @@ from core.utils import (
     install_requirements, 
     patch_requests, 
     init_main_loop, 
-    run_async_in_thread, 
     acquire_instance_lock
 )
-from core.modules import (
-    load_modules, 
-    set_modules, 
-    get_modules,
-    connect_modules
-)
+from core.modules import get_modules
 from core.handlers import call_bot_event
 from core import bootreport
+from core.startup import (
+    diagnose,
+    enter_setup_mode,
+    start_modules,
+    start_telegram_bot,
+    start_playerok_bot
+)
 from updater import (
     check_for_updates, 
     check_new_releases_task
@@ -78,16 +79,6 @@ async def clear_logs_task():
         await asyncio.sleep(30)
 
 
-async def start_telegram_bot():
-    from tgbot.telegrambot import TelegramBot
-    run_async_in_thread(TelegramBot().run_bot)
-
-
-async def start_playerok_bot():
-    from plbot.playerokbot import PlayerokBot
-    await PlayerokBot().run_bot()
-
-
 if __name__ == "__main__":
     running_pid = acquire_instance_lock()
     if running_pid is not None:
@@ -125,20 +116,21 @@ if __name__ == "__main__":
         )
         
         check_for_updates()
-        configure_config()
+        configure_config() # в консоли — только токен Telegram, остальное настраивается в самом ТГ-боте
 
-        modules = load_modules()
-        set_modules(modules)
-        asyncio.run(connect_modules(modules))
-
-        main_loop.run_until_complete(start_telegram_bot())
-        main_loop.run_until_complete(start_playerok_bot())
+        problem = diagnose()
+        if problem: # Playerok не подключается — поднимаем один ТГ-бот, чинить будем там
+            main_loop.run_until_complete(start_telegram_bot())
+            enter_setup_mode(problem)
+        else:
+            start_modules()
+            main_loop.run_until_complete(start_telegram_bot())
+            main_loop.run_until_complete(start_playerok_bot())
+            asyncio.run(call_bot_event("ON_INIT"))
+            Thread(target=bootreport.send_report, args=(get_modules(),), daemon=True).start()
 
         main_loop.create_task(clear_logs_task())
         main_loop.create_task(check_new_releases_task())
-
-        asyncio.run(call_bot_event("ON_INIT"))
-        Thread(target=bootreport.send_report, args=(get_modules(),), daemon=True).start()
         
         main_loop.run_forever()
     except Exception as e:

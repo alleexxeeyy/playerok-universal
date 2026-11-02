@@ -69,7 +69,7 @@ async def handler_waiting_for_cookies(message: types.Message, state: FSMContext)
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.auth_float_text(f"🍪 <b>Cookie-данные</b> были успешно изменены на: <blockquote>{str_cookies}</blockquote>"),
+            text=templ.auth_float_text("🍪 <b>Cookie-данные</b> успешно изменены"),
             reply_markup=templ.back_kb(calls.MenuNavigation(to="auth").pack())
         )
     except Exception as e:

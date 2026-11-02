@@ -262,11 +262,10 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 is_configured() {
+  # в консоли нужен только токен — Playerok и доступы настраиваются в самом Telegram боте
   [[ -f "$CONFIG" ]] || return 1
-  cookies=$(python3 -c "import json; c=json.load(open('$CONFIG')); print(c['playerok']['api']['cookies'])" 2>/dev/null)
   token=$(python3 -c "import json; c=json.load(open('$CONFIG')); print(c['telegram']['api']['token'])" 2>/dev/null)
-  password=$(python3 -c "import json; c=json.load(open('$CONFIG')); print(c['telegram']['bot']['password'])" 2>/dev/null)
-  [[ -n "$cookies" && -n "$token" && -n "$password" ]]
+  [[ -n "$token" ]]
 }
 
 case "$1" in
@@ -463,10 +462,8 @@ CONFIG_FILE="$BOT_DIR/bot_settings/config.json"
 CONFIGURED=false
 
 if [[ -f "$CONFIG_FILE" ]]; then
-  COOKIES=$(python3 -c "import json; c=json.load(open('$CONFIG_FILE')); print(c['playerok']['api']['cookies'])" 2>/dev/null || echo "")
   TOKEN=$(python3 -c "import json; c=json.load(open('$CONFIG_FILE')); print(c['telegram']['api']['token'])" 2>/dev/null || echo "")
-  PASSWORD=$(python3 -c "import json; c=json.load(open('$CONFIG_FILE')); print(c['telegram']['bot']['password'])" 2>/dev/null || echo "")
-  if [[ -n "$COOKIES" && -n "$TOKEN" && -n "$PASSWORD" ]]; then
+  if [[ -n "$TOKEN" ]]; then
     CONFIGURED=true
   fi
 fi

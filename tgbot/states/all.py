@@ -7,8 +7,15 @@ class PageStates(StatesGroup):
 
 class SystemStates(StatesGroup):
     waiting_for_password = State()
-    waiting_for_current_password = State()
-    waiting_for_new_password = State()
+    waiting_for_access_confirm = State()
+    waiting_for_signed_user_id = State()
+    waiting_for_shared_user = State()
+
+
+class SetupStates(StatesGroup):
+    waiting_for_cookies = State()
+    waiting_for_user_agent = State()
+    waiting_for_proxy = State()
 
 
 class ActionsStates(StatesGroup):

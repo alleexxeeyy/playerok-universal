@@ -1,5 +1,7 @@
 from .main import *
 from .boot import *
+from .access import *
+from .setup import *
 from .menu import *
 from .modules import *
 from .module_page import *

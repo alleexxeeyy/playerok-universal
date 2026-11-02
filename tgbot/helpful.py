@@ -15,17 +15,62 @@ from . import templates as templ
 
 async def do_auth(message: Message, state: FSMContext) -> Message | None:
     from . import states
+    from core import access
 
-    await state.set_state(states.SystemStates.waiting_for_password)
+    if access.is_legacy_password_login():
+        await state.set_state(states.SystemStates.waiting_for_password)
+        return await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.sign_text(
+                "🔑 Введите <b>ключ-пароль</b>, указанный вами в конфиге бота:"
+                '\n\n<span class="tg-spoiler">Если вы забыли, его можно посмотреть напрямую в конфиге по пути bot_settings/config.json, параметр password в разделе telegram.bot</span>'
+            ),
+            reply_markup=templ.destroy_kb()
+        )
+
+    await state.set_state(None)
+    if not access.get_signed_users():
+        return await throw_float_message(
+            state=state,
+            message=message,
+            text=templ.not_linked_text(),
+            reply_markup=templ.destroy_kb()
+        )
+
+    chat = message.chat # do_auth зовут и с сообщением бота из колбэка — в личке chat и есть пользователь
+    requested = access.can_request_access(chat.id)
+    if requested:
+        access.remember_request(chat.id, chat.username, chat.full_name)
+        await send_access_request(message.bot, chat.id, chat.username, chat.full_name)
+
     return await throw_float_message(
         state=state,
         message=message,
-        text=templ.sign_text(
-            "🔑 Введите <b>ключ-пароль</b>, указанный вами в конфиге бота:"
-            '\n\n<span class="tg-spoiler">Если вы забыли, его можно посмотреть напрямую в конфиге по пути bot_settings/config.json, параметр password в разделе telegram.bot</span>'
-        ),
-        reply_markup=templ.destroy_kb()
+        text=templ.access_denied_text(chat.id, requested)
     )
+
+
+async def send_access_request(bot, user_id: int, username: str | None, name: str | None):
+    from core import access
+
+    for admin_id in access.get_signed_users():
+        try:
+            await bot.send_message(
+                chat_id=admin_id,
+                text=templ.access_request_text(user_id, username, name),
+                reply_markup=templ.access_request_kb(user_id),
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+
+
+async def notify_access_granted(bot, user_id: int):
+    try: # если человек ещё ни разу не писал боту, Telegram не даст ему написать — это не ошибка
+        await bot.send_message(chat_id=user_id, text=templ.access_granted_text(), parse_mode="HTML")
+    except Exception:
+        pass
 
 
 MAX_TXT_FILE_SIZE = 5 * 1024 * 1024

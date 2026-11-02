@@ -1,129 +1,125 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
+from aiogram.types import ReplyKeyboardRemove
 
 from settings import Settings as sett
-from utils import is_password_valid
+from core import access
 
 from .. import templates as templ
 from .. import states
 from .. import callback_datas as calls
-from ..helpful import throw_float_message
+from ..helpful import throw_float_message, do_auth, notify_access_granted
+from .setup import open_home
 
 
 router = Router()
 
 
+async def _render_signed_users(message: types.Message, state: FSMContext, page: int, placeholder: str = None, send: bool = False):
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.signed_users_float_text(placeholder) if placeholder else templ.signed_users_text(),
+        reply_markup=templ.back_kb(calls.SignedUsersPagination(page=page).pack()) if placeholder else await templ.signed_users_kb(page),
+        send=send
+    )
+
+
 @router.message(states.SystemStates.waiting_for_password, F.text)
 async def handler_waiting_for_password(message: types.Message, state: FSMContext):
-    try: 
-        await state.set_state(None)
-        config = sett.get("config")
-        
-        if message.text != config["telegram"]["bot"]["password"]:
-            raise Exception("❌ Неверный ключ-пароль")
-        
-        config["telegram"]["bot"]["signed_users"].append(message.from_user.id)
-        sett.set("config", config)
+    await state.set_state(None)
 
-        try:
-            await throw_float_message(
-                state=state,
-                message=message,
-                text=templ.menu_text(),
-                reply_markup=templ.menu_kb()
-            )
-        except:
-            await message.bot.send_message(
-                chat_id=message.from_user.id,
-                text=templ.menu_text(),
-                reply_markup=templ.menu_kb(),
-                parse_mode="HTML"
-            )
+    if not access.is_legacy_password_login(): # вход по паролю отключён — владелец уже есть
+        return await do_auth(message, state)
 
-        old_users = config["telegram"]["bot"]["signed_users"]
-        old_users.remove(message.from_user.id)
-
-        for user_id in old_users:
-            try:
-                await message.bot.send_message(
-                    chat_id=user_id,
-                    text=templ.new_sign_text(message.from_user),
-                    reply_markup=templ.destroy_kb(),
-                    parse_mode="HTML"
-                )
-            except:
-                pass
-    except Exception as e:
-        await throw_float_message(
+    if message.text != sett.get("config")["telegram"]["bot"]["password"]:
+        await state.set_state(states.SystemStates.waiting_for_password)
+        return await throw_float_message(
             state=state,
             message=message,
-            text=templ.sign_text(e), 
+            text=templ.sign_text("❌ Неверный ключ-пароль, попробуйте ещё раз"),
             reply_markup=templ.destroy_kb()
         )
 
+    access.add_signed_user(message.from_user.id)
+    await open_home(message, state, welcome=True)
 
-@router.message(states.SystemStates.waiting_for_current_password, F.text)
-async def handler_waiting_for_current_password(message: types.Message, state: FSMContext):
-    try: 
-        await state.set_state(None)
-        config = sett.get("config")
 
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        
-        if message.text != config["telegram"]["bot"]["password"]:
-            raise Exception("❌ Неверный ключ-пароль")
+@router.message(states.SystemStates.waiting_for_access_confirm, F.text)
+async def handler_waiting_for_access_confirm(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    await state.set_state(None)
 
-        await state.set_state(states.SystemStates.waiting_for_new_password)
-        await throw_float_message(
+    user_id = data.get("access_user_id")
+    request = data.get("access_request") or {}
+    if not user_id or not access.is_signed(message.from_user.id):
+        return
+
+    username, name = request.get("username"), request.get("name")
+    if message.text.strip().lower() != access.CONFIRM_WORD:
+        return await throw_float_message(
             state=state,
             message=message,
-            text=templ.signed_users_float_text("🆕 Введите <b>новый ключ-пароль</b> от бота (не менее 6 и не более 64 символов):"),
-            reply_markup=templ.back_kb(calls.SignedUsersPagination(page=last_page).pack())
-        )
-    except Exception as e:
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.signed_users_float_text(e), 
-            reply_markup=templ.back_kb(calls.SignedUsersPagination(page=last_page).pack())
-        )
-
-
-@router.message(states.SystemStates.waiting_for_new_password, F.text)
-async def handler_waiting_for_new_password(message: types.Message, state: FSMContext):
-    try: 
-        await state.set_state(None)
-
-        config = sett.get("config")
-        old_passwd = config["telegram"]["bot"]["password"]
-
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
-        
-        if not is_password_valid(message.text):
-            raise Exception("❌ Ваш пароль не подходит. Убедитесь, что он соответствует формату и не является лёгким и попробуйте ещё раз")
-        
-        new_passwd = message.text
-        await state.update_data(new_password=new_passwd)
-
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.signed_users_float_text(
-                "✔️ Подтвердите <b>смену пароля</b> для бота:"
-                f"\n\n・ <b>Старый:</b> {old_passwd}"
-                f"\n・ <b>Новый:</b> {new_passwd}"
+            text=templ.access_request_text(
+                user_id, username, name,
+                "❌ Слово не совпало — доступ не выдан. Если всё-таки хотите пустить, нажмите «Пустить» ещё раз"
             ),
-            reply_markup=templ.confirm_kb(
-                confirm_cb="change_password",
-                cancel_cb=calls.SignedUsersPagination(page=last_page).pack()
-            )
+            reply_markup=templ.access_request_kb(user_id)
         )
-    except Exception as e:
-        await throw_float_message(
-            state=state,
-            message=message,
-            text=templ.signed_users_float_text(e), 
-            reply_markup=templ.back_kb(calls.SignedUsersPagination(page=last_page).pack())
-        )
+
+    access.add_signed_user(user_id)
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.access_request_text(user_id, username, name, "✅ Доступ выдан"),
+        reply_markup=templ.destroy_kb()
+    )
+    await notify_access_granted(message.bot, user_id)
+
+
+@router.message(states.SystemStates.waiting_for_signed_user_id, F.text)
+async def handler_waiting_for_signed_user_id(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+    await state.set_state(None)
+
+    text = message.text.strip()
+    if not text.isdigit():
+        placeholder = "❌ ID — это число, например <code>123456789</code>. Свой ID человек увидит, если напишет этому боту /start"
+    elif not access.add_signed_user(int(text)):
+        placeholder = f"❌ У пользователя <code>{text}</code> уже есть доступ"
+    else:
+        placeholder = f"✅ Доступ выдан пользователю <code>{text}</code>"
+        await notify_access_granted(message.bot, int(text))
+
+    await _render_signed_users(message, state, last_page, placeholder)
+
+
+@router.message(states.SystemStates.waiting_for_shared_user, F.users_shared)
+async def handler_waiting_for_shared_user(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+    await state.set_state(None)
+
+    added = []
+    for user in message.users_shared.users:
+        if access.add_signed_user(user.user_id):
+            added.append(templ.user_title(user.user_id, user.username, user.first_name))
+            await notify_access_granted(message.bot, user.user_id)
+
+    await message.answer(
+        f"✅ Доступ выдан: {', '.join(added)}" if added else "❌ У этого пользователя уже есть доступ",
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode="HTML"
+    )
+    await _render_signed_users(message, state, last_page, send=True)
+
+
+@router.message(states.SystemStates.waiting_for_shared_user)
+async def handler_waiting_for_shared_user_cancel(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
+    await state.set_state(None)
+
+    await message.answer("✖️ Выбор пользователя отменён", reply_markup=ReplyKeyboardRemove())
+    await _render_signed_users(message, state, last_page, send=True)

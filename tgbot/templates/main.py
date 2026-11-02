@@ -180,11 +180,7 @@ def log_transaction_kb(deal_id: str):
 
 
 def sign_text(placeholder: str):
-    txt = textwrap.dedent(f"""
-        <b>🔐 Авторизация</b>
-        \n{placeholder}
-    """)
-    return txt
+    return f"<b>🔐 Авторизация</b>\n\n{placeholder}"
 
 
 def call_seller_text(username: str, chat_id: str):

@@ -12,6 +12,7 @@ import logging
 from settings import Settings as sett
 from core.modules import get_modules
 from core.handlers import call_bot_event
+from core.notify import get_connection
 from utils import normalize_custom_api_url
 
 from . import router as main_router
@@ -43,9 +44,10 @@ class TelegramBot:
         logging.getLogger("aiogram.dispatcher").setLevel(logging.CRITICAL)
         
         config = sett.get("config")
+        connection = get_connection() # при запуске могли переключиться на запасное подключение, если прокси не ответил
         self.token = config["telegram"]["api"]["token"]
-        self.proxy = config["telegram"]["api"]["proxy"]
-        self.custom_api_url = config["telegram"]["api"]["custom_api_url"]
+        self.proxy = connection["proxy"]
+        self.custom_api_url = connection["custom_api_url"]
 
         if self.proxy:
             session = AiohttpSession(proxy=f"http://{self.proxy}")
@@ -62,11 +64,32 @@ class TelegramBot:
 
         self.dp = Dispatcher()
         self.me = None
+        self.loop = None
 
-        for module in get_modules():
-            for router in module.telegram_bot_routers:
-                main_router.include_router(router)
+        self.attach_modules(get_modules())
         self.dp.include_router(main_router)
+
+    def attach_modules(self, modules: list):
+        for module in modules:
+            for router in module.telegram_bot_routers:
+                if router.parent_router is None:
+                    main_router.include_router(router)
+
+    async def init_modules(self, modules: list):
+        # модули подключены уже после старта ТГ-бота (запуск после настройки) — догоняем их хук
+        for module in modules:
+            if not module.enabled:
+                continue
+            for handler in module.bot_event_handlers.get("ON_TELEGRAM_BOT_INIT", []):
+                await call_bot_event("ON_TELEGRAM_BOT_INIT", [self], handler)
+        asyncio.create_task(self._restart_polling())
+
+    async def _restart_polling(self):
+        # aiogram считает allowed_updates при старте поллинга — у новых роутеров могут быть свои типы апдейтов
+        try:
+            await self.dp.stop_polling()
+        except RuntimeError:
+            pass
 
     async def _set_main_menu(self):
         try:

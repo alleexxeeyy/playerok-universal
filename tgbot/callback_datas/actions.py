@@ -12,6 +12,10 @@ class AccessRequest(CallbackData, prefix="accreq"):
     id: int
     do: str
 
+class ModuleCheckAction(CallbackData, prefix="modchk"):
+    idx: int
+    do: str
+
 class RememberChatId(CallbackData, prefix="rech"):
     id: str
     do: str

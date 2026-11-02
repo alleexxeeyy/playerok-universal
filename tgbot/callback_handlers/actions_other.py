@@ -24,7 +24,7 @@ from core.modules import install_staged_module, clear_module_import_dir, ModuleI
 from .. import templates as templ
 from .. import callback_datas as calls
 from .. import states
-from ..helpful import throw_float_message, do_auth, notify, answer_callback, require_state_item
+from ..helpful import throw_float_message, do_auth, notify, answer_callback, require_state_item, show_module_checks
 from .navigation import *
 from .pagination import *
 from .page import *
@@ -1223,18 +1223,13 @@ async def callback_module_import_action(callback: CallbackQuery, state: FSMConte
         fresh_note = "\n\n✅ Новые модули из архива установлены: " + ", ".join(f"<b>{n}</b>" for n in fresh)
 
     if action == "cancel":
-        text = "✖️ Импорт существующих модулей отменён." + fresh_note
-        if fresh:
-            text += "\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
-        await throw_float_message(
-            state=state,
-            message=callback.message,
-            text=templ.modules_float_text(text),
-            reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
-        )
         clear_module_import_dir(user_id)
         await callback.answer()
-        return
+        return await show_module_checks(
+            callback.message, state,
+            "✖️ Импорт существующих модулей отменён." + fresh_note,
+            fresh, calls.ModulesPagination(page=last_page).pack()
+        )
 
     if any(not os.path.exists(mod["source"]) for mod in collided):
         await throw_float_message(
@@ -1254,20 +1249,74 @@ async def callback_module_import_action(callback: CallbackQuery, state: FSMConte
         verb = {"merge": "обновлены", "replace": "переустановлены", "duplicate": "добавлены копией"}[action]
         str_installed = "\n".join(f"・ <b>{name}</b>" for name in installed)
         text = f"✅ Модули {verb}:\n<blockquote>{str_installed}</blockquote>{fresh_note}"
-        text += "\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
     except Exception as e:
         done = ("\n\nУспели установиться: " + ", ".join(f"<b>{n}</b>" for n in installed)) if installed else ""
         text = (str(e) if isinstance(e, ModuleImportError) else
                 f"❌ Не удалось установить модуль: <blockquote>{escape(str(e))}</blockquote>") + done
 
+    clear_module_import_dir(user_id)
+    await callback.answer()
+    await show_module_checks(callback.message, state, text, installed + fresh, calls.ModulesPagination(page=last_page).pack())
+
+
+@router.callback_query(calls.ModuleCheckAction.filter())
+async def callback_module_check_action(callback: CallbackQuery, callback_data: calls.ModuleCheckAction, state: FSMContext):
+    from core.modules import remove_module, restore_module_backup, drop_module_backup
+
+    data = await state.get_data()
+    checks = data.get("module_checks") or []
+    back_cb = data.get("module_checks_back") or calls.ModulesPagination(page=0).pack()
+    if callback_data.idx >= len(checks):
+        return await notify(callback, "Меню устарело — импортируйте модуль заново", alert=True)
+
+    check = checks[callback_data.idx]
+    if callback_data.do == "trace":
+        await callback.bot.send_document(
+            chat_id=callback.from_user.id,
+            document=BufferedInputFile(check["trace"].encode("utf-8"), filename=f"{check['name']}_error.txt"),
+            reply_markup=templ.destroy_kb()
+        )
+        return await answer_callback(callback.bot, callback)
+
+    if check["status"] != "error":
+        return await answer_callback(callback.bot, callback)
+
+    try:
+        if callback_data.do == "rollback":
+            restore_module_backup(check["name"])
+            check["status"] = "rolled_back"
+        elif callback_data.do == "delete":
+            remove_module(check["name"])
+            drop_module_backup(check["name"])
+            check["status"] = "deleted"
+    except Exception as e:
+        return await notify(callback, str(e) if isinstance(e, ModuleImportError) else f"❌ Не получилось: {e}", alert=True)
+
+    await state.update_data(module_checks=checks)
     await throw_float_message(
         state=state,
         message=callback.message,
-        text=templ.modules_float_text(text),
-        reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
+        text=templ.modules_float_text(templ.module_check_text(data.get("module_checks_header", ""), checks)),
+        reply_markup=templ.module_check_kb(checks, back_cb),
+        callback=callback
     )
-    clear_module_import_dir(user_id)
-    await callback.answer()
+
+
+@router.callback_query(F.data == "module_check_restart")
+async def callback_module_check_restart(callback: CallbackQuery, state: FSMContext):
+    from core.utils import restart
+    from core.bootreport import set_marker
+
+    await state.set_state(None)
+    mess = await throw_float_message(
+        state=state,
+        message=callback.message,
+        text="🔄️ <b>Перезагружаю бота</b>, подождите...",
+        reply_markup=templ.destroy_kb(),
+        callback=callback
+    )
+    set_marker("restart", callback.message.chat.id, mess.message_id if mess else callback.message.message_id)
+    restart(from_tg=True)
 
 
 @router.callback_query(F.data == "reload_module")

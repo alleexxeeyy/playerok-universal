@@ -66,6 +66,27 @@ async def send_access_request(bot, user_id: int, username: str | None, name: str
             pass
 
 
+async def show_module_checks(message: Message, state: FSMContext, header: str, names: list[str], back_cb: str):
+    from core.modules import check_installed_modules
+
+    if not names:
+        return await throw_float_message(state=state, message=message, text=templ.modules_float_text(header), reply_markup=templ.back_kb(back_cb))
+
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.modules_float_text(f"{header}\n\n⏳ Проверяю, что модуль запускается — это может занять до минуты...")
+    )
+    checks = await asyncio.to_thread(check_installed_modules, names)
+    await state.update_data(module_checks=checks, module_checks_header=header, module_checks_back=back_cb)
+    await throw_float_message(
+        state=state,
+        message=message,
+        text=templ.modules_float_text(templ.module_check_text(header, checks)),
+        reply_markup=templ.module_check_kb(checks, back_cb)
+    )
+
+
 async def notify_access_granted(bot, user_id: int):
     try: # если человек ещё ни разу не писал боту, Telegram не даст ему написать — это не ошибка
         await bot.send_message(chat_id=user_id, text=templ.access_granted_text(), parse_mode="HTML")

@@ -8,6 +8,7 @@ import zipfile
 import rarfile
 import importlib
 import traceback
+import subprocess
 import uuid
 from uuid import UUID
 from colorama import Fore
@@ -31,6 +32,8 @@ logger = getLogger("universal.modules")
 
 MODULES_DIR = "modules"
 MODULES_TEMP_DIR = os.path.join(TEMP_DIR, "modules")
+MODULES_BACKUP_DIR = os.path.join(TEMP_DIR, "modules_backup")
+MODULE_CHECK_TIMEOUT = 60
 MODULE_EXTENSIONS = (".zip", ".rar")
 MAX_MODULE_SIZE = 50 * 1024 * 1024
 MAX_UNPACKED_SIZE = 300 * 1024 * 1024
@@ -578,12 +581,118 @@ def install_staged_module(mod: dict, action: str) -> str:
         name = _free_module_name(name)
         return _place_py(source, name, True) if is_py else _place_folder_replace(source, name)
 
+    if module_name_exists(name): # прежняя версия — чтобы откатиться, если новая не запустится
+        backup_module(name)
+    else:
+        drop_module_backup(name)
+
     if is_py:
         return _place_py(source, name, action != "merge")
 
     if action == "merge":
         return _place_folder_merge(source, name)
     return _place_folder_replace(source, name)
+
+
+def _module_paths(name: str) -> list[str]:
+    paths = (os.path.join(MODULES_DIR, name), os.path.join(MODULES_DIR, f"{name}.py"))
+    return [path for path in paths if os.path.exists(path)]
+
+
+def backup_module(name: str):
+    dest = os.path.join(MODULES_BACKUP_DIR, name)
+    _rmtree(dest)
+    os.makedirs(dest, exist_ok=True)
+    for path in _module_paths(name):
+        target = os.path.join(dest, os.path.basename(path))
+        if os.path.isdir(path):
+            shutil.copytree(path, target, ignore=shutil.ignore_patterns("__pycache__"))
+        else:
+            shutil.copy2(path, target)
+
+
+def has_module_backup(name: str) -> bool:
+    return os.path.isdir(os.path.join(MODULES_BACKUP_DIR, name))
+
+
+def drop_module_backup(name: str):
+    _rmtree(os.path.join(MODULES_BACKUP_DIR, name))
+
+
+def remove_module(name: str):
+    _rmtree(os.path.join(MODULES_DIR, name))
+    py = os.path.join(MODULES_DIR, f"{name}.py")
+    if os.path.isfile(py):
+        os.remove(py)
+
+
+def restore_module_backup(name: str):
+    backup = os.path.join(MODULES_BACKUP_DIR, name)
+    if not os.path.isdir(backup):
+        raise ModuleImportError(f"❌ Прежняя версия модуля <b>{name}</b> не сохранилась — установите её заново")
+    remove_module(name)
+    for item in os.listdir(backup):
+        shutil.move(os.path.join(backup, item), os.path.join(MODULES_DIR, item))
+    _rmtree(backup)
+
+
+# импортируем в отдельном процессе: ошибку видно сразу, а живой бот не задет кодом нового модуля
+_CHECK_SCRIPT = (
+    "import os, sys, importlib, traceback\n"
+    "sys.path.insert(0, os.getcwd())\n"
+    "name = sys.argv[1]\n"
+    "try:\n"
+    "    module = importlib.import_module(f'modules.{name}')\n"
+    "    for field in ('PREFIX', 'VERSION', 'NAME', 'DESCRIPTION', 'AUTHORS', 'LINKS'):\n"
+    "        if not hasattr(module, field):\n"
+    "            raise AttributeError(f\"module 'modules.{name}' has no attribute '{field}'\")\n"
+    "except BaseException:\n"
+    "    traceback.print_exc()\n"
+    "    sys.stderr.flush()\n"
+    "    os._exit(1)\n"
+    "os._exit(0)\n"
+)
+
+
+def check_module_import(name: str, timeout: int = MODULE_CHECK_TIMEOUT) -> tuple[str, str]:
+    requirements = os.path.join(MODULES_DIR, name, "requirements.txt")
+    if os.path.isfile(requirements):
+        install_requirements(requirements)
+
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", _CHECK_SCRIPT, name],
+            cwd=os.getcwd(),
+            capture_output=True,
+            timeout=timeout,
+            env=dict(os.environ, PYTHONIOENCODING="utf-8")
+        )
+    except subprocess.TimeoutExpired:
+        return "timeout", ""
+    except Exception as e:
+        logger.error(f"Не удалось проверить модуль {name}: {e}")
+        return "timeout", ""
+
+    if result.returncode == 0:
+        return "ok", ""
+    output = result.stderr.decode("utf-8", "replace")
+    start = output.rfind("Traceback (most recent call last):")
+    return "error", (output[start:] if start != -1 else output[-4000:]).strip()
+
+
+def check_installed_modules(names: list[str]) -> list[dict]:
+    results = []
+    for name in names:
+        status, trace = check_module_import(name)
+        if status != "error":
+            drop_module_backup(name)
+        results.append({
+            "name": name,
+            "status": status,
+            "trace": trace,
+            "has_backup": has_module_backup(name)
+        })
+    return results
 
 
 def _format_string(count: int):

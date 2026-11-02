@@ -2,6 +2,7 @@ from .main import *
 from .boot import *
 from .access import *
 from .setup import *
+from .module_check import *
 from .menu import *
 from .modules import *
 from .module_page import *

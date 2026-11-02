@@ -6,6 +6,7 @@ from packaging.version import Version
 from __init__ import VERSION
 from settings import Settings as sett
 from core.utils import restart
+from core.bootreport import set_marker
 
 from .. import templates as templ
 from ..helpful import throw_float_message, do_auth
@@ -49,11 +50,12 @@ async def handler_restart(message: types.Message, state: FSMContext):
     if message.from_user.id not in config["telegram"]["bot"]["signed_users"]:
         return await do_auth(message, state)
     
-    await throw_float_message(
+    mess = await throw_float_message(
         state=state,
         message=message,
         text="🔄️ <b>Перезагружаю бота</b>, подождите...",
         reply_markup=templ.destroy_kb()
     )
     
+    set_marker("restart", message.chat.id, mess.message_id if mess else None)
     restart(from_tg=True)

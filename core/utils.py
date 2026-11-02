@@ -156,10 +156,12 @@ def release_instance_locks():
 
 def restart(from_tg=False):
     python = sys.executable
-    args = sys.argv.copy()
+    args = [arg for arg in sys.argv if arg != "--from_tg"]
 
     if from_tg:
-        args.append("--from_tg")
+        from core import bootreport
+        if not bootreport.has_marker(): # перезапуск из ТГ без своего маркера — пусть отчёт уйдёт всем, как раньше
+            bootreport.set_marker("restart")
 
     release_instance_locks() # иначе новый процесс упрётся в локи, которые держит ещё живой старый
     logger.info("Перезапуск бота...")

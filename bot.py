@@ -2,6 +2,7 @@ import os
 import sys
 import asyncio
 import traceback
+from threading import Thread
 from colorama import Fore, init as init_colorama
 from logging import getLogger
 
@@ -18,9 +19,11 @@ from core.utils import (
 from core.modules import (
     load_modules, 
     set_modules, 
+    get_modules,
     connect_modules
 )
 from core.handlers import call_bot_event
+from core import bootreport
 from updater import (
     check_for_updates, 
     check_new_releases_task
@@ -75,9 +78,9 @@ async def clear_logs_task():
         await asyncio.sleep(30)
 
 
-async def start_telegram_bot(from_tg=False):
+async def start_telegram_bot():
     from tgbot.telegrambot import TelegramBot
-    run_async_in_thread(TelegramBot().run_bot, (from_tg,))
+    run_async_in_thread(TelegramBot().run_bot)
 
 
 async def start_playerok_bot():
@@ -104,11 +107,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        from_tg = "--from_tg" in sys.argv
-
         install_requirements("requirements.txt") # установка недостающих зависимостей, если таковые есть
         patch_requests()
         setup_logger()
+        bootreport.start_capture()
         
         set_title(f"Playerok Universal v{VERSION} by @friedfluoride")
         print(
@@ -129,22 +131,25 @@ if __name__ == "__main__":
         set_modules(modules)
         asyncio.run(connect_modules(modules))
 
-        main_loop.run_until_complete(start_telegram_bot(from_tg))
+        main_loop.run_until_complete(start_telegram_bot())
         main_loop.run_until_complete(start_playerok_bot())
 
         main_loop.create_task(clear_logs_task())
         main_loop.create_task(check_new_releases_task())
 
         asyncio.run(call_bot_event("ON_INIT"))
+        Thread(target=bootreport.send_report, args=(get_modules(),), daemon=True).start()
         
         main_loop.run_forever()
     except Exception as e:
+        trace = traceback.format_exc()
         traceback.print_exc()
         print(
             f"\n\n{Fore.LIGHTRED_EX}Ваш бот словил непредвиденную ошибку и был выключен."
             f"\n\n{Fore.WHITE}Пожалуйста, попробуйте найти свою проблему в нашей статье, в которой собраны все самые частые ошибки.",
             f"\nСтатья: {Fore.LIGHTWHITE_EX}https://devfried.com/docs/faq/ {Fore.WHITE}(CTRL + Клик ЛКМ)\n\n"
         )
+        bootreport.notify_crash(trace)
     except KeyboardInterrupt:
         print(
             f"\n\n{Fore.YELLOW}Работа бота остановлена "

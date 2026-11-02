@@ -1479,6 +1479,13 @@ class PlayerokBot:
             logger.error(f"{Fore.WHITE}Закройте это окно: если оставить два бота на одном аккаунте, заказы и сообщения будут обрабатываться дважды.")
             logger.error(f"{Fore.LIGHTBLACK_EX}Если бот на самом деле не запущен — завершите зависший процесс python и попробуйте снова.")
             logger.info("")
+
+            from core.bootreport import notify_crash
+            notify_crash("", reason=(
+                f"На аккаунте Playerok <b>{escape(self.account.username)}</b> уже работает другой бот"
+                f"{f' (процесс {account_pid})' if account_pid else ''} — один аккаунт, один бот. "
+                f"Закройте лишнюю копию и перезапустите этого бота"
+            ))
             sys.exit(1)
 
         logger.info("")

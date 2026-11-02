@@ -1,4 +1,5 @@
 from .main import *
+from .boot import *
 from .menu import *
 from .modules import *
 from .module_page import *

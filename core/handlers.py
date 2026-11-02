@@ -1,7 +1,9 @@
+import traceback
 from colorama import Fore
 from logging import getLogger
 
 from playerokapi.listener.events import EventTypes
+from core import bootreport
 
 
 logger = getLogger("universal.handlers")
@@ -184,6 +186,9 @@ async def call_bot_event(event: str, args: list = [], func = None):
             await handler(*args)
         except Exception as e:
             logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обработке хендлера «{handler.__module__}.{handler.__qualname__}» для ивента бота «{event}»: {Fore.WHITE}{e}")
+            module = bootreport.module_of(handler)
+            if module:
+                bootreport.add_error(module, "start", traceback.format_exc())
 
 
 def _modules_playerok_handlers() -> set:

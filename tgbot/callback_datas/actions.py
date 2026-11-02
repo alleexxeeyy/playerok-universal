@@ -4,6 +4,10 @@ from aiogram.filters.callback_data import CallbackData
 class DeleteSignedUser(CallbackData, prefix="desu"):
     id: int
 
+class BootErrorFile(CallbackData, prefix="booterr"):
+    boot: int
+    idx: int
+
 class RememberChatId(CallbackData, prefix="rech"):
     id: str
     do: str

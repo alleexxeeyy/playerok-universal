@@ -24,6 +24,7 @@ from core.handlers import (
 )
 from core.configs import TEMP_DIR
 from core.utils import install_requirements
+from core import bootreport
 
 
 logger = getLogger("universal.modules")
@@ -260,10 +261,12 @@ def load_modules() -> list[Module]:
             modules.append(_import_module_object(stem))
             seen_stems.add(stem)
         except:
+            trace = traceback.format_exc()
             logger.error(
                 f"{Fore.LIGHTRED_EX}Ошибка при загрузке модуля {name}: "
-                f"{Fore.WHITE}{traceback.format_exc()}"
+                f"{Fore.WHITE}{trace}"
             )
+            bootreport.add_error(stem, "load", trace)
 
     return modules
 
@@ -606,7 +609,9 @@ async def connect_modules(modules: list[Module]):
         try:
             await _enable_module(module)
         except Exception as e:
-            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при подключении модуля {module.meta.name}: {Fore.WHITE}{traceback.format_exc()}")
+            trace = traceback.format_exc()
+            logger.error(f"{Fore.LIGHTRED_EX}Ошибка при подключении модуля {module.meta.name}: {Fore.WHITE}{trace}")
+            bootreport.add_error(module._dir_name, "start", trace)
     
     connected_modules = [module for module in loaded_modules if module.enabled]
     names = [f"{Fore.YELLOW}{module.meta.name} {Fore.LIGHTWHITE_EX}{module.meta.version}" for module in connected_modules]

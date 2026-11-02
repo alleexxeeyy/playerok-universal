@@ -32,6 +32,14 @@ BUMPED_ITEMS = DataFile(
 )
 DATA = [INITIALIZED_USERS, SAVED_ITEMS, CACHED_ORDERS, BUMPED_ITEMS]
 
+# служебные файлы — не попадают в экспорт конфигов
+BOOT_MARKER = DataFile(
+    name="boot_marker",
+    path="bot_data/boot_marker.json",
+    default={}
+)
+SYSTEM_DATA = [BOOT_MARKER]
+
 
 def get_json(path: str, default: dict | list) -> dict:
     """

@@ -21,6 +21,7 @@ from settings import Settings as sett
 
 from __init__ import VERSION
 from core.utils import restart
+from core.bootreport import set_marker
 
 
 REPO = "alleexxeeyy/playerok-universal"
@@ -141,6 +142,7 @@ def check_for_updates():
             logger.info(f"Устанавливаю обновление {latest_release['tag_name']}...")
             if install_update(latest_release, bytes):
                 logger.info(f"{Fore.YELLOW}Обновление {Fore.LIGHTWHITE_EX}{latest_release['tag_name']} {Fore.YELLOW}было успешно установлено.")
+                set_marker("update")
                 restart()
     except Exception as e:
         logger.error(f"{Fore.LIGHTRED_EX}Ошибка при обновлении: {Fore.WHITE}{e}")

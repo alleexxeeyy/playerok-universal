@@ -1,6 +1,6 @@
 from aiogram import F, Router
 from html import escape
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery, FSInputFile, BufferedInputFile
 from aiogram.fsm.context import FSMContext
 from pathlib import Path
 from collections import deque
@@ -1320,6 +1320,26 @@ async def callback_send_logs_file(callback: CallbackQuery, callback_data: calls.
             pass
 
 
+@router.callback_query(calls.BootErrorFile.filter())
+async def callback_boot_error_file(callback: CallbackQuery, callback_data: calls.BootErrorFile):
+    from core import bootreport
+
+    if callback.from_user.id not in sett.get("config")["telegram"]["bot"]["signed_users"]:
+        return await answer_callback(callback.bot, callback)
+
+    errors = bootreport.get_errors()
+    if callback_data.boot != bootreport.boot_id or callback_data.idx >= len(errors):
+        return await notify(callback, "Этот отчёт от прошлого запуска бота — ошибки в нём уже неактуальны", alert=True)
+
+    error = errors[callback_data.idx]
+    content = f"Модуль: {error['module']}\nЭтап: {error['stage']}\n\n{error['trace']}"
+    await callback.message.answer_document(
+        document=BufferedInputFile(content.encode("utf-8"), filename=f"{error['module']}_error.txt"),
+        reply_markup=templ.destroy_kb()
+    )
+    await answer_callback(callback.bot, callback)
+
+
 @router.callback_query(F.data == "mark_chat_as_read")
 async def callback_mark_chat_as_read(callback: CallbackQuery, state: FSMContext):
     await state.set_state(None)
@@ -1764,6 +1784,7 @@ async def callback_install_update(callback: CallbackQuery, state: FSMContext):
 
         from updater import download_update, install_update, latest_release
         from core.utils import restart
+        from core.bootreport import set_marker
 
         bytes = download_update(latest_release)
         if not bytes:
@@ -1777,7 +1798,7 @@ async def callback_install_update(callback: CallbackQuery, state: FSMContext):
                 callback=callback
             )
 
-            await throw_float_message(
+            mess = await throw_float_message(
                 state=state,
                 message=mess,
                 text="🔄️ <b>Перезагружаю бота</b>, подождите...",
@@ -1786,6 +1807,7 @@ async def callback_install_update(callback: CallbackQuery, state: FSMContext):
                 send=True
             )
             
+            set_marker("update", callback.message.chat.id, mess.message_id if mess else None)
             restart(from_tg=True)
     except Exception as e:
         await throw_float_message(

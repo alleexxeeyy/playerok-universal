@@ -956,6 +956,10 @@ async def callback_enter_reviews_filter_max_value(callback: CallbackQuery, state
 
 @router.callback_query(F.data == "add_signed_user_id")
 async def callback_add_signed_user_id(callback: CallbackQuery, state: FSMContext):
+    from core.access import is_signed
+    if not is_signed(callback.from_user.id):
+        return await answer_callback(callback.bot, callback)
+
     await state.set_state(states.SystemStates.waiting_for_signed_user_id)
 
     data = await state.get_data()
@@ -975,6 +979,10 @@ async def callback_add_signed_user_id(callback: CallbackQuery, state: FSMContext
 
 @router.callback_query(F.data == "pick_signed_user")
 async def callback_pick_signed_user(callback: CallbackQuery, state: FSMContext):
+    from core.access import is_signed
+    if not is_signed(callback.from_user.id):
+        return await answer_callback(callback.bot, callback)
+
     await state.set_state(states.SystemStates.waiting_for_shared_user)
     await callback.bot.send_message(
         chat_id=callback.from_user.id,

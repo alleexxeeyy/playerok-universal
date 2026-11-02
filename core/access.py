@@ -27,6 +27,7 @@ def add_signed_user(user_id: int) -> bool:
     users.append(user_id)
     sett.set("config", config)
     forget_request(user_id)
+    data.set("owner_link", {}, SYSTEM_DATA) # владелец появился — ссылка больше не нужна, даже если вошли старым паролем
     return True
 
 

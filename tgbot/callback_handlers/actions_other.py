@@ -47,14 +47,20 @@ async def callback_null_answer(callback: CallbackQuery):
 
 @router.callback_query(calls.DeleteSignedUser.filter())
 async def callback_delete_signed_user(callback: CallbackQuery, callback_data: calls.DeleteSignedUser, state: FSMContext):
+    from core import access
+
+    data = await state.get_data()
+    last_page = data.get("last_page", 0)
     try:
         await state.set_state(None)
         id = callback_data.id
 
-        data = await state.get_data()
-        last_page = data.get("last_page", 0)
+        if not access.is_signed(callback.from_user.id): # у удалённого юзера могло остаться старое меню
+            return await answer_callback(callback.bot, callback)
         
         config = sett.get("config")
+        if config["telegram"]["bot"]["signed_users"] == [id]:
+            raise Exception("❌ Это последний пользователь — без него у бота не останется владельца")
         config["telegram"]["bot"]["signed_users"].remove(id)
         sett.set("config", config)
         await notify(callback, "🗑️ Пользователь удалён из доступа")

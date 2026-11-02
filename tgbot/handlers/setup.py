@@ -119,7 +119,7 @@ async def run_check(message: types.Message, state: FSMContext, callback: types.C
     await throw_float_message(
         state=state,
         message=message,
-        text=templ.setup_float_text("⏳ Проверяю подключение к Playerok — это может занять до минуты..."),
+        text=templ.setup_float_text("⏳ Проверяю подключение к Playerok — это может занять пару минут..."),
         callback=callback
     )
     problem = await asyncio.to_thread(diagnose_playerok)
@@ -145,6 +145,16 @@ async def _next_step(message: types.Message, state: FSMContext, after: str, call
     if after == "user_agent":
         return await ask_proxy(message, state, callback)
     return await run_check(message, state, callback)
+
+
+async def _is_command(message: types.Message, state: FSMContext) -> bool:
+    # в шагах мастера команда — не ввод: /restart работает как обычно, остальные возвращают на экран настройки
+    if not (message.text or "").startswith("/"):
+        return False
+    if message.text.startswith("/restart"):
+        raise SkipHandler()
+    await render_setup(message, state)
+    return True
 
 
 def _set_api(key: str, value: str):
@@ -194,6 +204,8 @@ async def callback_setup_check(callback: types.CallbackQuery, state: FSMContext)
 
 @router.message(states.SetupStates.waiting_for_cookies)
 async def handler_setup_cookies(message: types.Message, state: FSMContext):
+    if await _is_command(message, state):
+        return
     try:
         str_cookies = "".join(await extract_lines(message)).strip()
     except Exception as e:
@@ -216,6 +228,8 @@ async def handler_setup_cookies(message: types.Message, state: FSMContext):
 
 @router.message(states.SetupStates.waiting_for_user_agent, F.text)
 async def handler_setup_user_agent(message: types.Message, state: FSMContext):
+    if await _is_command(message, state):
+        return
     user_agent = message.text.strip()
     if not is_user_agent_valid(user_agent):
         return await ask_user_agent(message, state, error="❌ Неверный формат User Agent — в нём не должно быть русских символов")
@@ -226,6 +240,8 @@ async def handler_setup_user_agent(message: types.Message, state: FSMContext):
 
 @router.message(states.SetupStates.waiting_for_proxy, F.text)
 async def handler_setup_proxy(message: types.Message, state: FSMContext):
+    if await _is_command(message, state):
+        return
     proxy = normalize_proxy(message.text)
     if not is_proxy_valid(proxy):
         return await ask_proxy(message, state, error="❌ Неверный формат прокси")

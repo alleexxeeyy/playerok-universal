@@ -82,7 +82,7 @@ class TelegramBot:
                 continue
             for handler in module.bot_event_handlers.get("ON_TELEGRAM_BOT_INIT", []):
                 await call_bot_event("ON_TELEGRAM_BOT_INIT", [self], handler)
-        asyncio.create_task(self._restart_polling())
+        self._polling_restart = asyncio.create_task(self._restart_polling())
 
     async def _restart_polling(self):
         # aiogram считает allowed_updates при старте поллинга — у новых роутеров могут быть свои типы апдейтов
@@ -177,8 +177,10 @@ class TelegramBot:
             logger.info(f" · Пароль: {Fore.LIGHTWHITE_EX}{password}")
             logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
 
+        drop_updates = True # старые апдейты сбрасываем только при запуске, а не при перезапуске поллинга
         while True:
-            await self.bot.delete_webhook(drop_pending_updates=True)
+            await self.bot.delete_webhook(drop_pending_updates=drop_updates)
+            drop_updates = False
             try: await self.dp.start_polling(self.bot, skip_updates=True, handle_signals=False)
             except: pass
 

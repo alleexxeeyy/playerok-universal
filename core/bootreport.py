@@ -191,6 +191,15 @@ def has_marker() -> bool:
     return bool(marker) and time.time() - marker.get("time", 0) < MARKER_TTL
 
 
+def update_marker_message(text: str):
+    # пока бот долго стартует — показываем, что происходит, в сообщении «Перезагружаю бота»
+    marker = data.get("boot_marker", SYSTEM_DATA) or {}
+    if not marker.get("chat_id") or not marker.get("message_id") or time.time() - marker.get("time", 0) >= MARKER_TTL:
+        return
+    from core import notify
+    notify.edit_message(marker["chat_id"], marker["message_id"], text)
+
+
 def pop_marker() -> dict | None:
     marker = data.get("boot_marker", SYSTEM_DATA) or {}
     if marker:

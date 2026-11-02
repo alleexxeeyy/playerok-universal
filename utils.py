@@ -11,6 +11,7 @@ import queue
 import requests
 from html import escape
 from threading import Thread
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from urllib.parse import urlparse, unquote, quote
 from logging import getLogger
 from colorama import Fore
@@ -680,13 +681,14 @@ def connect_telegram(token: str) -> tuple[str, str | None, tuple | None]:
         if candidate not in candidates:
             candidates.append(candidate)
 
+    unauthorized = False
     for proxy, custom_api_url in candidates:
         status, username = probe_telegram(token, proxy, custom_api_url)
         if status == "ok":
             return status, username, (proxy, custom_api_url)
-        if status == "unauthorized": # это ответ самого Telegram — пробовать другие подключения смысла нет
-            return status, None, None
-    return "network", None, None
+        # 401 мог отдать и кривой прокси или воркер — токен считаем мёртвым, только если ни одно подключение не прошло
+        unauthorized = unauthorized or status == "unauthorized"
+    return ("unauthorized" if unauthorized else "network"), None, None
 
 
 def _describe_fallback(configured: tuple, connection: tuple) -> str:
@@ -721,7 +723,8 @@ def _console_reader() -> queue.Queue:
             while True:
                 try:
                     _console_queue.put(input())
-                except Exception:
+                except Exception as e: # EOF и пр. — пробрасываем в того, кто ждёт ввода, иначе он повиснет
+                    _console_queue.put(e)
                     return
 
         Thread(target=read, daemon=True).start()
@@ -733,10 +736,13 @@ def _read_console(timeout: float = None) -> str | None:
     if _console_queue is None and timeout is None:
         return input().strip()
     try:
-        return _console_reader().get(timeout=timeout).strip()
+        line = _console_reader().get(timeout=timeout)
     except queue.Empty:
         print()
         return None
+    if isinstance(line, BaseException):
+        raise line
+    return line.strip()
 
 
 def _ask_token() -> str:
@@ -817,8 +823,7 @@ def configure_telegram() -> str:
             )
             if not tty:
                 _exit_not_configured("Укажите новый токен Telegram бота.")
-            config["telegram"]["api"]["token"] = ""
-            sett.set("config", config)
+            _ask_token() # старый токен не стираем, пока не введён новый
             attempt = 0
             continue
 
@@ -853,8 +858,7 @@ def print_owner_link(bot_username: str):
     )
     if is_legacy_password_login():
         print(f"  {Fore.WHITE}Или войдите в бота со своим старым паролем — сработает один раз.")
-    print()
-    logger.debug(f"Ссылка владельца: {link}")
+    print() # в лог ссылку не пишем: latest.log пересылают разработчику, а по ссылке можно стать владельцем
 
 
 def configure_config():
@@ -863,7 +867,10 @@ def configure_config():
     return bot_username
 
 
-def is_proxy_alive(proxy: str, url: str = "https://playerok.com", timeout: int = 20) -> bool:
+DIAGNOSE_TIMEOUT = 60
+
+
+def is_proxy_alive(proxy: str, url: str = "https://playerok.com", timeout: int = 15) -> bool:
     try:
         requests.get(url, proxies={"http": f"http://{proxy}", "https": f"http://{proxy}"}, timeout=(10, timeout))
         return True # любой ответ сайта — значит прокси жив, даже если сам Playerok отдал 5xx
@@ -880,13 +887,19 @@ def diagnose_playerok() -> dict | None:
     if api["proxy"] and not is_proxy_alive(api["proxy"]):
         return {"code": "proxy", "text": "Прокси для Playerok не отвечает", "transient": True}
 
+    # запросы к Playerok сами повторяются на 429/5xx с паузами до 2 минут — ограничиваем общее время проверки
+    executor = ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(lambda: Account(
+        cookies=api["cookies"],
+        user_agent=api["user_agent"],
+        requests_timeout=api["requests_timeout"],
+        proxy=api["proxy"] or None
+    ).get())
+    executor.shutdown(wait=False)
     try:
-        account = Account(
-            cookies=api["cookies"],
-            user_agent=api["user_agent"],
-            requests_timeout=api["requests_timeout"],
-            proxy=api["proxy"] or None
-        ).get()
+        account = future.result(timeout=DIAGNOSE_TIMEOUT)
+    except FutureTimeout:
+        return {"code": "server", "text": f"Playerok не ответил за {DIAGNOSE_TIMEOUT} сек", "transient": True}
     except UnauthorizedError:
         return {
             "code": "cookies",
@@ -902,7 +915,10 @@ def diagnose_playerok() -> dict | None:
     except RequestFailedError as e:
         return {"code": "server", "text": f"Playerok временно не отвечает (ошибка {e.status_code})", "transient": True}
     except Exception as e:
-        reason = escape(str(e).strip()[:200]) or type(e).__name__
+        reason = str(e).strip()
+        if api["proxy"]: # в тексте ошибки curl бывает адрес прокси вместе с логином и паролем
+            reason = reason.replace(api["proxy"], mask_proxy(api["proxy"])).replace(api["proxy"].split("@")[0], "***")
+        reason = escape(reason[:200]) or type(e).__name__
         return {"code": "network", "text": f"Не удалось подключиться к Playerok: {reason}", "transient": True}
 
     if account.profile.is_blocked:

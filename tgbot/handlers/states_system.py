@@ -1,3 +1,4 @@
+import asyncio
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove
@@ -33,6 +34,7 @@ async def handler_waiting_for_password(message: types.Message, state: FSMContext
         return await do_auth(message, state)
 
     if message.text != sett.get("config")["telegram"]["bot"]["password"]:
+        await asyncio.sleep(2) # тормозим перебор пароля
         await state.set_state(states.SystemStates.waiting_for_password)
         return await throw_float_message(
             state=state,
@@ -82,6 +84,8 @@ async def handler_waiting_for_signed_user_id(message: types.Message, state: FSMC
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     await state.set_state(None)
+    if not access.is_signed(message.from_user.id):
+        return
 
     text = message.text.strip()
     if not text.isdigit():
@@ -100,6 +104,8 @@ async def handler_waiting_for_shared_user(message: types.Message, state: FSMCont
     data = await state.get_data()
     last_page = data.get("last_page", 0)
     await state.set_state(None)
+    if not access.is_signed(message.from_user.id):
+        return
 
     added = []
     for user in message.users_shared.users:

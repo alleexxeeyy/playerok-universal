@@ -130,7 +130,7 @@ def _launch(chat_id: int | None, message_id: int | None):
         modules = start_modules()
         tgbot = get_telegram_bot()
         tgbot.attach_modules(modules)
-        asyncio.run_coroutine_threadsafe(tgbot.init_modules(modules), tgbot.loop).result(120)
+        asyncio.run_coroutine_threadsafe(tgbot.refresh_polling(), tgbot.loop).result(30)
 
         asyncio.run_coroutine_threadsafe(start_playerok_bot(), get_main_loop()).result(300)
         asyncio.run(call_bot_event("ON_INIT"))

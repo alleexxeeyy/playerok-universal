@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 from colorama import Fore
 from logging import getLogger
@@ -7,6 +8,10 @@ from core import bootreport
 
 
 logger = getLogger("universal.handlers")
+
+INIT_EVENTS = ("ON_TELEGRAM_BOT_INIT", "ON_PLAYEROK_BOT_INIT", "ON_INIT")
+_fired_init_events: dict[str, tuple] = {}
+_called_init_handlers: set = set()
 
 _bot_event_handlers: dict[str, list[callable]] = {
     "ON_MODULE_CONNECTED": [],
@@ -179,9 +184,13 @@ async def call_bot_event(event: str, args: list = [], func = None):
     """
     if not func: 
         handlers = get_bot_event_handlers().get(event, [])
+        if event in INIT_EVENTS:
+            _fired_init_events[event] = (args, asyncio.get_running_loop())
     else:
         handlers = [func]
     for handler in handlers:
+        if event in INIT_EVENTS:
+            _called_init_handlers.add((event, handler))
         try:
             await handler(*args)
         except Exception as e:
@@ -189,6 +198,23 @@ async def call_bot_event(event: str, args: list = [], func = None):
             module = bootreport.module_of(handler)
             if module:
                 bootreport.add_error(module, "start", traceback.format_exc())
+
+
+async def catch_up_init_events(handlers: dict):
+    # модуль включили уже после запуска бота — догоняем init-хуки, которые он пропустил, по одному разу
+    for event in INIT_EVENTS:
+        if event not in _fired_init_events:
+            continue
+        args, loop = _fired_init_events[event]
+        for handler in handlers.get(event, []):
+            if (event, handler) in _called_init_handlers:
+                continue
+            coro = call_bot_event(event, args, handler)
+            if loop is not asyncio.get_running_loop() and loop.is_running():
+                # хук ТГ-бота работает с его aiohttp-сессией — только в его лупе
+                await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(coro, loop))
+            else:
+                await coro
 
 
 def _modules_playerok_handlers() -> set:

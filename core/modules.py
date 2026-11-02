@@ -21,8 +21,10 @@ from core.handlers import (
     register_playerok_event_handlers,
     remove_bot_event_handlers,
     remove_playerok_event_handlers,
-    call_bot_event
+    call_bot_event,
+    catch_up_init_events
 )
+from data import Data as data, SYSTEM_DATA, DISABLED_MODULES
 from core.configs import TEMP_DIR
 from core.utils import install_requirements
 from core import bootreport
@@ -117,6 +119,9 @@ async def _enable_module(module: Module) -> bool:
     handlers = module.bot_event_handlers.get("ON_MODULE_ENABLED", [])
     for handler in handlers:
         await call_bot_event("ON_MODULE_ENABLED", [module], handler)
+
+    if module.enabled: # мог выключиться сам на проверке лицензии
+        await catch_up_init_events(module.bot_event_handlers)
 
 
 async def enable_module(module_uuid: UUID) -> bool:
@@ -705,6 +710,20 @@ def _format_string(count: int):
         return f"Подключено {Fore.LIGHTWHITE_EX}{count} модулей"
 
 
+def get_disabled_modules() -> list[str]:
+    return list(data.get("disabled_modules", SYSTEM_DATA) or [])
+
+
+def set_module_disabled(name: str, disabled: bool):
+    # только по воле юзера: самовыключение плагина по лицензии сюда не пишется
+    names = get_disabled_modules()
+    if disabled == (name in names):
+        return
+    names = names + [name] if disabled else [n for n in names if n != name]
+    os.makedirs(os.path.dirname(DISABLED_MODULES.path), exist_ok=True)
+    data.set("disabled_modules", names, SYSTEM_DATA)
+
+
 async def connect_modules(modules: list[Module]):
     """
     Подключает загруженные модули.
@@ -714,7 +733,11 @@ async def connect_modules(modules: list[Module]):
     """
     global loaded_modules
 
+    disabled = get_disabled_modules()
     for module in modules:
+        if module._dir_name in disabled:
+            logger.info(f"Модуль {Fore.LIGHTWHITE_EX}{module.meta.name} {Fore.WHITE}выключен в настройках — не подключаю")
+            continue
         try:
             await _enable_module(module)
         except Exception as e:

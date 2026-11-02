@@ -5,7 +5,8 @@ from aiogram.fsm.context import FSMContext
 from core.modules import (
     get_module_by_uuid, 
     enable_module, 
-    disable_module
+    disable_module,
+    set_module_disabled
 )
 from settings import Settings as sett
 
@@ -436,7 +437,9 @@ async def callback_switch_module_enabled(callback: CallbackQuery, state: FSMCont
 
         if module.enabled:
             await disable_module(module_uuid)
+            set_module_disabled(module._dir_name, True)
         else:
+            set_module_disabled(module._dir_name, False)
             await enable_module(module_uuid)
 
         return await callback_module_page(

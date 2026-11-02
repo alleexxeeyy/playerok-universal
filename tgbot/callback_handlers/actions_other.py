@@ -1424,6 +1424,29 @@ async def callback_boot_error_file(callback: CallbackQuery, callback_data: calls
     await answer_callback(callback.bot, callback)
 
 
+@router.callback_query(calls.BootModuleDisable.filter())
+async def callback_boot_module_disable(callback: CallbackQuery, callback_data: calls.BootModuleDisable):
+    from core import bootreport
+    from core.modules import get_modules, disable_module, set_module_disabled
+
+    if callback.from_user.id not in sett.get("config")["telegram"]["bot"]["signed_users"]:
+        return await answer_callback(callback.bot, callback)
+
+    errors = bootreport.get_errors()
+    if callback_data.boot != bootreport.boot_id or callback_data.idx >= len(errors):
+        return await notify(callback, "Этот отчёт от прошлого запуска бота — ошибки в нём уже неактуальны", alert=True)
+
+    name = errors[callback_data.idx]["module"]
+    module = next((m for m in get_modules() if m._dir_name == name), None)
+    if not module:
+        return await notify(callback, f"Модуль {name} не загружен", alert=True)
+
+    if module.enabled:
+        await disable_module(module.uuid)
+    set_module_disabled(name, True)
+    await notify(callback, f"🔴 Модуль {name} выключен и не будет включаться при запуске. Включить обратно можно на его странице в «Модулях»", alert=True)
+
+
 @router.callback_query(F.data == "mark_chat_as_read")
 async def callback_mark_chat_as_read(callback: CallbackQuery, state: FSMContext):
     await state.set_state(None)

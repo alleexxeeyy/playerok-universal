@@ -8,6 +8,10 @@ class BootErrorFile(CallbackData, prefix="booterr"):
     boot: int
     idx: int
 
+class BootModuleDisable(CallbackData, prefix="bootoff"):
+    boot: int
+    idx: int
+
 class AccessRequest(CallbackData, prefix="accreq"):
     id: int
     do: str

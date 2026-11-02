@@ -48,7 +48,12 @@ ACCESS_REQUESTS = DataFile(
     path="bot_data/access_requests.json",
     default={}
 )
-SYSTEM_DATA = [BOOT_MARKER, OWNER_LINK, ACCESS_REQUESTS]
+DISABLED_MODULES = DataFile(
+    name="disabled_modules",
+    path="bot_data/disabled_modules.json",
+    default=[]
+)
+SYSTEM_DATA = [BOOT_MARKER, OWNER_LINK, ACCESS_REQUESTS, DISABLED_MODULES]
 
 
 def get_json(path: str, default: dict | list) -> dict:

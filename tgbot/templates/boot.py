@@ -14,7 +14,7 @@ BOOT_STAGES = {
 }
 
 
-def boot_report_text(marker: dict | None, errors: list[dict], working: int, total: int, notes: list[str] = None):
+def boot_report_text(marker: dict | None, errors: list[dict], working: int, total: int, notes: list[str] = None, disabled: int = 0):
     marker = marker or {}
     reason = marker.get("reason")
     took = f" за {int(time.time() - marker['time'])} сек" if marker.get("time") else ""
@@ -30,6 +30,8 @@ def boot_report_text(marker: dict | None, errors: list[dict], working: int, tota
 
     if total:
         lines.append(f"🔌 Модули: работают <b>{working}</b> из <b>{total}</b>")
+    if disabled:
+        lines.append(f"🔴 Выключено вами: <b>{disabled}</b>")
 
     for note in notes or []:
         lines.append(f"\n⚠️ {note}")
@@ -59,12 +61,15 @@ def boot_report_text(marker: dict | None, errors: list[dict], working: int, tota
 
 
 def boot_report_kb(errors: list[dict], boot_id: int):
-    rows = [
-        [InlineKeyboardButton(
-            text=f"📄 {error['module']} — полная ошибка",
-            callback_data=calls.BootErrorFile(boot=boot_id, idx=i).pack()
-        )]
-        for i, error in enumerate(errors)
-    ]
+    rows = []
+    for i, error in enumerate(errors):
+        file_cb = calls.BootErrorFile(boot=boot_id, idx=i).pack()
+        if error["stage"] == "start": # модуль загрузился, но сломан — его можно выключить, чтобы не мешал
+            rows.append([
+                InlineKeyboardButton(text=f"📄 {error['module']}", callback_data=file_cb),
+                InlineKeyboardButton(text="🔴 Отключить", callback_data=calls.BootModuleDisable(boot=boot_id, idx=i).pack())
+            ])
+        else:
+            rows.append([InlineKeyboardButton(text=f"📄 {error['module']} — полная ошибка", callback_data=file_cb)])
     rows.append([InlineKeyboardButton(text="❌ Закрыть", callback_data="destroy")])
     return InlineKeyboardMarkup(inline_keyboard=rows)

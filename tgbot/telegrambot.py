@@ -75,13 +75,8 @@ class TelegramBot:
                 if router.parent_router is None:
                     main_router.include_router(router)
 
-    async def init_modules(self, modules: list):
-        # модули подключены уже после старта ТГ-бота (запуск после настройки) — догоняем их хук
-        for module in modules:
-            if not module.enabled:
-                continue
-            for handler in module.bot_event_handlers.get("ON_TELEGRAM_BOT_INIT", []):
-                await call_bot_event("ON_TELEGRAM_BOT_INIT", [self], handler)
+    async def refresh_polling(self):
+        # их ON_TELEGRAM_BOT_INIT догнал _enable_module, тут только поллинг под новые роутеры
         self._polling_restart = asyncio.create_task(self._restart_polling())
 
     async def _restart_polling(self):

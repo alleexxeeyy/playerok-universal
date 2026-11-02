@@ -159,9 +159,12 @@ def explain_error(trace: str) -> str:
 
 
 def collect_disabled(modules: list):
+    from core.modules import get_disabled_modules
+
     # официальные плагины ловят свою ошибку сами, пишут critical и выключаются — ядро об этом не узнаёт
+    user_disabled = get_disabled_modules()
     for module in modules:
-        if module.enabled or any(e["module"] == module._dir_name for e in _errors):
+        if module.enabled or module._dir_name in user_disabled or any(e["module"] == module._dir_name for e in _errors):
             continue
         prefix = ANSI_RE.sub("", module.meta.prefix or "").strip()
         lines = []
@@ -259,9 +262,12 @@ def send_report(modules: list):
         if not marker and not _errors and not _notes:
             return
 
+        from core.modules import get_disabled_modules
+
+        user_disabled = [module for module in modules if module._dir_name in get_disabled_modules()]
         working = len([module for module in modules if module.enabled])
-        total = len(modules) + len({e["module"] for e in _errors if e["stage"] == "load"})
-        text = templ.boot_report_text(marker, _errors, working, total, _notes)
+        total = len(modules) - len(user_disabled) + len({e["module"] for e in _errors if e["stage"] == "load"})
+        text = templ.boot_report_text(marker, _errors, working, total, _notes, len(user_disabled))
         kb = templ.boot_report_kb(_errors[:MAX_REPORT_ERRORS], boot_id)
         _deliver(marker, text, kb, to_all=bool(_errors or _notes))
     except Exception as e:

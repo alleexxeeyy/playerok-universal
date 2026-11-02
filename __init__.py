@@ -1,4 +1,4 @@
 from colorama import Fore
 
-VERSION = "1.24"
+VERSION = "1.25"
 ACCENT_COLOR = Fore.LIGHTBLUE_EX

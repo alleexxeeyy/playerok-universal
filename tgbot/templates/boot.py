@@ -6,6 +6,7 @@ from __init__ import VERSION
 from .. import callback_datas as calls
 
 
+REPORT_BUDGET = 3600 # лимит Telegram — 4096 символов вместе с разметкой, оставляем запас на шапку и подвал
 BOOT_STAGES = {
     "load": ("❌", "не загрузился"),
     "start": ("⚠️", "ошибка при запуске"),
@@ -13,7 +14,7 @@ BOOT_STAGES = {
 }
 
 
-def boot_report_text(marker: dict | None, errors: list[dict], errors_total: int, working: int, total: int):
+def boot_report_text(marker: dict | None, errors: list[dict], working: int, total: int):
     marker = marker or {}
     reason = marker.get("reason")
     took = f" за {int(time.time() - marker['time'])} сек" if marker.get("time") else ""
@@ -30,12 +31,22 @@ def boot_report_text(marker: dict | None, errors: list[dict], errors_total: int,
 
     if errors:
         lines.append("")
+        size = sum(len(line) + 1 for line in lines)
+        shown = 0
         for error in errors:
             emoji, stage = BOOT_STAGES.get(error["stage"], ("⚠️", "ошибка"))
-            lines.append(f"{emoji} <b>{html.escape(error['module'])}</b> — {stage}")
-            lines.append(f"<blockquote>{error['text']}</blockquote>")
-        if errors_total > len(errors):
-            lines.append(f"...и ещё {errors_total - len(errors)} — смотрите logs/latest.log")
+            block = [
+                f"{emoji} <b>{html.escape(error['module'])}</b> — {stage}",
+                f"<blockquote>{error['text']}</blockquote>"
+            ]
+            block_size = sum(len(line) + 1 for line in block)
+            if size + block_size > REPORT_BUDGET:
+                break
+            lines += block
+            size += block_size
+            shown += 1
+        if len(errors) > shown:
+            lines.append(f"...и ещё {len(errors) - shown} — смотрите logs/latest.log")
         lines.append("")
         lines.append("Нажмите на модуль ниже, чтобы получить полный текст ошибки — его можно переслать разработчику")
 

@@ -219,6 +219,7 @@ def setup_logger(log_file: str = "logs/latest.log"):
 
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
+    logging.getLogger("urllib3").setLevel(logging.INFO) # на DEBUG пишет URL запроса вместе с токеном бота, а latest.log пересылают разработчику
     
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)

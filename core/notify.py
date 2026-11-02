@@ -1,3 +1,4 @@
+import re
 import json
 import requests
 from logging import getLogger
@@ -6,6 +7,8 @@ from settings import Settings as sett
 
 
 logger = getLogger("universal.notify")
+
+TOKEN_RE = re.compile(r"/bot[^/\s]+/")
 
 # подключение к Telegram, выбранное при запуске — может отличаться от конфига, если прокси отвалился
 _connection: dict | None = None
@@ -43,7 +46,7 @@ def _dump_kb(kb) -> str | None:
     return json.dumps(kb, ensure_ascii=False)
 
 
-def call(method: str, data: dict = None, files: dict = None, timeout: int = 20) -> dict | bool | None:
+def call(method: str, data: dict = None, files: dict = None, timeout: tuple = (5, 20)) -> dict | bool | None:
     try:
         token = sett.get("config")["telegram"]["api"]["token"]
         if not token:
@@ -63,7 +66,7 @@ def call(method: str, data: dict = None, files: dict = None, timeout: int = 20) 
             return None
         return result.get("result")
     except Exception as e:
-        logger.debug(f"Не удалось выполнить {method} в Telegram: {e}")
+        logger.debug(f"Не удалось выполнить {method} в Telegram: {TOKEN_RE.sub('/bot***/', str(e))}")
         return None
 
 
@@ -94,7 +97,7 @@ def send_document(chat_id: int, filename: str, content: bytes, caption: str = No
         "sendDocument",
         {"chat_id": chat_id, "caption": caption, "parse_mode": "HTML"},
         files={"document": (filename, content)},
-        timeout=60
+        timeout=(5, 60)
     ) is not None
 
 

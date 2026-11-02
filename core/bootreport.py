@@ -116,13 +116,6 @@ def explain_error(trace: str) -> str:
             return "Модулю нужна более новая версия бота — обновите бота"
         return f"Несовместимая версия библиотеки <b>{esc(root)}</b>"
 
-    if "pyarmor" in low:
-        return (
-            "Ошибка защищённого модуля (PyArmor). Чаще всего модуль собран под другую версию Python — "
-            f"у вас Python {sys.version_info.major}.{sys.version_info.minor}, {esc(platform.system())}"
-            f"\n<code>{esc(last[:200])}</code>"
-        )
-
     if last.startswith(("SyntaxError", "IndentationError", "TabError")):
         return "В файле модуля синтаксическая ошибка — файл повреждён, переустановите модуль"
 
@@ -136,6 +129,14 @@ def explain_error(trace: str) -> str:
 
     if exc_name == "PermissionError":
         return "Нет прав на файлы бота — проверьте права на папку бота"
+
+    # pyarmor_runtime есть в трейсе любого защищённого модуля — смотрим, что упало именно в нём
+    if "pyarmor" in last.lower() or (exc_name == "RuntimeError" and "pyarmor_runtime" in low):
+        return (
+            "Ошибка защищённого модуля (PyArmor). Чаще всего модуль собран под другую версию Python — "
+            f"у вас Python {sys.version_info.major}.{sys.version_info.minor}, {esc(platform.system())}"
+            f"\n<code>{esc(last[:200])}</code>"
+        )
 
     return esc(last[:300]) or "Неизвестная ошибка"
 
@@ -182,19 +183,31 @@ def pop_marker() -> dict | None:
     return marker
 
 
-def _deliver(marker: dict | None, text: str, kb, to_all: bool):
+def _deliver(marker: dict | None, text: str, kb, to_all: bool, attempts: int = 3) -> bool:
     from core import notify
 
     initiator = (marker or {}).get("chat_id")
-    if initiator:
-        message_id = (marker or {}).get("message_id")
-        if not (message_id and notify.edit_message(initiator, message_id, text, kb)):
-            notify.send_message(initiator, text, kb)
-
+    message_id = (marker or {}).get("message_id")
+    pending = [initiator] if initiator else []
     if to_all or not initiator:
-        for user_id in notify.signed_users():
-            if user_id != initiator:
-                notify.send_message(user_id, text, kb)
+        pending += [user_id for user_id in notify.signed_users() if user_id != initiator]
+
+    for attempt in range(attempts):
+        failed = []
+        for user_id in pending:
+            if user_id == initiator and message_id and notify.edit_message(user_id, message_id, text, kb):
+                continue
+            if notify.send_message(user_id, text, kb) is None:
+                failed.append(user_id)
+        if not failed:
+            return True
+        pending = failed
+        message_id = None # сообщение уже не правим — если правка не прошла, шлём новое
+        if attempt < attempts - 1:
+            time.sleep(5)
+
+    logger.warning(f"Не удалось доставить сообщение в Telegram пользователям: {', '.join(map(str, pending))}")
+    return False
 
 
 def wait_telegram_bot(timeout: int = 60):
@@ -222,7 +235,7 @@ def send_report(modules: list):
 
         working = len([module for module in modules if module.enabled])
         total = len(modules) + len({e["module"] for e in _errors if e["stage"] == "load"})
-        text = templ.boot_report_text(marker, _errors[:MAX_REPORT_ERRORS], len(_errors), working, total)
+        text = templ.boot_report_text(marker, _errors, working, total)
         kb = templ.boot_report_kb(_errors[:MAX_REPORT_ERRORS], boot_id)
         _deliver(marker, text, kb, to_all=bool(_errors))
     except Exception as e:
@@ -253,7 +266,7 @@ def notify_crash(trace: str, reason: str = None):
             "\n\nЛог запуска — в файле ниже. Частые ошибки и их решения: devfried.com/docs/faq/"
         )
         marker = pop_marker()
-        _deliver(marker, text, None, to_all=True)
+        _deliver(marker, text, None, to_all=True, attempts=1) # процесс умирает — долго не держим
 
         log = _log_tail()
         if not log:

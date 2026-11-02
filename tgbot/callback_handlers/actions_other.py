@@ -1333,7 +1333,8 @@ async def callback_boot_error_file(callback: CallbackQuery, callback_data: calls
 
     error = errors[callback_data.idx]
     content = f"Модуль: {error['module']}\nЭтап: {error['stage']}\n\n{error['trace']}"
-    await callback.message.answer_document(
+    await callback.bot.send_document(
+        chat_id=callback.from_user.id,
         document=BufferedInputFile(content.encode("utf-8"), filename=f"{error['module']}_error.txt"),
         reply_markup=templ.destroy_kb()
     )

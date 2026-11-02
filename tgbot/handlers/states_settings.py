@@ -22,6 +22,7 @@ from core.modules import (
     prepare_module_import_dir,
     clear_module_import_dir,
     stage_archive_modules,
+    stage_single_py_module,
     install_staged_module
 )
 
@@ -537,17 +538,21 @@ async def handler_waiting_for_module_file(message: types.Message, state: FSMCont
         await state.update_data(import_pending=None)
 
         file_name = safe_file_name(message.document.file_name)
-        if not file_name.lower().endswith(MODULE_EXTENSIONS):
-            raise ModuleImportError("❌ Нужен архив в формате <b>.zip</b> или <b>.rar</b>")
+        is_py = file_name.lower().endswith(".py")
+        if not is_py and not file_name.lower().endswith(MODULE_EXTENSIONS):
+            raise ModuleImportError("❌ Нужен архив <b>.zip</b> / <b>.rar</b> или одиночный файл <b>.py</b>")
         if (message.document.file_size or 0) > MAX_MODULE_SIZE:
             raise ModuleImportError(f"❌ Файл слишком большой (максимум {MAX_MODULE_SIZE // 1024 // 1024} МБ)")
 
         user_dir = prepare_module_import_dir(user_id)
-        archive_path = os.path.join(user_dir, file_name)
-        await bot.download(message.document, destination=archive_path)
+        src_path = os.path.join(user_dir, file_name)
+        await bot.download(message.document, destination=src_path)
 
         stage = os.path.join(user_dir, "_stage")
-        mods = stage_archive_modules(archive_path, stage)
+        if is_py:
+            mods = stage_single_py_module(src_path, stage)
+        else:
+            mods = stage_archive_modules(src_path, stage)
 
         collided = [m for m in mods if m["exists"]]
         fresh = [m for m in mods if not m["exists"]]
@@ -616,7 +621,7 @@ async def handler_waiting_for_module_file_wrong(message: types.Message, state: F
     await throw_float_message(
         state=state,
         message=message,
-        text=templ.modules_float_text("❌ Нужен <b>архив</b> с модулем в формате <b>.zip</b> или <b>.rar</b>"),
+        text=templ.modules_float_text("❌ Нужен архив <b>.zip</b> / <b>.rar</b> или одиночный файл <b>.py</b>"),
         reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
     )
 

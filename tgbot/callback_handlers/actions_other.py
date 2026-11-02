@@ -1160,7 +1160,8 @@ async def callback_send_module_file(callback: CallbackQuery, state: FSMContext):
         state=state,
         message=callback.message,
         text=templ.modules_float_text(
-            "🗂 Отправьте <b>архив</b> с модулем/модулями (форматы: zip, rar):"
+            "🗂 Отправьте <b>архив</b> с модулем/модулями (zip, rar) "
+            "или одиночный файл модуля (<b>.py</b>):"
         ),
         reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
     )

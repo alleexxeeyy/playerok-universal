@@ -19,6 +19,7 @@ from playerokapi.enums import (
 )
 from settings import Settings as sett
 from core.blacklist import get_blacklist_entry, add_to_blacklist, remove_from_blacklist
+from core.modules import install_staged_module, clear_module_import_dir, ModuleImportError
 
 from .. import templates as templ
 from .. import callback_datas as calls
@@ -1163,6 +1164,81 @@ async def callback_send_module_file(callback: CallbackQuery, state: FSMContext):
         ),
         reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
     )
+
+
+@router.callback_query(F.data.startswith("modimp_"))
+async def callback_module_import_action(callback: CallbackQuery, state: FSMContext):
+    action = callback.data.split("_", 1)[1]
+    user_id = callback.from_user.id
+    data = await state.get_data()
+    pending = data.get("import_pending")
+    last_page = (pending or {}).get("last_page", data.get("last_page", 0))
+
+    await state.update_data(import_pending=None)
+
+    fresh = (pending or {}).get("fresh_installed") or []
+    collided = (pending or {}).get("collided") or []
+
+    if not pending or action not in ("merge", "replace", "duplicate", "cancel"):
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.modules_float_text("❌ Сессия импорта истекла — повторите импорт заново."),
+            reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
+        )
+        await callback.answer()
+        return
+
+    fresh_note = ""
+    if fresh:
+        fresh_note = "\n\n✅ Новые модули из архива установлены: " + ", ".join(f"<b>{n}</b>" for n in fresh)
+
+    if action == "cancel":
+        text = "✖️ Импорт существующих модулей отменён." + fresh_note
+        if fresh:
+            text += "\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.modules_float_text(text),
+            reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
+        )
+        clear_module_import_dir(user_id)
+        await callback.answer()
+        return
+
+    if any(not os.path.exists(mod["source"]) for mod in collided):
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.modules_float_text("❌ Сессия импорта истекла — повторите импорт заново."),
+            reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
+        )
+        clear_module_import_dir(user_id)
+        await callback.answer()
+        return
+
+    installed = []
+    try:
+        for mod in collided:
+            installed.append(install_staged_module(mod, action))
+        verb = {"merge": "обновлены", "replace": "переустановлены", "duplicate": "добавлены копией"}[action]
+        str_installed = "\n".join(f"・ <b>{name}</b>" for name in installed)
+        text = f"✅ Модули {verb}:\n<blockquote>{str_installed}</blockquote>{fresh_note}"
+        text += "\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
+    except Exception as e:
+        done = ("\n\nУспели установиться: " + ", ".join(f"<b>{n}</b>" for n in installed)) if installed else ""
+        text = (str(e) if isinstance(e, ModuleImportError) else
+                f"❌ Не удалось установить модуль: <blockquote>{escape(str(e))}</blockquote>") + done
+
+    await throw_float_message(
+        state=state,
+        message=callback.message,
+        text=templ.modules_float_text(text),
+        reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
+    )
+    clear_module_import_dir(user_id)
+    await callback.answer()
 
 
 @router.callback_query(F.data == "reload_module")

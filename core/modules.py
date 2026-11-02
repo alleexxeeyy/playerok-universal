@@ -393,19 +393,6 @@ def _safe_module_name(source: str) -> str:
     return name
 
 
-def _install_module(source: str, name: str) -> str:
-    dest = os.path.join(MODULES_DIR, name)
-    if os.path.exists(dest):
-        _rmtree(dest)
-        if os.path.exists(dest):
-            raise ModuleImportError(
-                f"❌ Не удалось заменить старую версию модуля <b>{name}</b> — "
-                f"папка занята другой программой или нет прав на запись"
-            )
-    shutil.move(source, dest)
-    return name
-
-
 def prepare_module_import_dir(user_id: int | str) -> str:
     """
     Готовит чистую папку под присланный пользователем архив с модулем.
@@ -432,40 +419,115 @@ def clear_module_import_dir(user_id: int | str):
     _rmtree(os.path.join(MODULES_TEMP_DIR, str(user_id)))
 
 
-def import_modules_from_archive(path: str) -> list[str]:
-    """
-    Распаковывает архив и раскладывает найденные в нём модули по папке modules.
+MODULE_DATA_DIRS = ("module_data", "module_settings")
 
-    :param path: Путь к архиву.
-    :type path: `str`
 
-    :return: Названия папок установленных модулей.
-    :rtype: `list` of `str`
-    """
+def module_name_exists(name: str) -> bool:
+    return os.path.isdir(os.path.join(MODULES_DIR, name)) or os.path.isfile(os.path.join(MODULES_DIR, f"{name}.py"))
+
+
+def _free_module_name(base: str) -> str:
+    n = 2
+    while True:
+        candidate = f"{base}_{n}"
+        if not module_name_exists(candidate):
+            return candidate
+        n += 1
+
+
+def _remove_stray_py(name: str):
+    stray_py = os.path.join(MODULES_DIR, f"{name}.py")
+    if os.path.isfile(stray_py):
+        try:
+            os.remove(stray_py)
+        except Exception:
+            raise ModuleImportError(
+                f"❌ Не удалось заменить старую версию модуля <b>{name}</b> — файл занят или нет прав на запись"
+            )
+
+
+def stage_archive_modules(path: str, stage: str) -> list[dict]:
     if not path.lower().endswith(MODULE_EXTENSIONS):
         raise ModuleImportError("❌ Нужен архив в формате <b>.zip</b> или <b>.rar</b>")
 
     os.makedirs(MODULES_DIR, exist_ok=True)
-    stage = os.path.join(MODULES_TEMP_DIR, f"stage_{uuid.uuid4().hex[:8]}")
     _rmtree(stage)
     os.makedirs(stage, exist_ok=True)
 
+    _extract_archive(path, stage)
+
+    roots = _find_module_roots(stage)
+    if not roots:
+        raise ModuleImportError(
+            "❌ В архиве не найден модуль — внутри должна быть папка с файлом <code>__init__.py</code>"
+        )
+
+    found = []
+    used = set()
+    for root in roots:
+        base = _safe_module_name(path if root == stage else root)
+        name, n = base, 2
+        while name in used:
+            name = f"{base}_{n}"
+            n += 1
+        used.add(name)
+        found.append({"name": name, "source": root, "is_py": False, "exists": module_name_exists(name)})
+    return found
+
+
+def _place_folder_replace(source: str, name: str) -> str:
+    dest = os.path.join(MODULES_DIR, name)
+    _remove_stray_py(name)
+    if not os.path.exists(dest):
+        shutil.move(source, dest)
+        return name
+
+    backup = os.path.join(MODULES_DIR, f".{name}.bak_import")
+    _rmtree(backup)
+    os.rename(dest, backup)
     try:
-        _extract_archive(path, stage)
+        shutil.move(source, dest)
+    except Exception:
+        _rmtree(dest)
+        os.rename(backup, dest)
+        raise ModuleImportError(
+            f"❌ Не удалось заменить модуль <b>{name}</b> — старая версия восстановлена"
+        )
+    _rmtree(backup)
+    return name
 
-        roots = _find_module_roots(stage)
-        if not roots:
-            raise ModuleImportError(
-                "❌ В архиве не найден модуль — внутри должна быть папка с файлом <code>__init__.py</code>"
-            )
 
-        installed = []
-        for root in roots:
-            name = _safe_module_name(path if root == stage else root)
-            installed.append(_install_module(root, name))
-        return installed
-    finally:
-        _rmtree(stage)
+def _place_folder_merge(source: str, name: str) -> str:
+    dest = os.path.join(MODULES_DIR, name)
+    _remove_stray_py(name)
+    os.makedirs(dest, exist_ok=True)
+    try:
+        for root, _, files in os.walk(source):
+            for file in files:
+                src_file = os.path.join(root, file)
+                rel = os.path.relpath(src_file, source)
+                if rel.replace("\\", "/").split("/")[0] in MODULE_DATA_DIRS:
+                    continue
+                dst_file = os.path.join(dest, rel)
+                os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+                shutil.copy2(src_file, dst_file)
+    except Exception:
+        raise ModuleImportError(
+            f"❌ Не удалось обновить модуль <b>{name}</b> — файл занят или нет прав на запись"
+        )
+    return name
+
+
+def install_staged_module(mod: dict, action: str) -> str:
+    name, source = mod["name"], mod["source"]
+
+    if action == "duplicate":
+        name = _free_module_name(name)
+        return _place_folder_replace(source, name)
+
+    if action == "merge":
+        return _place_folder_merge(source, name)
+    return _place_folder_replace(source, name)
 
 
 def _format_string(count: int):

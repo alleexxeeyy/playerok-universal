@@ -21,7 +21,8 @@ from core.modules import (
     ModuleImportError,
     prepare_module_import_dir,
     clear_module_import_dir,
-    import_modules_from_archive
+    stage_archive_modules,
+    install_staged_module
 )
 
 from .. import templates as templ
@@ -533,6 +534,7 @@ async def handler_waiting_for_module_file(message: types.Message, state: FSMCont
 
     try:
         await state.set_state(None)
+        await state.update_data(import_pending=None)
 
         file_name = safe_file_name(message.document.file_name)
         if not file_name.lower().endswith(MODULE_EXTENSIONS):
@@ -540,28 +542,53 @@ async def handler_waiting_for_module_file(message: types.Message, state: FSMCont
         if (message.document.file_size or 0) > MAX_MODULE_SIZE:
             raise ModuleImportError(f"❌ Файл слишком большой (максимум {MAX_MODULE_SIZE // 1024 // 1024} МБ)")
 
-        archive_path = os.path.join(prepare_module_import_dir(user_id), file_name)
+        user_dir = prepare_module_import_dir(user_id)
+        archive_path = os.path.join(user_dir, file_name)
         await bot.download(message.document, destination=archive_path)
 
-        installed = import_modules_from_archive(archive_path)
+        stage = os.path.join(user_dir, "_stage")
+        mods = stage_archive_modules(archive_path, stage)
 
-        if len(installed) == 1:
-            result = f"✅ Модуль <b>успешно импортирован</b>: <code>{file_name}</code>"
-        else:
-            str_installed = "\n".join(f"・ <b>{name}</b>" for name in installed)
-            result = (
-                f"✅ Успешно импортировано <b>{len(installed)} модулей</b> из <code>{file_name}</code>:"
-                f"\n\n<blockquote>{str_installed}</blockquote>"
+        collided = [m for m in mods if m["exists"]]
+        fresh = [m for m in mods if not m["exists"]]
+
+        if not collided:
+            installed = [install_staged_module(m, "replace") for m in mods]
+            if len(installed) == 1:
+                result = f"✅ Модуль <b>успешно импортирован</b>: <code>{file_name}</code>"
+            else:
+                str_installed = "\n".join(f"・ <b>{name}</b>" for name in installed)
+                result = (
+                    f"✅ Успешно импортировано <b>{len(installed)} модулей</b> из <code>{file_name}</code>:"
+                    f"\n\n<blockquote>{str_installed}</blockquote>"
+                )
+            await throw_float_message(
+                state=state,
+                message=message,
+                text=templ.modules_float_text(
+                    f"{result}"
+                    f"\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
+                ),
+                reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
             )
+            clear_module_import_dir(user_id)
+            clear_temp_dir()
+            return
 
+        fresh_installed = [install_staged_module(m, "replace") for m in fresh]
+        await state.update_data(import_pending={
+            "collided": [{"name": m["name"], "source": m["source"], "is_py": m["is_py"]} for m in collided],
+            "fresh_installed": fresh_installed,
+            "last_page": last_page,
+        })
         await throw_float_message(
             state=state,
             message=message,
-            text=templ.modules_float_text(
-                f"{result}"
-                f"\n\n❗ Для подключения <b>необходима перезагрузка</b> — /restart"
+            text=templ.module_exists_warning_text(
+                [m["name"] for m in collided],
+                fresh_names=fresh_installed or None
             ),
-            reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
+            reply_markup=templ.module_import_actions_kb()
         )
     except Exception as e:
         if not isinstance(e, ModuleImportError):
@@ -576,7 +603,7 @@ async def handler_waiting_for_module_file(message: types.Message, state: FSMCont
             text=templ.modules_float_text(text),
             reply_markup=templ.back_kb(calls.ModulesPagination(page=last_page).pack())
         )
-    finally:
+        await state.update_data(import_pending=None)
         clear_module_import_dir(user_id)
         clear_temp_dir()
 

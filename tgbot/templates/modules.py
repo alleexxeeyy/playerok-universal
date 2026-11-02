@@ -59,3 +59,30 @@ def modules_float_text(placeholder):
         \n{placeholder}
     """)
     return txt
+
+
+def module_exists_warning_text(collided_names, fresh_names=None):
+    names = "\n".join(f"・ <b>{n}</b>" for n in collided_names)
+    extra = ""
+    if fresh_names:
+        installed = ", ".join(f"<b>{n}</b>" for n in fresh_names)
+        extra = f"\n\n✅ Новые модули из архива уже установлены: {installed}"
+    return modules_float_text(
+        f"⚠️ Такие модули <b>уже установлены</b>:"
+        f"\n<blockquote>{names}</blockquote>"
+        f"{extra}"
+        f"\n\nЧто сделать?"
+        f"\n\n🔀 <b>Слияние</b> — обновить код, настройки и данные <b>сохранятся</b>"
+        f"\n♻️ <b>Замена</b> — поставить заново, данные <b>удалятся</b>"
+        f"\n➕ <b>Отдельным модулем</b> — копия рядом с оригиналом (обе будут активны — не включайте обе сразу)"
+    )
+
+
+def module_import_actions_kb():
+    rows = [
+        [InlineKeyboardButton(text="🔀 Слияние (данные сохранятся)", callback_data="modimp_merge")],
+        [InlineKeyboardButton(text="♻️ Замена (данные удалятся)", callback_data="modimp_replace")],
+        [InlineKeyboardButton(text="➕ Отдельным модулем", callback_data="modimp_duplicate")],
+        [InlineKeyboardButton(text="✖️ Отмена", callback_data="modimp_cancel")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)

@@ -64,9 +64,11 @@ async def start_playerok_bot():
     await PlayerokBot().run_bot()
 
 
-def start_modules() -> list:
+def start_modules(attach_routers=None) -> list:
     modules = load_modules()
     set_modules(modules)
+    if attach_routers: # роутеры до хуков модулей — как при обычном запуске
+        attach_routers(modules)
     asyncio.run(connect_modules(modules))
     return modules
 
@@ -127,9 +129,8 @@ def _launch(chat_id: int | None, message_id: int | None):
         bootreport.reset()
         bootreport.start_capture()
 
-        modules = start_modules()
         tgbot = get_telegram_bot()
-        tgbot.attach_modules(modules)
+        start_modules(attach_routers=tgbot.attach_modules)
         asyncio.run_coroutine_threadsafe(tgbot.refresh_polling(), tgbot.loop).result(30)
 
         asyncio.run_coroutine_threadsafe(start_playerok_bot(), get_main_loop()).result(300)

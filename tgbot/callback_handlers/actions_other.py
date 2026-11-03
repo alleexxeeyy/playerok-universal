@@ -1265,53 +1265,77 @@ async def callback_module_import_action(callback: CallbackQuery, state: FSMConte
     await show_module_checks(callback.message, state, text, installed + fresh, calls.ModulesPagination(page=last_page).pack())
 
 
+_module_check_lock = asyncio.Lock() # два быстрых нажатия не должны откатить и тут же удалить модуль
+
+
 @router.callback_query(calls.ModuleCheckAction.filter())
 async def callback_module_check_action(callback: CallbackQuery, callback_data: calls.ModuleCheckAction, state: FSMContext):
+    from core.access import is_signed
     from core.modules import remove_module, restore_module_backup, drop_module_backup
 
-    data = await state.get_data()
-    checks = data.get("module_checks") or []
-    back_cb = data.get("module_checks_back") or calls.ModulesPagination(page=0).pack()
-    if callback_data.idx >= len(checks):
-        return await notify(callback, "Меню устарело — импортируйте модуль заново", alert=True)
+    if not is_signed(callback.from_user.id):
+        return await answer_callback(callback.bot, callback)
 
-    check = checks[callback_data.idx]
-    if callback_data.do == "trace":
-        await callback.bot.send_document(
-            chat_id=callback.from_user.id,
-            document=BufferedInputFile(check["trace"].encode("utf-8"), filename=f"{check['name']}_error.txt"),
-            reply_markup=templ.destroy_kb()
+    async with _module_check_lock:
+        data = await state.get_data()
+        checks = data.get("module_checks") or []
+        back_cb = data.get("module_checks_back") or calls.ModulesPagination(page=0).pack()
+        token = data.get("module_checks_token")
+        if callback_data.token != token or callback_data.idx >= len(checks):
+            return await notify(callback, "Меню устарело — импортируйте модуль заново", alert=True)
+
+        check = checks[callback_data.idx]
+        do = callback_data.do
+        if do == "trace":
+            await callback.bot.send_document(
+                chat_id=callback.from_user.id,
+                document=BufferedInputFile(check["trace"].encode("utf-8"), filename=f"{check['name']}_error.txt"),
+                reply_markup=templ.destroy_kb()
+            )
+            return await answer_callback(callback.bot, callback)
+
+        if check["status"] not in ("error", "timeout"):
+            return await answer_callback(callback.bot, callback)
+
+        try:
+            if do in ("delete", "rollback"): # проверка вне бота может ошибиться — удаление и откат только со второго нажатия
+                check["confirm"] = do
+            elif do == "cancel":
+                check.pop("confirm", None)
+            elif do == "rollback_yes" and check.get("confirm") == "rollback":
+                restore_module_backup(check["name"])
+                check["status"] = "rolled_back"
+                check.pop("confirm", None)
+            elif do == "delete_yes" and check.get("confirm") == "delete":
+                remove_module(check["name"])
+                drop_module_backup(check["name"])
+                check["status"] = "deleted"
+                check.pop("confirm", None)
+            else:
+                return await answer_callback(callback.bot, callback)
+        except Exception as e:
+            check.pop("confirm", None)
+            await state.update_data(module_checks=checks)
+            return await notify(callback, str(e) if isinstance(e, ModuleImportError) else f"❌ Не получилось: {e}", alert=True)
+
+        await state.update_data(module_checks=checks)
+        await throw_float_message(
+            state=state,
+            message=callback.message,
+            text=templ.modules_float_text(templ.module_check_text(data.get("module_checks_header", ""), checks)),
+            reply_markup=templ.module_check_kb(checks, back_cb, token),
+            callback=callback
         )
-        return await answer_callback(callback.bot, callback)
-
-    if check["status"] != "error":
-        return await answer_callback(callback.bot, callback)
-
-    try:
-        if callback_data.do == "rollback":
-            restore_module_backup(check["name"])
-            check["status"] = "rolled_back"
-        elif callback_data.do == "delete":
-            remove_module(check["name"])
-            drop_module_backup(check["name"])
-            check["status"] = "deleted"
-    except Exception as e:
-        return await notify(callback, str(e) if isinstance(e, ModuleImportError) else f"❌ Не получилось: {e}", alert=True)
-
-    await state.update_data(module_checks=checks)
-    await throw_float_message(
-        state=state,
-        message=callback.message,
-        text=templ.modules_float_text(templ.module_check_text(data.get("module_checks_header", ""), checks)),
-        reply_markup=templ.module_check_kb(checks, back_cb),
-        callback=callback
-    )
 
 
 @router.callback_query(F.data == "module_check_restart")
 async def callback_module_check_restart(callback: CallbackQuery, state: FSMContext):
     from core.utils import restart
     from core.bootreport import set_marker
+    from core.access import is_signed
+
+    if not is_signed(callback.from_user.id):
+        return await answer_callback(callback.bot, callback)
 
     await state.set_state(None)
     mess = await throw_float_message(

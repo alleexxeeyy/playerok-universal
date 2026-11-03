@@ -1,3 +1,4 @@
+import time
 import asyncio
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
@@ -78,12 +79,13 @@ async def show_module_checks(message: Message, state: FSMContext, header: str, n
         text=templ.modules_float_text(f"{header}\n\n⏳ Проверяю, что модуль запускается — это может занять до минуты...")
     )
     checks = await asyncio.to_thread(check_installed_modules, names)
-    await state.update_data(module_checks=checks, module_checks_header=header, module_checks_back=back_cb)
+    token = int(time.time() * 1000) % 10**8 # кнопки старого экрана проверки не должны трогать модули из нового
+    await state.update_data(module_checks=checks, module_checks_header=header, module_checks_back=back_cb, module_checks_token=token)
     await throw_float_message(
         state=state,
         message=message,
         text=templ.modules_float_text(templ.module_check_text(header, checks)),
-        reply_markup=templ.module_check_kb(checks, back_cb)
+        reply_markup=templ.module_check_kb(checks, back_cb, token)
     )
 
 

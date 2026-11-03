@@ -250,7 +250,7 @@ def is_package_installed(requirement_string: str) -> bool:
         return False
 
 
-def install_requirements(requirements_path: str):
+def install_requirements(requirements_path: str, timeout: int = None):
     """
     Устанавливает зависимости из файла.
 
@@ -280,7 +280,7 @@ def install_requirements(requirements_path: str):
             if not is_package_installed(pkg_name):
                 subprocess.check_call([
                     sys.executable, "-m", "pip", "install", "-r", requirements_path
-                ])
+                ], timeout=timeout)
                 return
     except Exception as e:
         logger.error(f"Не удалось установить зависимости из файла \"{requirements_path}\": {e}")

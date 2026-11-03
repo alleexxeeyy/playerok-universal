@@ -9,6 +9,7 @@ import rarfile
 import importlib
 import traceback
 import subprocess
+import threading
 import uuid
 from uuid import UUID
 from colorama import Fore
@@ -36,6 +37,7 @@ MODULES_DIR = "modules"
 MODULES_TEMP_DIR = os.path.join(TEMP_DIR, "modules")
 MODULES_BACKUP_DIR = os.path.join(TEMP_DIR, "modules_backup")
 MODULE_CHECK_TIMEOUT = 60
+REQUIREMENTS_TIMEOUT = 300
 MODULE_EXTENSIONS = (".zip", ".rar")
 MAX_MODULE_SIZE = 50 * 1024 * 1024
 MAX_UNPACKED_SIZE = 300 * 1024 * 1024
@@ -586,10 +588,13 @@ def install_staged_module(mod: dict, action: str) -> str:
         name = _free_module_name(name)
         return _place_py(source, name, True) if is_py else _place_folder_replace(source, name)
 
-    if module_name_exists(name): # прежняя версия — чтобы откатиться, если новая не запустится
-        backup_module(name)
+    if module_name_exists(name):
+        # бэкап последней рабочей версии не перетираем — иначе откат вернул бы прошлую сломанную
+        if not has_module_backup(name):
+            backup_module(name, with_data=action != "merge")
     else:
         drop_module_backup(name)
+        set_module_disabled(name, False)
 
     if is_py:
         return _place_py(source, name, action != "merge")
@@ -604,14 +609,16 @@ def _module_paths(name: str) -> list[str]:
     return [path for path in paths if os.path.exists(path)]
 
 
-def backup_module(name: str):
+def backup_module(name: str, with_data: bool = True):
+    # при слиянии данные модуля не трогаются — их не копируем, чтобы откат не вернул устаревшие
+    ignore = ("__pycache__",) if with_data else ("__pycache__", *MODULE_DATA_DIRS)
     dest = os.path.join(MODULES_BACKUP_DIR, name)
     _rmtree(dest)
     os.makedirs(dest, exist_ok=True)
     for path in _module_paths(name):
         target = os.path.join(dest, os.path.basename(path))
         if os.path.isdir(path):
-            shutil.copytree(path, target, ignore=shutil.ignore_patterns("__pycache__"))
+            shutil.copytree(path, target, ignore=shutil.ignore_patterns(*ignore))
         else:
             shutil.copy2(path, target)
 
@@ -629,15 +636,34 @@ def remove_module(name: str):
     py = os.path.join(MODULES_DIR, f"{name}.py")
     if os.path.isfile(py):
         os.remove(py)
+    set_module_disabled(name, False)
 
 
 def restore_module_backup(name: str):
     backup = os.path.join(MODULES_BACKUP_DIR, name)
     if not os.path.isdir(backup):
         raise ModuleImportError(f"❌ Прежняя версия модуля <b>{name}</b> не сохранилась — установите её заново")
-    remove_module(name)
+    # текущую версию сначала отодвигаем целиком: если что-то пойдёт не так, модуль не останется без файлов
+    aside = os.path.join(MODULES_BACKUP_DIR, f".{name}.rollback")
+    _rmtree(aside)
+    os.makedirs(aside, exist_ok=True)
+    try:
+        for path in _module_paths(name):
+            shutil.move(path, os.path.join(aside, os.path.basename(path)))
+    except Exception:
+        for item in os.listdir(aside):
+            shutil.move(os.path.join(aside, item), os.path.join(MODULES_DIR, item))
+        raise ModuleImportError(f"❌ Не удалось откатить модуль <b>{name}</b> — файлы заняты или нет прав на запись")
+
     for item in os.listdir(backup):
-        shutil.move(os.path.join(backup, item), os.path.join(MODULES_DIR, item))
+        target = os.path.join(MODULES_DIR, item)
+        shutil.move(os.path.join(backup, item), target)
+        current = os.path.join(aside, item)
+        if os.path.isdir(target) and os.path.isdir(current):
+            for data_dir in MODULE_DATA_DIRS: # данные, накопленные живым ботом, сохраняем
+                if not os.path.exists(os.path.join(target, data_dir)) and os.path.exists(os.path.join(current, data_dir)):
+                    shutil.move(os.path.join(current, data_dir), os.path.join(target, data_dir))
+    _rmtree(aside)
     _rmtree(backup)
 
 
@@ -662,13 +688,14 @@ _CHECK_SCRIPT = (
 def check_module_import(name: str, timeout: int = MODULE_CHECK_TIMEOUT) -> tuple[str, str]:
     requirements = os.path.join(MODULES_DIR, name, "requirements.txt")
     if os.path.isfile(requirements):
-        install_requirements(requirements)
+        install_requirements(requirements, timeout=REQUIREMENTS_TIMEOUT) # без сети pip иначе висит бесконечно
 
     try:
         result = subprocess.run(
             [sys.executable, "-c", _CHECK_SCRIPT, name],
             cwd=os.getcwd(),
             capture_output=True,
+            stdin=subprocess.DEVNULL, # input() в модуле не должен ждать консоль бота
             timeout=timeout,
             env=dict(os.environ, PYTHONIOENCODING="utf-8")
         )
@@ -689,7 +716,7 @@ def check_installed_modules(names: list[str]) -> list[dict]:
     results = []
     for name in names:
         status, trace = check_module_import(name)
-        if status != "error":
+        if status == "ok": # при таймауте бэкап держим — после перезагрузки откат ещё может понадобиться
             drop_module_backup(name)
         results.append({
             "name": name,
@@ -710,18 +737,22 @@ def _format_string(count: int):
         return f"Подключено {Fore.LIGHTWHITE_EX}{count} модулей"
 
 
+_disabled_lock = threading.Lock()
+
+
 def get_disabled_modules() -> list[str]:
     return list(data.get("disabled_modules", SYSTEM_DATA) or [])
 
 
 def set_module_disabled(name: str, disabled: bool):
     # только по воле юзера: самовыключение плагина по лицензии сюда не пишется
-    names = get_disabled_modules()
-    if disabled == (name in names):
-        return
-    names = names + [name] if disabled else [n for n in names if n != name]
-    os.makedirs(os.path.dirname(DISABLED_MODULES.path), exist_ok=True)
-    data.set("disabled_modules", names, SYSTEM_DATA)
+    with _disabled_lock:
+        names = get_disabled_modules()
+        if disabled == (name in names):
+            return
+        names = names + [name] if disabled else [n for n in names if n != name]
+        os.makedirs(os.path.dirname(DISABLED_MODULES.path), exist_ok=True)
+        data.set("disabled_modules", names, SYSTEM_DATA)
 
 
 async def connect_modules(modules: list[Module]):

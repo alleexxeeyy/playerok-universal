@@ -17,6 +17,7 @@ class AccessRequest(CallbackData, prefix="accreq"):
     do: str
 
 class ModuleCheckAction(CallbackData, prefix="modchk"):
+    token: int
     idx: int
     do: str
 

@@ -5,40 +5,75 @@ from core.bootreport import explain_error
 from .. import callback_datas as calls
 
 
+CHECK_BUDGET = 3400 # лимит Telegram 4096 вместе с шапкой экрана и заголовком импорта
+CONFIRM_LABELS = {"delete": "🗑️ Да, удалить", "rollback": "↩️ Да, откатить"}
+
+
 def module_check_text(header: str, checks: list[dict]):
-    lines = [header, "", "🧪 <b>Проверка запуска:</b>"]
+    lines = [header, "", "🧪 <b>Проверка загрузки:</b>"]
+    size = sum(len(line) + 1 for line in lines)
+    hidden = 0
     for check in checks:
         name = f"<b>{escape(check['name'])}</b>"
         status = check["status"]
         if status == "ok":
-            lines.append(f"✅ {name} — запускается")
+            block = [f"✅ {name} — загружается"]
         elif status == "timeout":
-            lines.append(f"⏳ {name} — не успел проверить, проверится при перезагрузке")
+            block = [f"⏳ {name} — не успел проверить, проверится при перезагрузке"]
         elif status == "deleted":
-            lines.append(f"🗑️ {name} — удалён")
+            block = [f"🗑️ {name} — удалён"]
         elif status == "rolled_back":
-            lines.append(f"↩️ {name} — возвращена прежняя версия")
+            block = [f"↩️ {name} — возвращена прежняя версия"]
         else:
-            lines.append(f"❌ {name} — не запустится")
-            lines.append(f"<blockquote>{explain_error(check['trace'])}</blockquote>")
+            block = [f"❌ {name} — ошибка при загрузке", f"<blockquote>{explain_error(check['trace'])}</blockquote>"]
+        if check.get("confirm"):
+            action = "удалить модуль" if check["confirm"] == "delete" else "вернуть прежнюю версию"
+            block.append(f"⚠️ Точно {action} <b>{escape(check['name'])}</b>? Подтвердите кнопкой ниже")
 
+        block_size = sum(len(line) + 1 for line in block)
+        if size + block_size > CHECK_BUDGET:
+            hidden += 1
+            continue
+        lines += block
+        size += block_size
+
+    if hidden:
+        lines.append(f"...и ещё {hidden} — подробности по кнопкам ниже")
     if any(check["status"] in ("ok", "timeout", "rolled_back") for check in checks):
         lines += ["", "❗ Для подключения <b>необходима перезагрузка</b> — /restart"]
     if any(check["status"] == "error" for check in checks):
-        lines += ["", "Модуль с ошибкой можно удалить или вернуть его прежнюю версию кнопками ниже"]
+        lines += [
+            "",
+            "Проверка запускает модуль отдельно от бота — если модуль рассчитан только на работу внутри бота, "
+            "ошибка может быть ложной. Удалить модуль или вернуть прежнюю версию можно кнопками ниже"
+        ]
     return "\n".join(lines)
 
 
-def module_check_kb(checks: list[dict], back_cb: str):
+def module_check_kb(checks: list[dict], back_cb: str, token: int):
+    def cb(i: int, do: str) -> str:
+        return calls.ModuleCheckAction(token=token, idx=i, do=do).pack()
+
     rows = []
     for i, check in enumerate(checks):
-        if check["status"] != "error":
+        status = check["status"]
+        if status not in ("error", "timeout"):
             continue
-        row = [InlineKeyboardButton(text=f"📄 {check['name']}", callback_data=calls.ModuleCheckAction(idx=i, do="trace").pack())]
+        if check.get("confirm"):
+            rows.append([
+                InlineKeyboardButton(text=CONFIRM_LABELS[check["confirm"]], callback_data=cb(i, f"{check['confirm']}_yes")),
+                InlineKeyboardButton(text="✖️ Отмена", callback_data=cb(i, "cancel"))
+            ])
+            continue
+        if status == "timeout":
+            if check.get("has_backup"):
+                rows.append([InlineKeyboardButton(text=f"↩️ Откатить {check['name']}", callback_data=cb(i, "rollback"))])
+            continue
+        row = [InlineKeyboardButton(text=f"📄 {check['name']}", callback_data=cb(i, "trace"))]
         if check.get("has_backup"):
-            row.append(InlineKeyboardButton(text="↩️ Откатить", callback_data=calls.ModuleCheckAction(idx=i, do="rollback").pack()))
+            row.append(InlineKeyboardButton(text="↩️ Откатить", callback_data=cb(i, "rollback")))
         else:
-            row.append(InlineKeyboardButton(text="🗑️ Удалить", callback_data=calls.ModuleCheckAction(idx=i, do="delete").pack()))
+            row.append(InlineKeyboardButton(text="🗑️ Удалить", callback_data=cb(i, "delete")))
         rows.append(row)
     if any(check["status"] in ("ok", "timeout", "rolled_back") for check in checks):
         rows.append([InlineKeyboardButton(text="🔄 Перезагрузить сейчас", callback_data="module_check_restart")])

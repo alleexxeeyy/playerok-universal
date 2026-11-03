@@ -1,5 +1,9 @@
+import copy
 import json
 import os
+import shutil
+import tempfile
+import time
 from dataclasses import dataclass
 
 
@@ -67,19 +71,32 @@ def get_json(path: str, default: dict | list) -> dict:
     :param default: Стандартная структура файла.
     :type default: `dict`
     """
-    
     folder_path = os.path.dirname(path)
-    if not os.path.exists(folder_path):
+    if folder_path and not os.path.exists(folder_path):
         os.makedirs(folder_path)
+
+    for _ in range(3):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            break
+        except (PermissionError, BlockingIOError, json.JSONDecodeError):
+            # файл как раз подменяют или дописывают — читаем ещё раз, а не затираем данные
+            time.sleep(0.1)
+        except:
+            break
+
+    # битый файл не теряем молча: копия рядом, потом стандартная структура
+    if os.path.exists(path):
+        try: shutil.copyfile(path, f"{path}.bak")
+        except: pass
+    config = copy.deepcopy(default)
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
+        set_json(path, config)
     except:
-        config = default
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
-    finally:
-        return config
+        pass
+    return config
     
 
 def set_json(path: str, new: dict):
@@ -92,9 +109,21 @@ def set_json(path: str, new: dict):
     :param new: Новые данные.
     :type new: `dict`
     """
-    
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(new, f, indent=4, ensure_ascii=False)
+    dir_name = os.path.dirname(path) or "."
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+
+    with tempfile.NamedTemporaryFile( # атомарная запись файла
+        "w",
+        encoding="utf-8",
+        dir=dir_name,
+        delete=False
+    ) as tmp:
+        json.dump(new, tmp, ensure_ascii=False, indent=4)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+
+    os.replace(tmp.name, path)
 
 
 class Data:

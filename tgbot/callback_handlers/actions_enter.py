@@ -970,7 +970,7 @@ async def callback_add_signed_user_id(callback: CallbackQuery, state: FSMContext
         message=callback.message,
         text=templ.signed_users_float_text(
             "🆔 Введите <b>Telegram ID</b> человека, которому нужно открыть доступ:"
-            "\n\nСвой ID человек увидит, если напишет этому боту /start"
+            "\n<blockquote><b>(?)</b> Свой ID человек увидит, если напишет этому боту /start.</blockquote>"
         ),
         reply_markup=templ.back_kb(calls.SignedUsersPagination(page=last_page).pack()),
         callback=callback

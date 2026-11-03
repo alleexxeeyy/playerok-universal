@@ -17,47 +17,43 @@ BOOT_STAGES = {
 def boot_report_text(marker: dict | None, errors: list[dict], working: int, total: int, notes: list[str] = None, disabled: int = 0):
     marker = marker or {}
     reason = marker.get("reason")
-    took = f" за {int(time.time() - marker['time'])} сек" if marker.get("time") else ""
 
     if reason == "update":
-        lines = [f"✅ Бот <b>обновлён до v{VERSION}</b>{took}"]
+        lines = [f"<b>✅ Бот обновлён до v{VERSION}</b>", ""]
     elif reason == "setup":
-        lines = ["✅ Playerok подключён, бот <b>запущен</b>"]
+        lines = ["<b>✅ Playerok подключён, бот запущен</b>", ""]
     elif reason:
-        lines = [f"✅ Бот <b>успешно перезагружен</b>{took}"]
+        lines = ["<b>✅ Бот успешно перезагружен</b>", ""]
     else:
-        lines = ["⚠️ Бот запущен, но <b>есть проблемы</b>"]
+        lines = ["<b>⚠️ Бот запущен, но есть проблемы</b>", ""]
 
+    if reason and reason != "setup" and marker.get("time"):
+        lines.append(f"<b>⏱ Время запуска:</b> {int(time.time() - marker['time'])} сек")
     if total:
-        lines.append(f"🔌 Модули: работают <b>{working}</b> из <b>{total}</b>")
+        lines.append(f"<b>🔌 Модули:</b> работают {working} из {total}")
     if disabled:
-        lines.append(f"🔴 Выключено вами: <b>{disabled}</b>")
+        lines.append(f"<b>🔴 Выключено вами:</b> {disabled}")
 
     for note in notes or []:
-        lines.append(f"\n⚠️ {note}")
+        lines.append(f"<b>⚠️ Внимание:</b> <blockquote>{note}</blockquote>")
 
     if errors:
-        lines.append("")
+        lines += ["", "<b>🤬 Проблемы с модулями:</b>"]
         size = sum(len(line) + 1 for line in lines)
         shown = 0
         for error in errors:
             emoji, stage = BOOT_STAGES.get(error["stage"], ("⚠️", "ошибка"))
-            block = [
-                f"{emoji} <b>{html.escape(error['module'])}</b> — {stage}",
-                f"<blockquote>{error['text']}</blockquote>"
-            ]
-            block_size = sum(len(line) + 1 for line in block)
-            if size + block_size > REPORT_BUDGET:
+            block = f"<blockquote>{emoji} <b>{html.escape(error['module'])}</b> — {stage}\n{error['text']}</blockquote>"
+            if size + len(block) + 1 > REPORT_BUDGET:
                 break
-            lines += block
-            size += block_size
+            lines.append(block)
+            size += len(block) + 1
             shown += 1
         if len(errors) > shown:
             lines.append(f"...и ещё {len(errors) - shown} — смотрите logs/latest.log")
-        lines.append("")
-        lines.append("Нажмите на модуль ниже, чтобы получить полный текст ошибки — его можно переслать разработчику")
+        lines += ["", "❗ Нажмите на модуль ниже, чтобы получить полный текст ошибки — его можно переслать разработчику"]
 
-    return "\n".join(lines)
+    return "\n".join(lines).strip()
 
 
 def boot_report_kb(errors: list[dict], boot_id: int):

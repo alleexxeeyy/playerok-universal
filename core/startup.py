@@ -48,8 +48,8 @@ def diagnose(attempts: int = DIAGNOSE_ATTEMPTS, delay: int = DIAGNOSE_DELAY) -> 
         logger.warning(f"{Fore.LIGHTYELLOW_EX}{problem['text']}. {Fore.WHITE}Проверю ещё раз через {delay} сек...")
         bootreport.update_marker_message(
             f"🔄️ <b>Перезагружаю бота</b>, подождите..."
-            f"\n\n⏳ Playerok пока не отвечает — пробую ещё раз (попытка {attempt + 2} из {attempts})"
-            f"\n<blockquote>{problem['text']}</blockquote>"
+            f"\n\n<b>⏳ Playerok пока не отвечает</b> — пробую ещё раз, попытка {attempt + 2} из {attempts}"
+            f" <blockquote>{problem['text']}</blockquote>"
         )
         time.sleep(delay)
 

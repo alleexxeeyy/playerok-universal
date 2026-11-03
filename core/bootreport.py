@@ -293,9 +293,10 @@ def notify_crash(trace: str, reason: str = None):
         from core import notify
 
         text = (
-            "❌ <b>Бот не смог запуститься</b>"
-            f"\n\n<blockquote>{reason or explain_error(trace)}</blockquote>"
-            "\n\nЛог запуска — в файле ниже. Частые ошибки и их решения: devfried.com/docs/faq/"
+            "<b>❌ Бот не смог запуститься</b>"
+            f"\n\n<b>🤬 Причина:</b> <blockquote>{reason or explain_error(trace)}</blockquote>"
+            "\n📄 Лог запуска — в файле ниже, его можно переслать разработчику"
+            "\n\n<blockquote><b>(?)</b> Частые ошибки и их решения: devfried.com/docs/faq/</blockquote>"
         )
         marker = pop_marker()
         _deliver(marker, text, None, to_all=True, attempts=1) # процесс умирает — долго не держим

@@ -11,11 +11,11 @@ def signed_users_text():
     config = sett.get("config")
     signed_users = config["telegram"]["bot"]["signed_users"]
 
-    txt = textwrap.dedent(f"""
-        <b>🔑 Авторизации</b>
-        Всего <b>{len(signed_users)}</b> юзеров:
-    """) + "\nЧтобы добавить человека, добавьте его кнопками ниже или попросите написать боту /start — вам придёт запрос"
-    return txt
+    return (
+        "<b>🔑 Авторизации</b>"
+        "\n<blockquote><b>(?)</b> Чтобы дать доступ человеку, добавьте его кнопками ниже или попросите написать боту /start — вам придёт запрос.</blockquote>"
+        f"\nВсего <b>{len(signed_users)}</b> юзеров:"
+    )
 
 
 async def signed_users_kb(page=0):

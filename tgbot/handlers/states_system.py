@@ -89,7 +89,7 @@ async def handler_waiting_for_signed_user_id(message: types.Message, state: FSMC
 
     text = message.text.strip()
     if not text.isdigit():
-        placeholder = "❌ ID — это число, например <code>123456789</code>. Свой ID человек увидит, если напишет этому боту /start"
+        placeholder = "❌ ID — это число, например <code>123456789</code>"
     elif not access.add_signed_user(int(text)):
         placeholder = f"❌ У пользователя <code>{text}</code> уже есть доступ"
     else:

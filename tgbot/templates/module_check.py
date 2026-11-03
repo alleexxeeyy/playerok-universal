@@ -10,32 +10,31 @@ CONFIRM_LABELS = {"delete": "🗑️ Да, удалить", "rollback": "↩️ 
 
 
 def module_check_text(header: str, checks: list[dict]):
-    lines = [header, "", "🧪 <b>Проверка загрузки:</b>"]
+    lines = [header, "", "<b>🧪 Проверка загрузки:</b>"]
     size = sum(len(line) + 1 for line in lines)
     hidden = 0
     for check in checks:
         name = f"<b>{escape(check['name'])}</b>"
         status = check["status"]
         if status == "ok":
-            block = [f"✅ {name} — загружается"]
+            block = f"✅ {name} — загружается"
         elif status == "timeout":
-            block = [f"⏳ {name} — не успел проверить, проверится при перезагрузке"]
+            block = f"⏳ {name} — не успел проверить, проверится при перезагрузке"
         elif status == "deleted":
-            block = [f"🗑️ {name} — удалён"]
+            block = f"🗑️ {name} — удалён"
         elif status == "rolled_back":
-            block = [f"↩️ {name} — возвращена прежняя версия"]
+            block = f"↩️ {name} — возвращена прежняя версия"
         else:
-            block = [f"❌ {name} — ошибка при загрузке", f"<blockquote>{explain_error(check['trace'])}</blockquote>"]
+            block = f"<blockquote>❌ {name} — ошибка при загрузке\n{explain_error(check['trace'])}</blockquote>"
         if check.get("confirm"):
             action = "удалить модуль" if check["confirm"] == "delete" else "вернуть прежнюю версию"
-            block.append(f"⚠️ Точно {action} <b>{escape(check['name'])}</b>? Подтвердите кнопкой ниже")
+            block += f"\n⚠️ Точно {action} {name}? Подтвердите кнопкой ниже"
 
-        block_size = sum(len(line) + 1 for line in block)
-        if size + block_size > CHECK_BUDGET:
+        if size + len(block) + 1 > CHECK_BUDGET:
             hidden += 1
             continue
-        lines += block
-        size += block_size
+        lines.append(block)
+        size += len(block) + 1
 
     if hidden:
         lines.append(f"...и ещё {hidden} — подробности по кнопкам ниже")
@@ -44,8 +43,8 @@ def module_check_text(header: str, checks: list[dict]):
     if any(check["status"] == "error" for check in checks):
         lines += [
             "",
-            "Проверка запускает модуль отдельно от бота — если модуль рассчитан только на работу внутри бота, "
-            "ошибка может быть ложной. Удалить модуль или вернуть прежнюю версию можно кнопками ниже"
+            "<blockquote><b>(?)</b> Проверка запускает модуль отдельно от бота — если модуль рассчитан только на работу внутри бота, "
+            "ошибка может быть ложной. Удалить модуль или вернуть прежнюю версию можно кнопками ниже.</blockquote>"
         ]
     return "\n".join(lines)
 

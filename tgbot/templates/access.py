@@ -24,38 +24,37 @@ def user_title(user_id: int, username: str | None = None, name: str | None = Non
 
 
 def not_linked_text():
-    lines = [
-        "🔒 <b>Бот ещё не привязан к владельцу</b>",
-        "",
-        "Если это ваш бот — откройте ссылку, которую он показал в консоли при запуске. "
-        "Она одноразовая и делает вас владельцем."
-    ]
-    return "\n".join(lines)
+    return (
+        "<b>🔒 Бот не привязан к владельцу</b>"
+        "\n\n<blockquote><b>(?)</b> Если это ваш бот — откройте ссылку, которую он показал в консоли при запуске. "
+        "Она одноразовая и делает вас владельцем.</blockquote>"
+    )
 
 
 def access_denied_text(user_id: int, requested: bool):
-    lines = ["🔒 <b>Нет доступа к боту</b>", ""]
     if requested:
-        lines.append("✉️ Владельцу бота отправлен запрос на доступ. Если он его одобрит — вам придёт сообщение.")
+        status = "✉️ Владельцу отправлен <b>запрос на доступ</b> — если он его одобрит, вам придёт сообщение"
     else:
-        lines.append("⏳ Запрос владельцу уже отправлен. Повторно запросить доступ можно через сутки.")
-    lines += ["", f"🆔 Ваш ID: <code>{user_id}</code>"]
-    return "\n".join(lines)
+        status = "⏳ Запрос владельцу <b>уже отправлен</b> — повторно запросить доступ можно через сутки"
+    return (
+        "<b>🔒 Нет доступа к боту</b>"
+        f"\n\n{status}"
+        f"\n\n<b>🆔 Ваш ID:</b> <code>{user_id}</code>"
+    )
 
 
 def access_request_text(user_id: int, username: str | None, name: str | None, placeholder: str = None):
-    lines = [
-        "👤 <b>Запрос доступа к боту</b>",
-        "",
-        f"<b>Имя:</b> {escape(name) if name else '—'}",
-        f"<b>Юзернейм:</b> {'@' + escape(username) if username else '—'}",
-        f"<b>ID:</b> <code>{user_id}</code>",
-        "",
-        "Этот человек сможет управлять ботом и вашим аккаунтом Playerok. Пускайте только тех, кого знаете."
-    ]
+    txt = (
+        "<b>👤 Запрос доступа к боту</b>"
+        f"\n\n<b>📛 Имя:</b> {escape(name) if name else '—'}"
+        f"\n<b>🔗 Юзернейм:</b> {'@' + escape(username) if username else '—'}"
+        f"\n<b>🆔 ID:</b> <code>{user_id}</code>"
+        "\n\n<blockquote><b>(?)</b> Этот человек сможет управлять ботом и вашим аккаунтом Playerok. "
+        "Пускайте только тех, кого знаете.</blockquote>"
+    )
     if placeholder:
-        lines += ["", placeholder]
-    return "\n".join(lines)
+        txt += f"\n\n{placeholder}"
+    return txt
 
 
 def access_request_kb(user_id: int):
@@ -67,12 +66,11 @@ def access_request_kb(user_id: int):
 
 
 def access_confirm_text(user_id: int, username: str | None, name: str | None):
-    lines = [
-        f"✍️ Чтобы пустить {user_title(user_id, username, name)}, напишите слово <b>{CONFIRM_WORD}</b>",
-        "",
-        "Так бот убедится, что вы не нажали «Пустить» случайно."
-    ]
-    return "\n".join(lines)
+    return (
+        "<b>👤 Запрос доступа к боту</b>"
+        f"\n\n✍️ Чтобы пустить {user_title(user_id, username, name)}, напишите слово <b>{CONFIRM_WORD}</b>"
+        "\n\n<blockquote><b>(?)</b> Так бот убедится, что вы не нажали «Пустить» случайно.</blockquote>"
+    )
 
 
 def access_confirm_kb(user_id: int):
@@ -81,20 +79,19 @@ def access_confirm_kb(user_id: int):
 
 
 def access_granted_text():
-    return "✅ <b>Вам открыли доступ к боту</b>\n\nНажмите /start, чтобы открыть меню."
+    return "<b>✅ Вам открыли доступ к боту</b>\n\nНажмите /start, чтобы открыть меню"
 
 
 def owner_welcome_text():
-    return "👋 <b>Готово, вы — владелец бота!</b>\n\nДругих людей можно добавить в разделе «🔑 Авторизации»."
+    return "<b>👋 Готово, вы — владелец бота!</b>\n\nДругих людей можно добавить в разделе «🔑 Авторизации»"
 
 
 def pick_user_text():
-    lines = [
-        "👤 Нажмите кнопку <b>«Выбрать пользователя»</b> внизу экрана и выберите человека из своих чатов.",
-        "",
-        "Бот сразу получит его ID и откроет доступ."
-    ]
-    return "\n".join(lines)
+    return (
+        "<b>🔑 Авторизации</b>"
+        "\n\n👤 Нажмите кнопку <b>«Выбрать пользователя»</b> внизу экрана и выберите человека из своих чатов"
+        "\n\n<blockquote><b>(?)</b> Бот сразу получит его ID и откроет ему доступ.</blockquote>"
+    )
 
 
 def pick_user_kb():

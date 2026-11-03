@@ -8,6 +8,7 @@ import sys
 import base64
 import string
 import queue
+import logging
 import requests
 from html import escape
 from threading import Thread
@@ -704,10 +705,12 @@ def _describe_fallback(configured: tuple, connection: tuple) -> str:
 
 
 def _exit_not_configured(reason: str):
-    print(
-        f"\n{Fore.LIGHTRED_EX}{reason}"
-        f"\n\n{Fore.WHITE}Если бот стоит на сервере — подключитесь к нему и выполните: {Fore.CYAN}pluniversal setup"
-        f"\n{Fore.WHITE}Если на компьютере — запустите бота заново в окне консоли.\n"
+    from core.console import print_panel
+    print_panel(
+        f"{Fore.LIGHTRED_EX}■ {reason}",
+        f"Если бот стоит на сервере — подключитесь к нему и выполните: {Fore.CYAN}pluniversal setup{Fore.RESET}\n"
+        f"Если на компьютере — запустите бота заново в окне консоли.",
+        color="red", width=72
     )
     time.sleep(NOT_CONFIGURED_EXIT_DELAY) # иначе systemd перезапускает бота каждые 5 секунд
     sys.exit(1)
@@ -732,7 +735,7 @@ def _console_reader() -> queue.Queue:
 
 
 def _read_console(timeout: float = None) -> str | None:
-    print(f"  {Fore.WHITE}→ {Fore.LIGHTWHITE_EX}", end="", flush=True)
+    print(f"  {Fore.LIGHTYELLOW_EX}→ {Fore.LIGHTWHITE_EX}", end="", flush=True)
     if _console_queue is None and timeout is None:
         return input().strip()
     try:
@@ -746,12 +749,15 @@ def _read_console(timeout: float = None) -> str | None:
 
 
 def _ask_token() -> str:
+    from core.console import print_panel, print_line
+
     while True:
-        print(
-            f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Введите {Fore.CYAN}Токен Telegram бота {Fore.LIGHTYELLOW_EX}├──────────────────────┐{Fore.WHITE}"
-            f"\n\n  {Fore.WHITE}Бота нужно создать у @BotFather (https://t.me/BotFather)"
-            f"\n  Всё остальное — аккаунт Playerok, прокси, доступы — настраивается дальше в самом Telegram боте"
-            f"\n\n  {Fore.LIGHTWHITE_EX}· Пример: {Fore.WHITE}7257913369:AAG2KjLL3-zvvfSQFSVhaTb4w7tR2iXsJXM"
+        print_panel(
+            f"{Fore.CYAN}🔑 Введите токен Telegram бота",
+            f"Бота нужно создать у @BotFather (https://t.me/BotFather).\n"
+            f"Всё остальное — аккаунт Playerok, прокси, доступы — настраивается дальше в самом Telegram боте.\n\n"
+            f"{Fore.LIGHTBLACK_EX}Пример: {Fore.RESET}7257913369:AAG2KjLL3-zvvfSQFSVhaTb4w7tR2iXsJXM",
+            color="yellow", width=72
         )
         token = _read_console()
 
@@ -759,38 +765,38 @@ def _ask_token() -> str:
             config = sett.get("config")
             config["telegram"]["api"]["token"] = token
             sett.set("config", config)
-            print(f"\n{Fore.YELLOW}Токен Telegram бота успешно сохранён в конфиг.")
+            print_line(f"{Fore.YELLOW}Токен Telegram бота сохранён в конфиг")
             return token
-        print(
-            f"\n{Fore.LIGHTRED_EX}Похоже, что вы ввели некорректный токен. "
-            f"Убедитесь, что он соответствует формату и попробуйте ещё раз."
-        )
+        print_line(f"{Fore.LIGHTRED_EX}Похоже, вы ввели некорректный токен — проверьте формат и попробуйте ещё раз", logging.ERROR)
 
 
 def _apply_console_connection(text: str):
     if not text:
         return
 
+    from core.console import print_line
+
     config = sett.get("config")
     proxy = normalize_proxy(text)
     if is_proxy_valid(proxy):
         config["telegram"]["api"]["proxy"] = proxy
         sett.set("config", config)
-        print(f"\n{Fore.YELLOW}Прокси для Telegram сохранён в конфиг, проверяю подключение...")
+        print_line(f"{Fore.YELLOW}Прокси для Telegram сохранён в конфиг, проверяю подключение...")
         return
 
     custom_api_url = normalize_custom_api_url(text)
     if is_url_valid(custom_api_url) and "." in urlparse(custom_api_url).netloc:
         config["telegram"]["api"]["custom_api_url"] = custom_api_url
         sett.set("config", config)
-        print(f"\n{Fore.YELLOW}Кастомный URL Telegram API сохранён в конфиг, проверяю подключение...")
+        print_line(f"{Fore.YELLOW}Кастомный URL Telegram API сохранён в конфиг, проверяю подключение...")
         return
 
-    print(f"\n{Fore.LIGHTRED_EX}Это не похоже ни на прокси (user:pass@ip:port), ни на URL — проверяю подключение как есть...")
+    print_line(f"{Fore.LIGHTRED_EX}Это не похоже ни на прокси (user:pass@ip:port), ни на URL — проверяю подключение как есть...", logging.WARNING)
 
 
 def configure_telegram() -> str:
     from core import notify, bootreport
+    from core.console import print_line
 
     tty = sys.stdin.isatty()
     attempt = 0
@@ -817,9 +823,9 @@ def configure_telegram() -> str:
             return username
 
         if status == "unauthorized":
-            print(
-                f"\n{Fore.LIGHTRED_EX}Telegram не принял токен бота — скорее всего, его отозвали "
-                f"или пересоздали в @BotFather."
+            print_line(
+                f"{Fore.LIGHTRED_EX}Telegram не принял токен бота — скорее всего, его отозвали или пересоздали в @BotFather",
+                logging.ERROR
             )
             if not tty:
                 _exit_not_configured("Укажите новый токен Telegram бота.")
@@ -829,13 +835,13 @@ def configure_telegram() -> str:
 
         delay = TG_RETRY_DELAYS[min(attempt, len(TG_RETRY_DELAYS) - 1)]
         attempt += 1
-        print(
-            f"\n{Fore.LIGHTRED_EX}Не удалось подключиться к Telegram{Fore.WHITE} (попытка {attempt}). "
-            f"Если вы в России — Telegram нужно подключать через прокси или URL Telegram API (Cloudflare Worker)."
-            f"\nПовторю попытку через {delay} сек."
+        print_line(
+            f"{Fore.LIGHTRED_EX}Не удалось подключиться к Telegram{Fore.RESET} (попытка {attempt}) — повторю через {delay} сек. "
+            f"{Fore.LIGHTBLACK_EX}Если вы в России — Telegram нужно подключать через прокси или URL Telegram API (Cloudflare Worker)",
+            logging.WARNING
         )
         if tty:
-            print(f"  {Fore.LIGHTWHITE_EX}Можно не ждать: введите прокси для Telegram (user:pass@ip:port) или URL Telegram API и нажмите Enter")
+            print_line(f"{Fore.LIGHTWHITE_EX}Можно не ждать: введите прокси для Telegram (user:pass@ip:port) или URL Telegram API и нажмите Enter")
             text = _read_console(timeout=delay)
             if text is not None:
                 _apply_console_connection(text)
@@ -849,16 +855,18 @@ def print_owner_link(bot_username: str):
     if get_signed_users():
         return
 
+    from core.console import print_panel
+
     link = get_owner_link(bot_username)
-    print(
-        f"\n{Fore.LIGHTYELLOW_EX}┌────┤ Откройте {Fore.CYAN}Telegram бота {Fore.LIGHTYELLOW_EX}├──────────────────────┐{Fore.WHITE}"
-        f"\n\n  Перейдите по ссылке и нажмите «Запустить» — бот запомнит вас как владельца:"
-        f"\n\n  {Fore.LIGHTWHITE_EX}{link}"
-        f"\n\n  {Fore.WHITE}Ссылка одноразовая. Дальше вся настройка — прямо в Telegram боте."
+    body = (
+        f"Перейдите по ссылке ниже и нажмите «Запустить» — бот запомнит вас как владельца.\n"
+        f"{Fore.LIGHTBLACK_EX}Ссылка одноразовая. Дальше вся настройка — прямо в Telegram боте."
     )
     if is_legacy_password_login():
-        print(f"  {Fore.WHITE}Или войдите в бота со своим старым паролем — сработает один раз.")
-    print() # в лог ссылку не пишем: latest.log пересылают разработчику, а по ссылке можно стать владельцем
+        body += f"\n{Fore.LIGHTBLACK_EX}Или войдите в бота со своим старым паролем — сработает один раз."
+    # печатаем мимо логгера: latest.log пересылают разработчику, а по ссылке можно стать владельцем
+    print_panel(f"{Fore.CYAN}🔗 Откройте Telegram бота", body, color="bright_cyan", width=80)
+    print(f"\n  {Fore.LIGHTWHITE_EX}{link}{Fore.RESET}\n") # вне рамки: перенос внутри неё ломает копирование ссылки
 
 
 def configure_config():

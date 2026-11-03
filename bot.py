@@ -79,21 +79,23 @@ async def clear_logs_task():
         await asyncio.sleep(30)
 
 
+def show_panel(title: str, body: str, color: str):
+    try:
+        from core.console import print_panel
+        print_panel(title, body, color, width=72)
+    except Exception: # rich ещё не установлен или сам и упал — пишем как есть
+        print(f"\n{title}\n{body}\n")
+
+
 if __name__ == "__main__":
     running_pid = acquire_instance_lock()
     if running_pid is not None:
-        print(
-            f"\n\n   {Fore.LIGHTRED_EX}┌───────────────────────────────────────┐\n"
-            f"\n     {Fore.LIGHTRED_EX}Бот уже запущен!"
-            f"\n"
-            f"\n     {Fore.WHITE}Playerok Universal из этой папки уже работает"
-            f"\n     в другом окне{f' (процесс {running_pid})' if running_pid else ''}."
-            f"\n     Закройте это окно — если запустить одного бота дважды,"
-            f"\n     заказы и сообщения будут обрабатываться по два раза."
-            f"\n"
-            f"\n     {Fore.LIGHTBLACK_EX}Если бот на самом деле не запущен — завершите"
-            f"\n     зависший процесс python и попробуйте снова."
-            f"\n\n   {Fore.LIGHTRED_EX}└───────────────────────────────────────┘\n\n"
+        show_panel(
+            f"{Fore.LIGHTRED_EX}■ Бот уже запущен",
+            f"Playerok Universal из этой папки уже работает в другом окне{f' (процесс {running_pid})' if running_pid else ''}. "
+            f"Закройте это окно — если запустить одного бота дважды, заказы и сообщения будут обрабатываться по два раза.\n\n"
+            f"{Fore.LIGHTBLACK_EX}Если бот на самом деле не запущен — завершите зависший процесс python и попробуйте снова.",
+            "red"
         )
         sys.exit(1)
 
@@ -104,15 +106,16 @@ if __name__ == "__main__":
         bootreport.start_capture()
         
         set_title(f"Playerok Universal v{VERSION} by @friedfluoride")
-        print(
-            f"\n\n   {Fore.LIGHTYELLOW_EX}┌───────────────────────────────────────┐\n"
-            f"\n     {ACCENT_COLOR}Playerok Universal {Fore.WHITE}v{Fore.LIGHTWHITE_EX}{VERSION}"
-            f"\n       {Fore.WHITE}by {Fore.LIGHTYELLOW_EX}@friedfluoride (3xtra)"
-            f"\n"
-            f"\n     {Fore.WHITE}· GitHub: {Fore.LIGHTWHITE_EX}github.com/alleexxeeyy/playerok-universal"
-            f"\n     {Fore.WHITE}· Новости: {Fore.LIGHTWHITE_EX}t.me/friedplayerok"
-            f"\n     {Fore.WHITE}· Плагины: {Fore.LIGHTWHITE_EX}t.me/friedshopbot"
-            f"\n\n   {Fore.LIGHTYELLOW_EX}└───────────────────────────────────────┘\n\n"
+        from core.console import print_panel
+        print_panel(
+            f"{ACCENT_COLOR}Playerok Universal {Fore.LIGHTWHITE_EX}v{VERSION} {Fore.LIGHTBLACK_EX}· by {Fore.LIGHTYELLOW_EX}@friedfluoride (3xtra)",
+            [
+                ("GitHub", "github.com/alleexxeeyy/playerok-universal"),
+                ("Новости", "t.me/friedplayerok"),
+                ("Плагины", "t.me/friedshopbot")
+            ],
+            color="yellow",
+            width=72
         )
         
         check_for_updates()
@@ -136,14 +139,12 @@ if __name__ == "__main__":
     except Exception as e:
         trace = traceback.format_exc()
         traceback.print_exc()
-        print(
-            f"\n\n{Fore.LIGHTRED_EX}Ваш бот словил непредвиденную ошибку и был выключен."
-            f"\n\n{Fore.WHITE}Пожалуйста, попробуйте найти свою проблему в нашей статье, в которой собраны все самые частые ошибки.",
-            f"\nСтатья: {Fore.LIGHTWHITE_EX}https://devfried.com/docs/faq/ {Fore.WHITE}(CTRL + Клик ЛКМ)\n\n"
+        show_panel(
+            f"{Fore.LIGHTRED_EX}■ Бот словил непредвиденную ошибку и был выключен",
+            f"Попробуйте найти свою проблему в статье с самыми частыми ошибками:\n"
+            f"{Fore.LIGHTWHITE_EX}https://devfried.com/docs/faq/ {Fore.LIGHTBLACK_EX}(CTRL + Клик ЛКМ)",
+            "red"
         )
         bootreport.notify_crash(trace)
     except KeyboardInterrupt:
-        print(
-            f"\n\n{Fore.YELLOW}Работа бота остановлена "
-            f"\n{Fore.WHITE}(вы нажали Ctrl + C)\n\n"
-        )
+        show_panel(f"{Fore.YELLOW}Работа бота остановлена", f"{Fore.LIGHTBLACK_EX}Вы нажали Ctrl + C", "yellow")

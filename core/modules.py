@@ -12,7 +12,7 @@ import subprocess
 import threading
 import uuid
 from uuid import UUID
-from colorama import Fore
+from colorama import Fore, Style
 from dataclasses import dataclass
 from logging import getLogger
 
@@ -776,7 +776,25 @@ async def connect_modules(modules: list[Module]):
             logger.error(f"{Fore.LIGHTRED_EX}Ошибка при подключении модуля {module.meta.name}: {Fore.WHITE}{trace}")
             bootreport.add_error(module._dir_name, "start", trace)
     
-    connected_modules = [module for module in loaded_modules if module.enabled]
-    names = [f"{Fore.YELLOW}{module.meta.name} {Fore.LIGHTWHITE_EX}{module.meta.version}" for module in connected_modules]
-    if names:
-        logger.info(f'{_format_string(len(connected_modules))}{Fore.WHITE}: {f"{Fore.WHITE}, ".join(names)}')
+    _log_modules_table(modules, disabled)
+
+
+def _log_modules_table(modules: list[Module], disabled: list[str]):
+    from core.console import log_table
+
+    rows = []
+    for module in modules:
+        name = re.sub(r"\s*(?:\x1b\[[0-9;]*m)*·.*$", "", module.meta.prefix or "") or module.meta.name # имя в цвете модуля
+        if module.enabled:
+            status = f"{Fore.GREEN}● подключён"
+        elif module._dir_name in disabled:
+            status = f"{Fore.LIGHTBLACK_EX}○ выключен вами"
+        else:
+            status = f"{Fore.LIGHTRED_EX}■ выключился при запуске"
+        rows.append([f"{Style.BRIGHT}{name}", module.meta.version, status])
+    for error in bootreport.get_errors():
+        if error["stage"] == "load":
+            rows.append([f"{Style.BRIGHT}{error['module']}", "—", f"{Fore.LIGHTRED_EX}■ ошибка загрузки"])
+
+    if rows:
+        log_table(logger, f"🔌 Модули · {len(rows)}", ["Модуль", "Версия", "Статус"], rows)

@@ -148,29 +148,24 @@ class TelegramBot:
         await call_bot_event("ON_TELEGRAM_BOT_INIT", [self])
         
         self.me = await self.bot.get_me()
-        logger.info("")
-        logger.info(f"{Fore.LIGHTBLUE_EX}Telegram бот {Fore.LIGHTWHITE_EX}@{self.me.username} {Fore.LIGHTBLUE_EX}запущен и активен")
-        
+        started = f"{Fore.LIGHTBLUE_EX}Telegram бот {Fore.LIGHTWHITE_EX}@{self.me.username} {Fore.LIGHTBLUE_EX}запущен и активен"
+
         if self.proxy:
+            from core.console import log_panel
+
             if "@" in self.proxy:
                 user, password = self.proxy.split("@")[0].split(":")
                 ip, port = self.proxy.split("@")[1].split(":")
             else:
                 user, password = None, None
                 ip, port = self.proxy.split(":")
-            
             ip = ".".join([("*" * len(nums)) if i >= 3 else nums for i, nums in enumerate(ip.split("."), start=1)])
-            port = f"{port[:3]}**"
-            user = f"{user[:3]}*****" if user else "-"
-            password = f"{password[:3]}*****" if password else "-"
-
-            logger.info("")
-            logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
-            logger.info(f"{Fore.LIGHTBLUE_EX}Информация о прокси:")
-            logger.info(f" · IP: {Fore.LIGHTWHITE_EX}{ip}:{port}")
-            logger.info(f" · Юзер: {Fore.LIGHTWHITE_EX}{user}")
-            logger.info(f" · Пароль: {Fore.LIGHTWHITE_EX}{password}")
-            logger.info(f"{Fore.LIGHTBLUE_EX}───────────────────────────────────────")
+            rows = [("IP", f"{ip}:{port[:3]}**")]
+            if user:
+                rows.append(("Юзер", f"{user[:3]}*****"))
+            log_panel(logger, "🌐 Прокси для Telegram", rows, message=started, color="bright_blue", width=64)
+        else:
+            logger.info(started)
 
         drop_updates = True # старые апдейты сбрасываем только при запуске, а не при перезапуске поллинга
         while True:

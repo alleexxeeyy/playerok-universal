@@ -3,6 +3,7 @@ import asyncio
 import traceback
 from threading import Thread, Lock
 from colorama import Fore
+import logging
 from logging import getLogger
 
 from core import bootreport
@@ -74,11 +75,14 @@ def start_modules(attach_routers=None) -> list:
 
 
 def enter_setup_mode(problem: dict):
+    from core.console import log_panel
+
     set_problem(problem)
-    logger.info("")
-    logger.warning(f"{Fore.LIGHTRED_EX}Работа с Playerok остановлена: {Fore.WHITE}{problem['text']}")
-    logger.warning(f"{Fore.WHITE}Бот ждёт настройки — откройте своего Telegram бота, там всё можно исправить.")
-    logger.info("")
+    log_panel(
+        logger, "▲ Работа с Playerok остановлена",
+        body=f"{problem['text']}\n\n{Fore.LIGHTWHITE_EX}Бот ждёт настройки — откройте своего Telegram бота, там всё можно исправить.",
+        level=logging.WARNING, color="red"
+    )
     Thread(target=_announce_setup, daemon=True).start()
     Thread(target=_auto_recheck_loop, daemon=True).start()
 

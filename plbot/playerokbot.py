@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta
 import pytz
 from threading import Thread, RLock
+import logging
 import textwrap
 from html import escape
 import shutil
@@ -140,10 +141,13 @@ class PlayerokBot:
         try:
             user = self.account.get_user(self.account.id)
             if user.is_blocked:
-                logger.critical("")
-                logger.critical(f"{Fore.LIGHTRED_EX}Ваш Playerok аккаунт был заблокирован! К сожалению, я не могу продолжать работу на заблокированном аккаунте...")
-                logger.critical(f"Напишите в тех. поддержку Playerok, чтобы узнать причину бана и как можно быстрее решить эту проблему.")
-                logger.critical("")
+                from core.console import log_panel
+                log_panel(
+                    logger, "■ Аккаунт Playerok заблокирован",
+                    body="К сожалению, на заблокированном аккаунте бот работать не может.\n"
+                         "Напишите в тех. поддержку Playerok, чтобы узнать причину бана и как можно быстрее решить проблему.",
+                    level=logging.CRITICAL, color="red"
+                )
                 shutdown()
         except Exception as e:
             logger.error(f"{Fore.LIGHTRED_EX}Ошибка при проверке на блокировку: {Fore.WHITE}{e}")
@@ -905,72 +909,57 @@ class PlayerokBot:
 
 
     def log_new_message(self, message: ChatMessage, chat: Chat):
+        from core.console import log_panel
+
         plbot = get_playerok_bot()
-        
         chat_user = next((u.username for u in chat.users if u.id != plbot.account.id), None)
         if not chat_user:
             chat_user = message.user.username
-        
-        ch_header = f"Новое сообщение в чате с {chat_user}:"
-        
-        logger.info(f"{ACCENT_COLOR}{ch_header.replace(chat_user, f'{Fore.LIGHTCYAN_EX}{chat_user}')}")
-        logger.info(f"{ACCENT_COLOR}│ {Fore.LIGHTWHITE_EX}{message.user.username}:")
-        
-        max_width = shutil.get_terminal_size((80, 20)).columns - 40
-        longest_line_len = 0
-        text = ""
-        
-        if message.text: 
-            text = message.text
-        if message.images: 
-            text = f"{Fore.LIGHTMAGENTA_EX}*Изображения ({len(message.images)})*" + ((f" {Fore.WHITE}" + text) if text else "")
-        
-        for raw_line in text.split("\n"):
-            if not raw_line.strip():
-                logger.info(f"{ACCENT_COLOR}│")
-                continue
-            
-            wrapped_lines = textwrap.wrap(raw_line, width=max_width)
-            for wrapped in wrapped_lines:
-                logger.info(f"{ACCENT_COLOR}│ {Fore.WHITE}{wrapped}")
-                longest_line_len = max(longest_line_len, len(wrapped.strip()))
-        
-        underline_len = max(len(ch_header)-1, longest_line_len+2)
-        logger.info(f"{ACCENT_COLOR}└{'─'*underline_len}")
+
+        text = message.text or ""
+        if message.images:
+            text = f"{Fore.LIGHTMAGENTA_EX}*Изображения ({len(message.images)})*{Fore.RESET}" + ((" " + text) if text else "")
+
+        log_panel(
+            logger, f"💬 Чат с {Fore.LIGHTCYAN_EX}{chat_user}",
+            body=f"{Fore.LIGHTWHITE_EX}{message.user.username}:{Fore.RESET} {text}",
+            color="bright_blue"
+        )
 
     def log_new_deal(self, deal: ItemDeal):
-        logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
-        logger.info(f"{Fore.YELLOW}Новая сделка {deal.id}:")
-        logger.info(f" · Покупатель: {Fore.LIGHTWHITE_EX}{deal.user.username}")
-        logger.info(f" · Товар: {Fore.LIGHTWHITE_EX}{deal.item.name}")
-        logger.info(f" · Сумма: {Fore.LIGHTWHITE_EX}{deal.item.price}₽")
-        logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
+        from core.console import log_panel
+        log_panel(logger, f"🛒 Новая сделка {deal.id}", [
+            ("Покупатель", deal.user.username),
+            ("Товар", deal.item.name),
+            ("Сумма", f"{deal.item.price} ₽")
+        ])
 
     def log_new_review(self, deal: ItemDeal):
-        logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
-        logger.info(f"{Fore.YELLOW}Новый отзыв по сделке {deal.id}:")
-        logger.info(f" · Оценка: {Fore.LIGHTYELLOW_EX}{'⭐' * deal.review.rating or 5} ({deal.review.rating or 5})")
-        logger.info(f" · Текст: {Fore.LIGHTWHITE_EX}{deal.review.text or '-'}")
-        logger.info(f" · Оставил: {Fore.LIGHTWHITE_EX}{deal.review.creator.username}")
-        logger.info(f" · Дата: {Fore.LIGHTWHITE_EX}{datetime.fromisoformat(deal.review.created_at).strftime('%d.%m.%Y %H:%M:%S')}")
-        logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
+        from core.console import log_panel
+        rating = deal.review.rating or 5
+        log_panel(logger, f"⭐ Новый отзыв по сделке {deal.id}", [
+            ("Оценка", f"{'⭐' * rating} ({rating})"),
+            ("Текст", deal.review.text or "-"),
+            ("Оставил", deal.review.creator.username),
+            ("Дата", datetime.fromisoformat(deal.review.created_at).strftime("%d.%m.%Y %H:%M:%S"))
+        ])
 
     def log_deal_status_changed(self, deal: ItemDeal, status_frmtd: str = "Неизвестный"):
-        logger.info(f"{Fore.WHITE}───────────────────────────────────────")
-        logger.info(f"{Fore.WHITE}Статус сделки {Fore.LIGHTWHITE_EX}{deal.id} {Fore.WHITE}изменился:")
-        logger.info(f" · Статус: {Fore.LIGHTWHITE_EX}{status_frmtd}")
-        logger.info(f" · Покупатель: {Fore.LIGHTWHITE_EX}{deal.user.username}")
-        logger.info(f" · Товар: {Fore.LIGHTWHITE_EX}{deal.item.name}")
-        logger.info(f" · Сумма: {Fore.LIGHTWHITE_EX}{deal.item.price}₽")
-        logger.info(f"{Fore.WHITE}───────────────────────────────────────")
+        from core.console import log_panel
+        log_panel(logger, f"🔄 Статус сделки {deal.id} изменился", [
+            ("Статус", status_frmtd),
+            ("Покупатель", deal.user.username),
+            ("Товар", deal.item.name),
+            ("Сумма", f"{deal.item.price} ₽")
+        ], color="grey62")
 
     def log_new_problem(self, deal: ItemDeal):
-        logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
-        logger.info(f"{Fore.YELLOW}Новая жалоба в сделке {deal.id}:")
-        logger.info(f" · Оставил: {Fore.LIGHTWHITE_EX}{deal.user.username}")
-        logger.info(f" · Товар: {Fore.LIGHTWHITE_EX}{deal.item.name}")
-        logger.info(f" · Сумма: {Fore.LIGHTWHITE_EX}{deal.item.price}₽")
-        logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
+        from core.console import log_panel
+        log_panel(logger, f"⚠️ Новая жалоба в сделке {deal.id}", [
+            ("Оставил", deal.user.username),
+            ("Товар", deal.item.name),
+            ("Сумма", f"{deal.item.price} ₽")
+        ], level=logging.WARNING, color="red")
 
 
     def _event_datetime(self, latest_event_time, event_interval):
@@ -1470,15 +1459,18 @@ class PlayerokBot:
 
 
     async def run_bot(self):
+        from core.console import log_panel
+
         account_pid = acquire_account_lock(self.account.id)
         if account_pid is not None:
-            logger.info("")
-            logger.error(f"{Fore.LIGHTRED_EX}Бот на этом аккаунте Playerok уже запущен!")
-            logger.error(f"{Fore.WHITE}Аккаунт {Fore.LIGHTWHITE_EX}{self.account.username} {Fore.WHITE}уже обслуживает другой бот"
-                         f"{f' (процесс {account_pid})' if account_pid else ''} — один аккаунт, один бот.")
-            logger.error(f"{Fore.WHITE}Закройте это окно: если оставить два бота на одном аккаунте, заказы и сообщения будут обрабатываться дважды.")
-            logger.error(f"{Fore.LIGHTBLACK_EX}Если бот на самом деле не запущен — завершите зависший процесс python и попробуйте снова.")
-            logger.info("")
+            log_panel(
+                logger, "■ Бот на этом аккаунте Playerok уже запущен",
+                body=f"Аккаунт {Fore.LIGHTWHITE_EX}{self.account.username}{Fore.RESET} уже обслуживает другой бот"
+                     f"{f' (процесс {account_pid})' if account_pid else ''} — один аккаунт, один бот.\n"
+                     f"Закройте это окно: если оставить два бота на одном аккаунте, заказы и сообщения будут обрабатываться дважды.\n"
+                     f"{Fore.LIGHTBLACK_EX}Если бот на самом деле не запущен — завершите зависший процесс python и попробуйте снова.",
+                level=logging.ERROR, color="red"
+            )
 
             from core.bootreport import notify_crash
             notify_crash("", reason=(
@@ -1488,26 +1480,18 @@ class PlayerokBot:
             ))
             sys.exit(1)
 
-        logger.info("")
-        logger.info(f"{Fore.YELLOW}Playerok бот запущен и активен")
-        logger.info("")
-        
-        logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
-        logger.info(f"{Fore.YELLOW}Информация об аккаунте:")
-        logger.info(f" · ID: {Fore.LIGHTWHITE_EX}{self.account.id}")
-        logger.info(f" · Никнейм: {Fore.LIGHTWHITE_EX}{self.account.username}")
-
         profile = self.account.profile
+        rows = [("Никнейм", self.account.username), ("ID", self.account.id)]
         if profile.balance:
-            logger.info(f" · Баланс: {Fore.LIGHTWHITE_EX}{profile.balance.value}₽")
-            logger.info(f"   · Доступно: {Fore.LIGHTWHITE_EX}{profile.balance.available}₽")
-            logger.info(f"   · В ожидании: {Fore.LIGHTWHITE_EX}{profile.balance.pending_income}₽")
-            logger.info(f"   · Заморожено: {Fore.LIGHTWHITE_EX}{profile.balance.frozen}₽")
-        
-        logger.info(f" · Активные продажи: {Fore.LIGHTWHITE_EX}{profile.stats.deals.outgoing.total - profile.stats.deals.outgoing.finished}")
-        logger.info(f" · Активные покупки: {Fore.LIGHTWHITE_EX}{profile.stats.deals.incoming.total - profile.stats.deals.incoming.finished}")
-        logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
-        
+            rows.append((
+                "Баланс",
+                f"{profile.balance.value} ₽ {Fore.LIGHTBLACK_EX}· доступно {Fore.RESET}{profile.balance.available} ₽"
+                f"{Fore.LIGHTBLACK_EX} · в ожидании {Fore.RESET}{profile.balance.pending_income} ₽"
+                f"{Fore.LIGHTBLACK_EX} · заморожено {Fore.RESET}{profile.balance.frozen} ₽"
+            ))
+        rows.append(("Активные продажи", profile.stats.deals.outgoing.total - profile.stats.deals.outgoing.finished))
+        rows.append(("Активные покупки", profile.stats.deals.incoming.total - profile.stats.deals.incoming.finished))
+
         proxy = self.config["playerok"]["api"]["proxy"]
         if proxy:
             if "@" in proxy:
@@ -1516,20 +1500,10 @@ class PlayerokBot:
             else:
                 user, password = None, None
                 ip, port = proxy.split(":")
-            
             ip = ".".join([("*" * len(nums)) if i >= 3 else nums for i, nums in enumerate(ip.split("."), start=1)])
-            port = f"{port[:3]}**"
-            user = f"{user[:3]}*****" if user else "-"
-            password = f"{password[:3]}*****" if password else "-"
+            rows.append(("Прокси", f"{ip}:{port[:3]}**" + (f" {Fore.LIGHTBLACK_EX}· юзер {Fore.RESET}{user[:3]}*****" if user else "")))
 
-            logger.info("")
-            logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
-            logger.info(f"{Fore.YELLOW}Информация о прокси:")
-            logger.info(f" · IP: {Fore.LIGHTWHITE_EX}{ip}:{port}")
-            logger.info(f" · Юзер: {Fore.LIGHTWHITE_EX}{user}")
-            logger.info(f" · Пароль: {Fore.LIGHTWHITE_EX}{password}")
-            logger.info(f"{Fore.YELLOW}───────────────────────────────────────")
-            logger.info("")
+        log_panel(logger, "👤 Аккаунт Playerok", rows, message=f"{Fore.YELLOW}Playerok бот запущен и активен")
 
         add_bot_event_handler("ON_PLAYEROK_BOT_INIT", PlayerokBot._on_playerok_bot_init, 0)
         add_playerok_event_handler(EventTypes.NEW_MESSAGE, PlayerokBot._on_new_message, 0)

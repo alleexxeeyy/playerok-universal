@@ -7,7 +7,9 @@ from datetime import datetime
 
 from rich import box
 from rich.console import Console, Group
+from rich.control import Control
 from rich.panel import Panel
+from rich.segment import ControlType
 from rich.table import Table
 from rich.text import Text
 
@@ -34,6 +36,7 @@ _lock = threading.RLock()
 _last_date = None
 _notices: dict[str, dict] = {}
 _notices_lock = threading.Lock()
+_prompt: str | None = None # приглашение к вводу, которое сейчас висит внизу консоли
 
 
 def get_console() -> Console:
@@ -125,12 +128,14 @@ class ConsoleHandler(logging.Handler):
 
             source, message = _source(record, message)
             with _lock: # одна запись — один неразрывный блок, даже если логируют сразу из нескольких потоков
-                _print_date(record.created)
                 console = get_console()
+                _erase_prompt(console)
+                _print_date(record.created)
                 if not empty and ANSI_RE.sub("", message).strip():
                     console.print(_line(record, source, message))
                 if renderable is not None:
                     console.print(renderable)
+                _draw_prompt(console)
         except Exception:
             self.handleError(record)
 
@@ -206,13 +211,48 @@ def print_line(text: str, level: int = logging.INFO):
     # строка в стиле лога, но мимо логгера — для консольной настройки, где логгер ещё не настроен
     record = logging.LogRecord("universal", level, "", 0, text, None, None)
     with _lock:
+        console = get_console()
+        _erase_prompt(console)
         _print_date(record.created)
-        get_console().print(_line(record, Text(""), text))
+        console.print(_line(record, Text(""), text))
+        _draw_prompt(console)
 
 
 def print_panel(title, body, color: str = "yellow", width: int = None):
     with _lock:
-        get_console().print(make_panel(title, body, color, width))
+        console = get_console()
+        _erase_prompt(console)
+        console.print(make_panel(title, body, color, width))
+        _draw_prompt(console)
+
+
+def _erase_prompt(console: Console):
+    if _prompt is not None:
+        console.control(Control(ControlType.CARRIAGE_RETURN, (ControlType.ERASE_IN_LINE, 2)))
+
+
+def _draw_prompt(console: Console):
+    if _prompt is not None:
+        console.file.write(_prompt)
+        console.file.flush()
+
+
+def show_prompt(prompt: str):
+    # пока приглашение висит, всё, что печатается в консоль, встаёт над ним, а оно перерисовывается снизу
+    global _prompt
+    with _lock:
+        if _prompt is None:
+            _prompt = prompt
+            _draw_prompt(get_console())
+
+
+def hide_prompt(erase: bool = True):
+    # erase=False — когда юзер уже нажал Enter и курсор сам ушёл на новую строку
+    global _prompt
+    with _lock:
+        if erase:
+            _erase_prompt(get_console())
+        _prompt = None
 
 
 def log_panel(logger: logging.Logger, title, rows=None, message: str = "", level: int = logging.INFO,

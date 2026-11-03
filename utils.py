@@ -623,6 +623,7 @@ def rebind_item(old_id: str, new: dict) -> int:
 TG_RETRY_DELAYS = (10, 30, 60, 120, 300)
 NOT_CONFIGURED_EXIT_DELAY = 60
 _console_queue: queue.Queue | None = None
+CONSOLE_PROMPT = f"  {Fore.LIGHTYELLOW_EX}→ {Fore.LIGHTWHITE_EX}"
 
 
 def normalize_proxy(proxy: str) -> str:
@@ -722,26 +723,37 @@ def _console_reader() -> queue.Queue:
         _console_queue = queue.Queue()
 
         def read():
+            from core.console import hide_prompt
             while True:
                 try:
-                    _console_queue.put(input())
+                    line = input()
                 except Exception as e: # EOF и пр. — пробрасываем в того, кто ждёт ввода, иначе он повиснет
                     _console_queue.put(e)
                     return
+                hide_prompt(erase=False) # Enter уже перевёл строку — иначе следующий лог сотрёт введённое
+                _console_queue.put(line)
 
         Thread(target=read, daemon=True).start()
     return _console_queue
 
 
 def _read_console(timeout: float = None) -> str | None:
-    print(f"  {Fore.LIGHTYELLOW_EX}→ {Fore.LIGHTWHITE_EX}", end="", flush=True)
+    from core.console import show_prompt, hide_prompt
+
     if _console_queue is None and timeout is None:
-        return input().strip()
+        show_prompt(CONSOLE_PROMPT)
+        try:
+            return input().strip()
+        finally:
+            hide_prompt(erase=False)
     try:
-        line = _console_reader().get(timeout=timeout)
+        line = _console_reader().get_nowait() # ввели, пока бот подключался: строка уже на экране, приглашение не нужно
     except queue.Empty:
-        print()
-        return None
+        show_prompt(CONSOLE_PROMPT)
+        try:
+            line = _console_reader().get(timeout=timeout)
+        except queue.Empty:
+            return None # приглашение остаётся внизу: ввести можно и во время следующей попытки
     if isinstance(line, BaseException):
         raise line
     return line.strip()
@@ -795,7 +807,7 @@ def _apply_console_connection(text: str):
 
 def configure_telegram() -> str:
     from core import notify, bootreport
-    from core.console import print_line
+    from core.console import print_line, show_prompt, hide_prompt
 
     tty = sys.stdin.isatty()
     attempt = 0
@@ -811,6 +823,7 @@ def configure_telegram() -> str:
         status, username, connection = connect_telegram(token)
 
         if status == "ok":
+            hide_prompt() # подключились — приглашение ввести прокси больше не нужно
             api = sett.get("config")["telegram"]["api"]
             configured = (api["proxy"], api["custom_api_url"])
             notify.set_connection(*connection)
@@ -846,6 +859,7 @@ def configure_telegram() -> str:
             text = _read_console(timeout=delay)
             if text is not None:
                 _apply_console_connection(text)
+                show_prompt(CONSOLE_PROMPT) # пока проверяем введённое, можно ввести другое — и лог не встанет поверх набора
         else:
             time.sleep(delay)
 

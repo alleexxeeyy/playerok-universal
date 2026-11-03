@@ -108,7 +108,7 @@ if __name__ == "__main__":
         set_title(f"Playerok Universal v{VERSION} by @friedfluoride")
         from core.console import print_panel
         print_panel(
-            f"{ACCENT_COLOR}Playerok Universal {Fore.LIGHTWHITE_EX}v{VERSION} {Fore.LIGHTBLACK_EX}· by {Fore.LIGHTYELLOW_EX}@friedfluoride (3xtra)",
+            f"{ACCENT_COLOR}Playerok Universal {Fore.LIGHTWHITE_EX}v{VERSION} {Fore.LIGHTBLACK_EX}· by {Fore.LIGHTYELLOW_EX}@friedfluoride (fried)",
             [
                 ("GitHub", "github.com/alleexxeeyy/playerok-universal"),
                 ("Новости", "t.me/friedplayerok"),

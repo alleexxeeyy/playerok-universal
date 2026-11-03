@@ -36,7 +36,7 @@ _lock = threading.RLock()
 _last_date = None
 _notices: dict[str, dict] = {}
 _notices_lock = threading.Lock()
-_prompt: str | None = None # приглашение к вводу, которое сейчас висит внизу консоли
+_prompt: str | None = None # подпись строки ввода, которая сейчас висит внизу консоли
 
 
 def get_console() -> Console:
@@ -232,17 +232,28 @@ def _erase_prompt(console: Console):
 
 
 def _draw_prompt(console: Console):
-    if _prompt is not None:
-        console.file.write(_prompt)
-        console.file.flush()
+    # строка ввода в той же сетке, что и лог: время, иконка, «ввод» в колонке источника, стрелка в колонке текста
+    if _prompt is None:
+        return
+    ascii_mode = is_ascii()
+    line = Text()
+    line.append(datetime.now().strftime("%H:%M:%S"), style="grey46")
+    line.append("  ")
+    line.append("?" if ascii_mode else "✎", style="bold bright_cyan")
+    line.append("  ")
+    line.append(_prompt.ljust(SOURCE_WIDTH), style="bold bright_cyan")
+    line.append("  ")
+    line.append("> " if ascii_mode else "→ ", style="bold bright_yellow")
+    console.print(line, end="")
+    console.file.flush()
 
 
-def show_prompt(prompt: str):
+def show_prompt(label: str = "ввод"):
     # пока приглашение висит, всё, что печатается в консоль, встаёт над ним, а оно перерисовывается снизу
     global _prompt
     with _lock:
         if _prompt is None:
-            _prompt = prompt
+            _prompt = label
             _draw_prompt(get_console())
 
 

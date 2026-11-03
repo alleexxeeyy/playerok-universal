@@ -1,6 +1,7 @@
 import asyncio
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
+from aiogram.filters import StateFilter
 from aiogram.types import ReplyKeyboardRemove
 
 from settings import Settings as sett
@@ -129,3 +130,22 @@ async def handler_waiting_for_shared_user_cancel(message: types.Message, state: 
 
     await message.answer("✖️ Выбор пользователя отменён", reply_markup=ReplyKeyboardRemove())
     await _render_signed_users(message, state, last_page, send=True)
+
+
+@router.message(StateFilter(states.SetupStates))
+async def handler_setup_step_after_launch(message: types.Message, state: FSMContext):
+    # бот запустился сам (сеть ожила), пока юзер был на шаге настройки — его сообщение с ключом не оставляем в чате
+    await state.set_state(None)
+    try:
+        await message.delete()
+    except Exception:
+        pass
+    if not access.is_signed(message.from_user.id):
+        return
+    await throw_float_message(
+        state=state,
+        message=message,
+        text="✅ Бот уже запущен — настройка больше не нужна\n\n" + templ.menu_text(),
+        reply_markup=templ.menu_kb(),
+        send=True
+    )

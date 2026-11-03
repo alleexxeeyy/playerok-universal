@@ -12,7 +12,6 @@ import logging
 import requests
 from html import escape
 from threading import Thread
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from urllib.parse import urlparse, unquote, quote
 from logging import getLogger
 from colorama import Fore
@@ -820,6 +819,8 @@ def configure_telegram() -> str:
                 logger.warning(f"{Fore.LIGHTYELLOW_EX}{note}")
                 bootreport.add_note(note)
             logger.info(f"{Fore.LIGHTYELLOW_EX}Telegram бот @{username} успешно подключён.")
+            if not logging.getLogger().handlers: # `setup` из install.sh зовёт без логгера — иначе юзер не увидит итог
+                print_line(f"{Fore.LIGHTYELLOW_EX}Telegram бот @{username} успешно подключён")
             return username
 
         if status == "unauthorized":
@@ -878,6 +879,30 @@ def configure_config():
 DIAGNOSE_TIMEOUT = 60
 
 
+class FutureTimeout(Exception):
+    pass
+
+
+def _run_with_timeout(func, timeout: float):
+    # daemon-поток, а не ThreadPoolExecutor: зависший запрос не должен держать выход из бота по Ctrl+C
+    result = {}
+
+    def target():
+        try:
+            result["value"] = func()
+        except BaseException as e:
+            result["error"] = e
+
+    thread = Thread(target=target, daemon=True)
+    thread.start()
+    thread.join(timeout)
+    if thread.is_alive():
+        raise FutureTimeout()
+    if "error" in result:
+        raise result["error"]
+    return result.get("value")
+
+
 def is_proxy_alive(proxy: str, url: str = "https://playerok.com", timeout: int = 15) -> bool:
     try:
         requests.get(url, proxies={"http": f"http://{proxy}", "https": f"http://{proxy}"}, timeout=(10, timeout))
@@ -896,16 +921,13 @@ def diagnose_playerok() -> dict | None:
         return {"code": "proxy", "text": "Прокси для Playerok не отвечает", "transient": True}
 
     # запросы к Playerok сами повторяются на 429/5xx с паузами до 2 минут — ограничиваем общее время проверки
-    executor = ThreadPoolExecutor(max_workers=1)
-    future = executor.submit(lambda: Account(
-        cookies=api["cookies"],
-        user_agent=api["user_agent"],
-        requests_timeout=api["requests_timeout"],
-        proxy=api["proxy"] or None
-    ).get())
-    executor.shutdown(wait=False)
     try:
-        account = future.result(timeout=DIAGNOSE_TIMEOUT)
+        account = _run_with_timeout(lambda: Account(
+            cookies=api["cookies"],
+            user_agent=api["user_agent"],
+            requests_timeout=api["requests_timeout"],
+            proxy=api["proxy"] or None
+        ).get(), DIAGNOSE_TIMEOUT)
     except FutureTimeout:
         return {"code": "server", "text": f"Playerok не ответил за {DIAGNOSE_TIMEOUT} сек", "transient": True}
     except UnauthorizedError:
@@ -924,8 +946,12 @@ def diagnose_playerok() -> dict | None:
         return {"code": "server", "text": f"Playerok временно не отвечает (ошибка {e.status_code})", "transient": True}
     except Exception as e:
         reason = str(e).strip()
-        if api["proxy"]: # в тексте ошибки curl бывает адрес прокси вместе с логином и паролем
-            reason = reason.replace(api["proxy"], mask_proxy(api["proxy"])).replace(api["proxy"].split("@")[0], "***")
+        if api["proxy"]: # в тексте ошибки бывает адрес прокси, иногда вместе с логином и паролем
+            host = api["proxy"].split("@")[-1].split(":")[0]
+            reason = reason.replace(api["proxy"], mask_proxy(api["proxy"]))
+            if "@" in api["proxy"]:
+                reason = reason.replace(api["proxy"].split("@")[0], "***")
+            reason = reason.replace(host, mask_proxy(host))
         reason = escape(reason[:200]) or type(e).__name__
         return {"code": "network", "text": f"Не удалось подключиться к Playerok: {reason}", "transient": True}
 

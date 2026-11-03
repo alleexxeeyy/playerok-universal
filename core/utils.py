@@ -1,4 +1,5 @@
 import os
+import importlib
 import re
 import sys
 import ctypes
@@ -256,6 +257,7 @@ def install_requirements(requirements_path: str, timeout: int = None):
                 subprocess.check_call([
                     sys.executable, "-m", "pip", "install", "-r", requirements_path
                 ], timeout=timeout)
+                importlib.invalidate_caches() # иначе только что поставленный пакет может не найтись в этом же процессе
                 return
     except Exception as e:
         logger.error(f"Не удалось установить зависимости из файла \"{requirements_path}\": {e}")

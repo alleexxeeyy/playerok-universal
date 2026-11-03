@@ -287,8 +287,29 @@ def _log_tail(path: str = "logs/latest.log") -> bytes | None:
         return None
 
 
-def notify_crash(trace: str, reason: str = None):
+THROTTLE_PATH = "bot_data/notify_throttle.json"
+
+
+def _throttled(key: str, interval: int) -> bool:
+    from data import get_json, set_json
+
+    try:
+        os.makedirs(os.path.dirname(THROTTLE_PATH), exist_ok=True)
+        stamps = get_json(THROTTLE_PATH, {})
+        if time.time() - stamps.get(key, 0) < interval:
+            return True
+        stamps[key] = time.time()
+        set_json(THROTTLE_PATH, stamps)
+    except Exception:
+        pass
+    return False
+
+
+def notify_crash(trace: str, reason: str = None, throttle_key: str = None, throttle: int = 1800):
     # тут не трогаем tgbot — падение могло случиться как раз на его импорте
+    if throttle_key and _throttled(throttle_key, throttle):
+        logger.debug(f"Уведомление о падении «{throttle_key}» уже отправлялось недавно — не дублирую")
+        return
     try:
         from core import notify
 

@@ -121,6 +121,7 @@ if __name__ == "__main__":
         check_for_updates()
         configure_config() # в консоли — только токен Telegram, остальное настраивается в самом ТГ-боте
 
+        logger.info(f"{Fore.LIGHTYELLOW_EX}Проверяю подключение к Playerok...")
         problem = diagnose()
         if problem: # Playerok не подключается — поднимаем один ТГ-бот, чинить будем там
             main_loop.run_until_complete(start_telegram_bot())
